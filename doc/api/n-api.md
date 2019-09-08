@@ -158,14 +158,15 @@ from version 3 with some additions. This means that it is not necessary
 to recompile for new versions of Node.js which are
 listed as supporting a later version.
 
-|       | 1       | 2        | 3        | 4        |
-|:-----:|:-------:|:--------:|:--------:|:--------:|
-| v6.x  |         |          | v6.14.2* |          |
-| v8.x  | v8.0.0* | v8.10.0* | v8.11.2  | v8.16.0  |
-| v9.x  | v9.0.0* | v9.3.0*  | v9.11.0* |          |
-| v10.x |         |          | v10.0.0  | v10.16.0 |
-| v11.x |         |          | v11.0.0  | v11.8.0  |
-| v12.x |         |          |          | v12.0.0  |
+|       | 1       | 2        | 3        | 4        | 5         |
+|:-----:|:-------:|:--------:|:--------:|:--------:|:---------:|
+| v6.x  |         |          | v6.14.2* |          |           |
+| v8.x  | v8.0.0* | v8.10.0* | v8.11.2  | v8.16.0  |           |
+| v9.x  | v9.0.0* | v9.3.0*  | v9.11.0* |          |           |
+| v10.x |         |          | v10.0.0  | v10.16.0 |           |
+| v11.x |         |          | v11.0.0  | v11.8.0  |           |
+| v12.x |         |          |          | v12.0.0  |           |
+| v13.x |         |          |          |          | REPLACEME |
 
 \* Indicates that the N-API version was released as experimental
 
@@ -548,12 +549,12 @@ operations. Callback functions must satisfy the following signature:
 typedef void (*napi_async_execute_callback)(napi_env env, void* data);
 ```
 
-Implementations of this type of function should avoid making any N-API calls
-that could result in the execution of JavaScript or interaction with
-JavaScript objects. Most often, any code that needs to make N-API
-calls should be made in `napi_async_complete_callback` instead.
-Avoid using the `napi_env` parameter in the execute callback as
-it will likely execute JavaScript.
+Implementations of this function must avoid making N-API calls
+that execute JavaScript or interact with
+JavaScript objects.  N-API
+calls should be in the `napi_async_complete_callback` instead.
+Do not use the `napi_env` parameter as it will likely
+result in execution of JavaScript.
 
 #### napi_async_complete_callback
 <!-- YAML
@@ -1758,8 +1759,6 @@ structure, in most cases using a `TypedArray` will suffice.
 added: v11.11.0
 -->
 
-> Stability: 1 - Experimental
-
 ```C
 napi_status napi_create_date(napi_env env,
                              double time,
@@ -2420,8 +2419,6 @@ This API returns various properties of a `DataView`.
 added: v11.11.0
 -->
 
-> Stability: 1 - Experimental
-
 ```C
 napi_status napi_get_date_value(napi_env env,
                                 napi_value value,
@@ -3047,8 +3044,6 @@ This API checks if the `Object` passed in is a buffer.
 <!-- YAML
 added: v11.11.0
 -->
-
-> Stability: 1 - Experimental
 
 ```C
 napi_status napi_is_date(napi_env env, napi_value value, bool* result)
@@ -4185,8 +4180,6 @@ callback was associated with the wrapping, it will no longer be called when the
 JavaScript object becomes garbage-collected.
 
 ### napi_add_finalizer
-
-> Stability: 1 - Experimental
 
 <!-- YAML
 added: v8.0.0
