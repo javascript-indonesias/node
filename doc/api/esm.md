@@ -34,13 +34,13 @@ Once enabled, Node.js will treat the following as ES modules when passed to
 `node` as the initial input, or when referenced by `import` statements within
 ES module code:
 
-- Files ending in `.mjs`.
+* Files ending in `.mjs`.
 
-- Files ending in `.js`, or extensionless files, when the nearest parent
+* Files ending in `.js`, or extensionless files, when the nearest parent
   `package.json` file contains a top-level field `"type"` with a value of
   `"module"`.
 
-- Strings passed in as an argument to `--eval` or `--print`, or piped to
+* Strings passed in as an argument to `--eval` or `--print`, or piped to
   `node` via `STDIN`, with the flag `--input-type=module`.
 
 Node.js will treat as CommonJS all other forms of input, such as `.js` files
@@ -51,13 +51,13 @@ CommonJS and ES modules, it is best to be explicit whenever possible. Node.js
 will treat the following as CommonJS when passed to `node` as the initial input,
 or when referenced by `import` statements within ES module code:
 
-- Files ending in `.cjs`.
+* Files ending in `.cjs`.
 
-- Files ending in `.js`, or extensionless files, when the nearest parent
+* Files ending in `.js`, or extensionless files, when the nearest parent
   `package.json` file contains a top-level field `"type"` with a value of
   `"commonjs"`.
 
-- Strings passed in as an argument to `--eval` or `--print`, or piped to
+* Strings passed in as an argument to `--eval` or `--print`, or piped to
   `node` via `STDIN`, with the flag `--input-type=commonjs`.
 
 ## <code>package.json</code> <code>"type"</code> field
@@ -146,12 +146,12 @@ import 'commonjs-package/src/index.mjs';
 The `.mjs` and `.cjs` extensions may be used to mix types within the same
 package scope:
 
-- Within a `"type": "module"` package scope, Node.js can be instructed to
+* Within a `"type": "module"` package scope, Node.js can be instructed to
   interpret a particular file as CommonJS by naming it with a `.cjs` extension
   (since both `.js` and `.mjs` files are treated as ES modules within a
   `"module"` package scope).
 
-- Within a `"type": "commonjs"` package scope, Node.js can be instructed to
+* Within a `"type": "commonjs"` package scope, Node.js can be instructed to
   interpret a particular file as an ES module by naming it with an `.mjs`
   extension (since both `.js` and `.cjs` files are treated as CommonJS within a
   `"commonjs"` package scope).
@@ -298,16 +298,16 @@ e.g. `'path'` in `import { sep } from 'path'`. Specifiers are also used in
 
 There are four types of specifiers:
 
-- _Bare specifiers_ like `'some-package'`. They refer to an entry point of a
+* _Bare specifiers_ like `'some-package'`. They refer to an entry point of a
   package by the package name.
 
-- _Deep import specifiers_ like `'some-package/lib/shuffle.mjs'`. They refer to
+* _Deep import specifiers_ like `'some-package/lib/shuffle.mjs'`. They refer to
   a path within a package prefixed by the package name.
 
-- _Relative specifiers_ like `'./startup.js'` or `'../config.mjs'`. They refer
+* _Relative specifiers_ like `'./startup.js'` or `'../config.mjs'`. They refer
   to a path relative to the location of the importing file.
 
-- _Absolute specifiers_ like `'file:///opt/nodejs/config.js'`. They refer
+* _Absolute specifiers_ like `'file:///opt/nodejs/config.js'`. They refer
   directly and explicitly to a full path.
 
 Bare specifiers, and the bare specifier portion of deep import specifiers, are
@@ -573,8 +573,14 @@ The resolve hook returns the resolved file URL and module format for a
 given module specifier and parent file URL:
 
 ```js
-const baseURL = new URL(`${process.cwd()}/`, 'file://');
+import { URL, pathToFileURL } from 'url';
+const baseURL = pathToFileURL(process.cwd()).href;
 
+/**
+ * @param {string} specifier
+ * @param {string} parentModuleURL
+ * @param {function} defaultResolver
+ */
 export async function resolve(specifier,
                               parentModuleURL = baseURL,
                               defaultResolver) {
@@ -612,13 +618,21 @@ be written:
 import path from 'path';
 import process from 'process';
 import Module from 'module';
+import { URL, pathToFileURL } from 'url';
 
 const builtins = Module.builtinModules;
 const JS_EXTENSIONS = new Set(['.js', '.mjs']);
 
-const baseURL = new URL(`${process.cwd()}/`, 'file://');
+const baseURL = pathToFileURL(process.cwd()).href;
 
-export function resolve(specifier, parentModuleURL = baseURL, defaultResolve) {
+/**
+ * @param {string} specifier
+ * @param {string} parentModuleURL
+ * @param {function} defaultResolver
+ */
+export async function resolve(specifier,
+                              parentModuleURL = baseURL,
+                              defaultResolver) {
   if (builtins.includes(specifier)) {
     return {
       url: specifier,
@@ -627,7 +641,7 @@ export function resolve(specifier, parentModuleURL = baseURL, defaultResolve) {
   }
   if (/^\.{0,2}[/]/.test(specifier) !== true && !specifier.startsWith('file:')) {
     // For node_modules support:
-    // return defaultResolve(specifier, parentModuleURL);
+    // return defaultResolver(specifier, parentModuleURL);
     throw new Error(
       `imports must begin with '/', './', or '../'; '${specifier}' does not`);
   }
