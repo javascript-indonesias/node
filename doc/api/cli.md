@@ -411,6 +411,13 @@ added: v6.0.0
 
 Silence all process warnings (including deprecations).
 
+### `--force-context-aware`
+<!-- YAML
+added: REPLACEME
+-->
+
+Disable loading native addons that are not [context-aware][].
+
 ### `--openssl-config=file`
 <!-- YAML
 added: v6.9.0
@@ -980,6 +987,7 @@ Node.js options that are allowed are:
 * `--experimental-report`
 * `--experimental-vm-modules`
 * `--experimental-wasm-modules`
+* `--force-context-aware`
 * `--force-fips`
 * `--frozen-intrinsics`
 * `--heapsnapshot-signal`
@@ -1256,3 +1264,4 @@ greater than `4` (its current default value). For more information, see the
 [experimental ECMAScript Module]: esm.html#esm_resolve_hook
 [libuv threadpool documentation]: http://docs.libuv.org/en/latest/threadpool.html
 [remote code execution]: https://www.owasp.org/index.php/Code_Injection
+[context-aware]: addons.html#addons_context_aware_addons
