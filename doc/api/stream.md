@@ -571,7 +571,8 @@ The `writable.write()` method writes some data to the stream, and calls the
 supplied `callback` once the data has been fully handled. If an error
 occurs, the `callback` *may or may not* be called with the error as its
 first argument. To reliably detect write errors, add a listener for the
-`'error'` event.
+`'error'` event. If `callback` is called with an error, it will be called
+before the `'error'` event is emitted.
 
 The return value is `true` if the internal buffer is less than the
 `highWaterMark` configured when the stream was created after admitting `chunk`.
@@ -1589,6 +1590,10 @@ async function run() {
 
 run().catch(console.error);
 ```
+
+`stream.pipeline()` will call `stream.destroy(err)` on all streams except:
+* `Readable` streams which have emitted `'end'` or `'close'`.
+* `Writable` streams which have emitted `'finish'` or `'close'`.
 
 `stream.pipeline()` leaves dangling event listeners on the streams
 after the `callback` has been invoked. In the case of reuse of streams after
