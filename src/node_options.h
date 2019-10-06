@@ -100,6 +100,7 @@ class DebugOptions : public Options {
 class EnvironmentOptions : public Options {
  public:
   bool abort_on_uncaught_exception = false;
+  bool enable_source_maps = false;
   bool experimental_exports = false;
   bool experimental_modules = false;
   std::string es_module_specifier_resolution;
@@ -134,6 +135,7 @@ class EnvironmentOptions : public Options {
   bool heap_prof = false;
 #endif  // HAVE_INSPECTOR
   std::string redirect_warnings;
+  bool test_udp_no_try_send = false;
   bool throw_deprecation = false;
   bool trace_deprecation = false;
   bool trace_sync_io = false;
