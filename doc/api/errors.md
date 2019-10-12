@@ -201,7 +201,7 @@ are dependent on [V8's stack trace API][]. Stack traces extend only to either
 (a) the beginning of *synchronous code execution*, or (b) the number of frames
 given by the property `Error.stackTraceLimit`, whichever is smaller.
 
-### Error.captureStackTrace(targetObject[, constructorOpt])
+### Error.captureStackTrace(targetObject\[, constructorOpt\])
 
 * `targetObject` {Object}
 * `constructorOpt` {Function}
@@ -2079,7 +2079,7 @@ state, usually after `.close()` has been called.
 ### ERR_CRYPTO_HASH_DIGEST_NO_UTF16
 <!-- YAML
 added: v9.0.0
-removed: REPLACEME
+removed: v12.12.0
 -->
 
 The UTF-16 encoding was used with [`hash.digest()`][]. While the

@@ -137,7 +137,7 @@ Enable FIPS-compliant crypto at startup. (Requires Node.js to be built with
 
 ### `--enable-source-maps`
 <!-- YAML
-added: REPLACEME
+added: v12.12.0
 -->
 
 > Stability: 1 - Experimental
@@ -157,13 +157,6 @@ module. The `node` mode will enable support for optional file extensions and
 the ability to import a directory that has an index file.
 
 Please see [customizing esm specifier resolution][] for example usage.
-
-### `--experimental-exports`
-<!-- YAML
-added: v12.7.0
--->
-
-Enable experimental resolution using the `exports` field in `package.json`.
 
 ### `--experimental-json-modules`
 <!-- YAML
@@ -430,7 +423,7 @@ Silence all process warnings (including deprecations).
 
 ### `--force-context-aware`
 <!-- YAML
-added: REPLACEME
+added: v12.12.0
 -->
 
 Disable loading native addons that are not [context-aware][].
@@ -998,7 +991,6 @@ Node.js options that are allowed are:
 * `--enable-fips`
 * `--enable-source-maps`
 * `--es-module-specifier-resolution`
-* `--experimental-exports`
 * `--experimental-json-modules`
 * `--experimental-loader`
 * `--experimental-modules`
@@ -1128,6 +1120,14 @@ added: v3.0.0
 Path to the file used to store the persistent REPL history. The default path is
 `~/.node_repl_history`, which is overridden by this variable. Setting the value
 to an empty string (`''` or `' '`) disables persistent REPL history.
+
+### `NODE_REPL_EXTERNAL_MODULE=file`
+<!-- YAML
+added: REPLACEME
+-->
+
+Path to a Node.js module which will be loaded in place of the built-in REPL.
+Overriding this value to an empty string (`''`) will use the built-in REPL.
 
 ### `NODE_TLS_REJECT_UNAUTHORIZED=value`
 

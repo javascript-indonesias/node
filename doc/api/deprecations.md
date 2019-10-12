@@ -2003,7 +2003,7 @@ to be verified, no matter if it is set to true or not. Skipping the verification
 could lead to hard to find errors and crashes.
 
 <a id="DEP0103"></a>
-### DEP0103: process.binding('util').is[...] typechecks
+### DEP0103: process.binding('util').is\[...\] typechecks
 <!-- YAML
 changes:
   - version: v10.9.0
@@ -2509,7 +2509,7 @@ Passing a callback to [`worker.terminate()`][] is deprecated. Use the returned
 ### DEP0133: http connection
 <!-- YAML
 changes:
-  - version: REPLACEME
+  - version: v12.12.0
     pr-url: https://github.com/nodejs/node/pull/29015
     description: Documentation-only deprecation.
 -->
@@ -2523,7 +2523,7 @@ Prefer [`response.socket`][] over [`response.connection`][] and
 ### DEP0134: process._tickCallback
 <!-- YAML
 changes:
-  - version: REPLACEME
+  - version: v12.12.0
     pr-url: https://github.com/nodejs/node/pull/29781
     description: Documentation-only deprecation.
 -->
