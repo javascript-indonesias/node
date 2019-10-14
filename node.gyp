@@ -176,6 +176,7 @@
       'lib/internal/repl/history.js',
       'lib/internal/repl/utils.js',
       'lib/internal/socket_list.js',
+      'lib/internal/source_map/prepare_stack_trace.js',
       'lib/internal/source_map/source_map.js',
       'lib/internal/source_map/source_map_cache.js',
       'lib/internal/test/binding.js',
@@ -290,7 +291,7 @@
           '-Wl,-bnoerrmsg',
         ],
       }],
-      ['(OS=="linux" or OS=="mac") and llvm_version!=0', {
+      ['OS in ("linux", "mac") and llvm_version != "0.0"', {
         'libraries': ['-latomic'],
       }],
     ],
