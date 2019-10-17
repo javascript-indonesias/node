@@ -1041,6 +1041,43 @@ console.log(hash.digest('hex'));
 //   6a2da20943931e9834fc12cfe5bb47bbd9ae43489a30726962b576f4e3993e50
 ```
 
+### hash.copy(\[options\])
+<!-- YAML
+added:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/29910
+-->
+
+* `options` {Object} [`stream.transform` options][]
+* Returns: {Hash}
+
+Creates a new `Hash` object that contains a deep copy of the internal state
+of the current `Hash` object.
+
+The optional `options` argument controls stream behavior. For XOF hash
+functions such as `'shake256'`, the `outputLength` option can be used to
+specify the desired output length in bytes.
+
+An error is thrown when an attempt is made to copy the `Hash` object after
+its [`hash.digest()`][] method has been called.
+
+```js
+// Calculate a rolling hash.
+const crypto = require('crypto');
+const hash = crypto.createHash('sha256');
+
+hash.update('one');
+console.log(hash.copy().digest('hex'));
+
+hash.update('two');
+console.log(hash.copy().digest('hex'));
+
+hash.update('three');
+console.log(hash.copy().digest('hex'));
+
+// Etc.
+```
+
 ### hash.digest(\[encoding\])
 <!-- YAML
 added: v0.1.92
@@ -3048,7 +3085,7 @@ The following constants exported by `crypto.constants` apply to various uses of
 the `crypto`, `tls`, and `https` modules and are generally specific to OpenSSL.
 
 ### OpenSSL Options
-<!--lint disable maximum-line-length-->
+
 <table>
   <tr>
     <th>Constant</th>
@@ -3204,7 +3241,6 @@ the `crypto`, `tls`, and `https` modules and are generally specific to OpenSSL.
 </table>
 
 ### OpenSSL Engine Constants
-<!--lint enable maximum-line-length remark-lint-->
 
 <table>
   <tr>
