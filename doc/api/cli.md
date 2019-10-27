@@ -39,7 +39,7 @@ For example, `--pending-deprecation` is equivalent to `--pending_deprecation`.
 added: v8.0.0
 -->
 
-Alias for stdin, analogous to the use of - in other command line utilities,
+Alias for stdin. Analogous to the use of `-` in other command line utilities,
 meaning that the script will be read from stdin, and the rest of the options
 are passed to that script.
 
@@ -195,6 +195,14 @@ added: v11.8.0
 -->
 
 Enable experimental diagnostic report feature.
+
+### `--experimental-resolve-self`
+<!-- YAML
+added: REPLACEME
+-->
+
+Enable experimental support for a package using `require` or `import` to load
+itself.
 
 ### `--experimental-vm-modules`
 <!-- YAML
@@ -1010,6 +1018,7 @@ Node.js options that are allowed are:
 * `--experimental-policy`
 * `--experimental-repl-await`
 * `--experimental-report`
+* `--experimental-resolve-self`
 * `--experimental-vm-modules`
 * `--experimental-wasm-modules`
 * `--force-context-aware`

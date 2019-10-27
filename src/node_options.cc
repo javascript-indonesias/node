@@ -27,10 +27,10 @@ std::shared_ptr<PerProcessOptions> cli_options{new PerProcessOptions()};
 }  // namespace per_process
 
 void DebugOptions::CheckOptions(std::vector<std::string>* errors) {
-#if !NODE_USE_V8_PLATFORM
+#if !NODE_USE_V8_PLATFORM && !HAVE_INSPECTOR
   if (inspector_enabled) {
     errors->push_back("Inspector is not available when Node is compiled "
-                      "--without-v8-platform");
+                      "--without-v8-platform and --without-inspector.");
   }
 #endif
 
@@ -330,6 +330,10 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
   AddOption("--experimental-modules",
             "experimental ES Module support and caching modules",
             &EnvironmentOptions::experimental_modules,
+            kAllowedInEnvironment);
+  AddOption("--experimental-resolve-self",
+            "experimental support for require/import of the current package",
+            &EnvironmentOptions::experimental_resolve_self,
             kAllowedInEnvironment);
   AddOption("--experimental-wasm-modules",
             "experimental ES Module support for webassembly modules",
