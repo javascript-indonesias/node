@@ -211,14 +211,6 @@ Environment* Environment::ForAsyncHooks(AsyncHooks* hooks) {
   return ContainerOf(&Environment::async_hooks_, hooks);
 }
 
-inline AsyncCallbackScope::AsyncCallbackScope(Environment* env) : env_(env) {
-  env_->PushAsyncCallbackScope();
-}
-
-inline AsyncCallbackScope::~AsyncCallbackScope() {
-  env_->PopAsyncCallbackScope();
-}
-
 inline size_t Environment::async_callback_scope_depth() const {
   return async_callback_scope_depth_;
 }
@@ -874,6 +866,19 @@ inline void Environment::remove_sub_worker_context(worker::Worker* context) {
 
 inline bool Environment::is_stopping() const {
   return thread_stopper_.is_stopped();
+}
+
+inline std::list<node_module>* Environment::extra_linked_bindings() {
+  return &extra_linked_bindings_;
+}
+
+inline node_module* Environment::extra_linked_bindings_head() {
+  return extra_linked_bindings_.size() > 0 ?
+      &extra_linked_bindings_.front() : nullptr;
+}
+
+inline const Mutex& Environment::extra_linked_bindings_mutex() const {
+  return extra_linked_bindings_mutex_;
 }
 
 inline performance::performance_state* Environment::performance_state() {

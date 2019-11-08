@@ -637,7 +637,7 @@ void Environment::RunAtExitCallbacks() {
 }
 
 void Environment::AtExit(void (*cb)(void* arg), void* arg) {
-  at_exit_functions_.push_back(ExitCallback{cb, arg});
+  at_exit_functions_.push_front(ExitCallback{cb, arg});
 }
 
 void Environment::RunAndClearNativeImmediates() {
@@ -935,9 +935,10 @@ void Environment::stop_sub_worker_contexts() {
   }
 }
 
-#if HAVE_INSPECTOR
-
-#endif  // HAVE_INSPECTOR
+Environment* Environment::worker_parent_env() const {
+  if (worker_context_ == nullptr) return nullptr;
+  return worker_context_->env();
+}
 
 void MemoryTracker::TrackField(const char* edge_name,
                                const CleanupHookCallback& value,
@@ -1035,21 +1036,6 @@ char* Environment::Reallocate(char* data, size_t old_size, size_t size) {
     memset(new_data + old_size, 0, size - old_size);
   Free(data, old_size);
   return new_data;
-}
-
-void Environment::AddArrayBufferAllocatorToKeepAliveUntilIsolateDispose(
-    std::shared_ptr<v8::ArrayBuffer::Allocator> allocator) {
-  if (keep_alive_allocators_ == nullptr) {
-    MultiIsolatePlatform* platform = isolate_data()->platform();
-    CHECK_NOT_NULL(platform);
-
-    keep_alive_allocators_ = new ArrayBufferAllocatorList();
-    platform->AddIsolateFinishedCallback(isolate(), [](void* data) {
-      delete static_cast<ArrayBufferAllocatorList*>(data);
-    }, static_cast<void*>(keep_alive_allocators_));
-  }
-
-  keep_alive_allocators_->insert(allocator);
 }
 
 bool Environment::RunWeakRefCleanup() {

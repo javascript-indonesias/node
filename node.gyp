@@ -1,7 +1,6 @@
 {
   'variables': {
     'v8_use_siphash%': 0,
-    'v8_use_snapshot%': 1,
     'v8_trace_maps%': 0,
     'node_use_dtrace%': 'false',
     'node_use_etw%': 'false',
@@ -91,6 +90,7 @@
       'lib/internal/buffer.js',
       'lib/internal/cli_table.js',
       'lib/internal/child_process.js',
+      'lib/internal/child_process/serialization.js',
       'lib/internal/cluster/child.js',
       'lib/internal/cluster/master.js',
       'lib/internal/cluster/round_robin_handle.js',
@@ -564,7 +564,6 @@
         'src/node_zlib.cc',
         'src/pipe_wrap.cc',
         'src/process_wrap.cc',
-        'src/sharedarraybuffer_metadata.cc',
         'src/signal_wrap.cc',
         'src/spawn_sync.cc',
         'src/stream_base.cc',
@@ -642,7 +641,6 @@
         'src/pipe_wrap.h',
         'src/req_wrap.h',
         'src/req_wrap-inl.h',
-        'src/sharedarraybuffer_metadata.h',
         'src/spawn_sync.h',
         'src/stream_base.h',
         'src/stream_base-inl.h',

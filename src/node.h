@@ -286,13 +286,6 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
                                           void* data) = 0;
 };
 
-// Set up some Node.js-specific defaults for `params`, in particular
-// the ArrayBuffer::Allocator if it is provided, memory limits, and
-// possibly a code event handler.
-NODE_EXTERN void SetIsolateCreateParams(v8::Isolate::CreateParams* params,
-                                        ArrayBufferAllocator* allocator
-                                            = nullptr);
-
 enum IsolateSettingsFlags {
   MESSAGE_LISTENER_WITH_ERROR_LEVEL = 1 << 0,
   DETAILED_SOURCE_POSITIONS_FOR_PROFILING = 1 << 1
@@ -335,6 +328,10 @@ NODE_EXTERN v8::Isolate* NewIsolate(ArrayBufferAllocator* allocator,
 NODE_EXTERN v8::Isolate* NewIsolate(ArrayBufferAllocator* allocator,
                                     struct uv_loop_s* event_loop,
                                     MultiIsolatePlatform* platform);
+NODE_EXTERN v8::Isolate* NewIsolate(
+    std::shared_ptr<ArrayBufferAllocator> allocator,
+    struct uv_loop_s* event_loop,
+    MultiIsolatePlatform* platform);
 
 // Creates a new context with Node.js-specific tweaks.
 NODE_EXTERN v8::Local<v8::Context> NewContext(
@@ -675,10 +672,26 @@ extern "C" NODE_EXTERN void node_module_register(void* mod);
                                v8::Local<v8::Value> module,           \
                                v8::Local<v8::Context> context)
 
+// Allows embedders to add a binding to the current Environment* that can be
+// accessed through process._linkedBinding() in the target Environment and all
+// Worker threads that it creates.
+// In each variant, the registration function needs to be usable at least for
+// the time during which the Environment exists.
+NODE_EXTERN void AddLinkedBinding(Environment* env, const node_module& mod);
+NODE_EXTERN void AddLinkedBinding(Environment* env,
+                                  const char* name,
+                                  addon_context_register_func fn,
+                                  void* priv);
+
 /* Called after the event loop exits but before the VM is disposed.
  * Callbacks are run in reverse order of registration, i.e. newest first.
+ *
+ * You should always use the three-argument variant (or, for addons,
+ * AddEnvironmentCleanupHook) in order to avoid relying on global state.
  */
-NODE_EXTERN void AtExit(void (*cb)(void* arg), void* arg = nullptr);
+NODE_DEPRECATED(
+    "Use the three-argument variant of AtExit() or AddEnvironmentCleanupHook()",
+    NODE_EXTERN void AtExit(void (*cb)(void* arg), void* arg = nullptr));
 
 /* Registers a callback with the passed-in Environment instance. The callback
  * is called after the event loop exits, but before the VM is disposed.
@@ -686,7 +699,13 @@ NODE_EXTERN void AtExit(void (*cb)(void* arg), void* arg = nullptr);
  */
 NODE_EXTERN void AtExit(Environment* env,
                         void (*cb)(void* arg),
-                        void* arg = nullptr);
+                        void* arg);
+NODE_DEPRECATED(
+    "Use the three-argument variant of AtExit() or AddEnvironmentCleanupHook()",
+    inline void AtExit(Environment* env,
+                       void (*cb)(void* arg)) {
+      AtExit(env, cb, nullptr);
+    })
 
 typedef double async_id;
 struct async_context {

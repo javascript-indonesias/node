@@ -156,7 +156,6 @@ constexpr size_t kFsStatsBufferLength =
   V(contextify_global_private_symbol, "node:contextify:global")               \
   V(decorated_private_symbol, "node:decorated")                               \
   V(napi_wrapper, "node:napi:wrapper")                                        \
-  V(sab_lifetimepartner_symbol, "node:sharedArrayBufferLifetimePartner")      \
 
 // Symbols are per-isolate primitives but Environment proxies them
 // for the sake of convenience.
@@ -217,6 +216,7 @@ constexpr size_t kFsStatsBufferLength =
   V(done_string, "done")                                                       \
   V(duration_string, "duration")                                               \
   V(emit_warning_string, "emitWarning")                                        \
+  V(empty_object_string, "{}")                                                 \
   V(encoding_string, "encoding")                                               \
   V(entries_string, "entries")                                                 \
   V(entry_type_string, "entryType")                                            \
@@ -721,20 +721,6 @@ class AsyncHooks : public MemoryRetainer {
   void grow_async_ids_stack();
 };
 
-class AsyncCallbackScope {
- public:
-  AsyncCallbackScope() = delete;
-  explicit AsyncCallbackScope(Environment* env);
-  ~AsyncCallbackScope();
-  AsyncCallbackScope(const AsyncCallbackScope&) = delete;
-  AsyncCallbackScope& operator=(const AsyncCallbackScope&) = delete;
-  AsyncCallbackScope(AsyncCallbackScope&&) = delete;
-  AsyncCallbackScope& operator=(AsyncCallbackScope&&) = delete;
-
- private:
-  Environment* env_;
-};
-
 class ImmediateInfo : public MemoryRetainer {
  public:
   inline AliasedUint32Array& fields();
@@ -874,7 +860,8 @@ class Environment : public MemoryRetainer {
 #if HAVE_INSPECTOR
   // If the environment is created for a worker, pass parent_handle and
   // the ownership if transferred into the Environment.
-  int InitializeInspector(inspector::ParentInspectorHandle* parent_handle);
+  int InitializeInspector(
+      std::unique_ptr<inspector::ParentInspectorHandle> parent_handle);
 #endif
 
   v8::MaybeLocal<v8::Value> BootstrapInternalLoaders();
@@ -1082,11 +1069,15 @@ class Environment : public MemoryRetainer {
   inline bool owns_inspector() const;
   inline uint64_t thread_id() const;
   inline worker::Worker* worker_context() const;
+  Environment* worker_parent_env() const;
   inline void set_worker_context(worker::Worker* context);
   inline void add_sub_worker_context(worker::Worker* context);
   inline void remove_sub_worker_context(worker::Worker* context);
   void stop_sub_worker_contexts();
   inline bool is_stopping() const;
+  inline std::list<node_module>* extra_linked_bindings();
+  inline node_module* extra_linked_bindings_head();
+  inline const Mutex& extra_linked_bindings_mutex() const;
 
   inline void ThrowError(const char* errmsg);
   inline void ThrowTypeError(const char* errmsg);
@@ -1258,10 +1249,6 @@ class Environment : public MemoryRetainer {
 
 #endif  // HAVE_INSPECTOR
 
-  // Only available if a MultiIsolatePlatform is in use.
-  void AddArrayBufferAllocatorToKeepAliveUntilIsolateDispose(
-      std::shared_ptr<v8::ArrayBuffer::Allocator>);
-
  private:
   template <typename Fn>
   inline void CreateImmediate(Fn&& cb,
@@ -1382,6 +1369,9 @@ class Environment : public MemoryRetainer {
 
   worker::Worker* worker_context_ = nullptr;
 
+  std::list<node_module> extra_linked_bindings_;
+  Mutex extra_linked_bindings_mutex_;
+
   static void RunTimers(uv_timer_t* handle);
 
   struct ExitCallback {
@@ -1437,10 +1427,6 @@ class Environment : public MemoryRetainer {
   // A custom async abstraction (a pair of async handle and a state variable)
   // Used by embedders to shutdown running Node instance.
   AsyncRequest thread_stopper_;
-
-  typedef std::unordered_set<std::shared_ptr<v8::ArrayBuffer::Allocator>>
-      ArrayBufferAllocatorList;
-  ArrayBufferAllocatorList* keep_alive_allocators_ = nullptr;
 
   template <typename T>
   void ForEachBaseObject(T&& iterator);
