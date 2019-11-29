@@ -1128,7 +1128,8 @@ class Environment : public MemoryRetainer {
   void RunAtExitCallbacks();
 
   void RegisterFinalizationGroupForCleanup(v8::Local<v8::FinalizationGroup> fg);
-  bool RunWeakRefCleanup();
+  void RunWeakRefCleanup();
+  void CleanupFinalizationGroups();
 
   // Strings and private symbols are shared across shared contexts
   // The getters simply proxy to the per-isolate primitive.
@@ -1270,6 +1271,7 @@ class Environment : public MemoryRetainer {
   uv_idle_t immediate_idle_handle_;
   uv_prepare_t idle_prepare_handle_;
   uv_check_t idle_check_handle_;
+  uv_async_t cleanup_finalization_groups_async_;
   bool profiler_idle_notifier_started_ = false;
 
   AsyncHooks async_hooks_;
@@ -1415,7 +1417,7 @@ class Environment : public MemoryRetainer {
   std::unique_ptr<NativeImmediateCallback> native_immediate_callbacks_head_;
   NativeImmediateCallback* native_immediate_callbacks_tail_ = nullptr;
 
-  void RunAndClearNativeImmediates();
+  void RunAndClearNativeImmediates(bool only_refed = false);
   static void CheckImmediate(uv_check_t* handle);
 
   // Use an unordered_set, so that we have efficient insertion and removal.

@@ -3,32 +3,27 @@ const common = require('../common');
 if (!common.hasCrypto)
   common.skip('missing crypto');
 
+const assert = require('assert');
 const http2 = require('http2');
 const net = require('net');
-const { Worker, parentPort } = require('worker_threads');
 
-// Verify that creating a number of invalid HTTP/2 streams will eventually
-// result in the peer closing the session.
-// This test uses separate threads for client and server to avoid
-// the two event loops intermixing, as we are writing in a busy loop here.
+// Verify that creating a number of invalid HTTP/2 streams will
+// result in the peer closing the session within maxSessionInvalidFrames
+// frames.
 
-if (process.env.HAS_STARTED_WORKER) {
-  const server = http2.createServer({ maxSessionInvalidFrames: 100 });
-  server.on('stream', (stream) => {
-    stream.respond({
-      'content-type': 'text/plain',
-      ':status': 200
-    });
-    stream.end('Hello, world!\n');
+const maxSessionInvalidFrames = 100;
+const server = http2.createServer({ maxSessionInvalidFrames });
+server.on('stream', (stream) => {
+  stream.respond({
+    'content-type': 'text/plain',
+    ':status': 200
   });
-  server.listen(0, () => parentPort.postMessage(server.address().port));
-  return;
-}
+  stream.end('Hello, world!\n');
+});
 
-process.env.HAS_STARTED_WORKER = 1;
-const worker = new Worker(__filename).on('message', common.mustCall((port) => {
+server.listen(0, () => {
   const h2header = Buffer.alloc(9);
-  const conn = net.connect(port);
+  const conn = net.connect(server.address().port);
 
   conn.write('PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n');
 
@@ -60,6 +55,7 @@ const worker = new Worker(__filename).on('message', common.mustCall((port) => {
 
   let gotError = false;
   let streamId = 1;
+  let reqCount = 0;
 
   function writeRequests() {
     for (let i = 1; i < 10 && !gotError; i++) {
@@ -72,14 +68,19 @@ const worker = new Worker(__filename).on('message', common.mustCall((port) => {
       if (!conn.write(Buffer.concat([h2header, Buffer.from([0x88])]))) {
         break;
       }
+      reqCount++;
     }
+    // Timeout requests to slow down the rate so we get more accurate reqCount.
     if (!gotError)
-      setImmediate(writeRequests);
+      setTimeout(writeRequests, 10);
   }
 
   conn.once('error', common.mustCall(() => {
     gotError = true;
-    worker.terminate();
+    assert.ok(Math.abs(reqCount - maxSessionInvalidFrames) < 100,
+              `Request count (${reqCount}) must be around (±100)` +
+      ` maxSessionInvalidFrames option (${maxSessionInvalidFrames})`);
     conn.destroy();
+    server.close();
   }));
-}));
+});
