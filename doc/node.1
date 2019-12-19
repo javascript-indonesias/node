@@ -141,7 +141,7 @@ Enable experimental support for a package to load itself.
 .It Fl -experimental-vm-modules
 Enable experimental ES module support in VM module.
 .
-.It Fl -experimental-wasi-unstable-preview0
+.It Fl -experimental-wasi-unstable-preview1
 Enable experimental WebAssembly System Interface support.
 .
 .It Fl -experimental-wasm-modules
@@ -354,6 +354,10 @@ and
 .
 .It Fl -trace-events-enabled
 Enable the collection of trace event tracing information.
+.
+.It Fl -trace-exit
+Prints a stack trace whenever an environment is exited proactively,
+i.e. invoking `process.exit()`.
 .
 .It Fl -trace-sync-io
 Print a stack trace whenever synchronous I/O is detected after the first turn of the event loop.

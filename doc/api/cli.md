@@ -211,7 +211,7 @@ itself.
 
 ### `--experimental-specifier-resolution=mode`
 <!-- YAML
-added: REPLACEME
+added: v13.4.0
 -->
 
 Sets the resolution algorithm for resolving ES module specifiers. Valid options
@@ -230,9 +230,14 @@ added: v9.6.0
 
 Enable experimental ES Module support in the `vm` module.
 
-### `--experimental-wasi-unstable-preview0`
+### `--experimental-wasi-unstable-preview1`
 <!-- YAML
 added: v13.3.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/30980
+    description: changed from `--experimental-wasi-unstable-preview0` to
+                 `--experimental-wasi-unstable-preview1`
 -->
 
 Enable experimental WebAssembly System Interface (WASI) support.
@@ -421,7 +426,7 @@ Specify the `module` of a custom [experimental ECMAScript Module loader][].
 
 ### `--insecure-http-parser`
 <!-- YAML
-added: REPLACEME
+added: v13.4.0
 -->
 
 Use an insecure HTTP parser that accepts invalid HTTP headers. This may allow
@@ -784,6 +789,14 @@ added: v7.7.0
 
 Enables the collection of trace event tracing information.
 
+### `--trace-exit`
+<!-- YAML
+added: v13.5.0
+-->
+
+Prints a stack trace whenever an environment is exited proactively,
+i.e. invoking `process.exit()`.
+
 ### `--trace-sync-io`
 <!-- YAML
 added: v2.1.0
@@ -1065,7 +1078,7 @@ Node.js options that are allowed are:
 * `--experimental-resolve-self`
 * `--experimental-specifier-resolution`
 * `--experimental-vm-modules`
-* `--experimental-wasi-unstable-preview0`
+* `--experimental-wasi-unstable-preview1`
 * `--experimental-wasm-modules`
 * `--force-context-aware`
 * `--force-fips`
@@ -1112,6 +1125,7 @@ Node.js options that are allowed are:
 * `--trace-event-categories`
 * `--trace-event-file-pattern`
 * `--trace-events-enabled`
+* `--trace-exit`
 * `--trace-sync-io`
 * `--trace-tls`
 * `--trace-uncaught`
