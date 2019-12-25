@@ -578,6 +578,9 @@ Http2Session::Http2Session(Environment* env,
     // TODO(thangktran): drop this check when V8 is pumped to 8.0 .
     if (!ab->IsExternal())
       ab->Externalize(ab->GetBackingStore());
+    ab->SetPrivate(env->context(),
+                   env->arraybuffer_untransferable_private_symbol(),
+                   True(env->isolate())).Check();
     js_fields_ab_.Reset(env->isolate(), ab);
     Local<Uint8Array> uint8_arr =
         Uint8Array::New(ab, 0, kSessionUint8FieldCount);
@@ -699,6 +702,13 @@ void Http2Session::Close(uint32_t code, bool socket_closed) {
   }
 
   flags_ |= SESSION_STATE_CLOSED;
+
+  // If we are writing we will get to make the callback in OnStreamAfterWrite.
+  if ((flags_ & SESSION_STATE_WRITE_IN_PROGRESS) == 0) {
+    Debug(this, "make done session callback");
+    HandleScope scope(env()->isolate());
+    MakeCallback(env()->ondone_string(), 0, nullptr);
+  }
 
   // If there are outstanding pings, those will need to be canceled, do
   // so on the next iteration of the event loop to avoid calling out into
@@ -1502,6 +1512,12 @@ void Http2Session::OnStreamAfterWrite(WriteWrap* w, int status) {
     stream_->ReadStart();
   }
 
+  if ((flags_ & SESSION_STATE_CLOSED) != 0) {
+    HandleScope scope(env()->isolate());
+    MakeCallback(env()->ondone_string(), 0, nullptr);
+    return;
+  }
+
   // If there is more incoming data queued up, consume it.
   if (stream_buf_offset_ > 0) {
     ConsumeHTTP2Data();
@@ -1786,7 +1802,7 @@ void Http2Session::OnStreamRead(ssize_t nread, const uv_buf_t& buf_) {
   Context::Scope context_scope(env()->context());
   Http2Scope h2scope(this);
   CHECK_NOT_NULL(stream_);
-  Debug(this, "receiving %d bytes", nread);
+  Debug(this, "receiving %d bytes, offset %d", nread, stream_buf_offset_);
   AllocatedBuffer buf(env(), buf_);
 
   // Only pass data on if nread > 0
