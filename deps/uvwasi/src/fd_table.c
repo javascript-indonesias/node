@@ -291,19 +291,25 @@ uvwasi_errno_t uvwasi_fd_table_init(uvwasi_t* uvwasi,
     return UVWASI_EINVAL;
 
   table->fds = NULL;
-  r = uv_rwlock_init(&table->rwlock);
-  if (r != 0)
-    return uvwasi__translate_uv_error(r);
-
   table->used = 0;
   table->size = init_size;
   table->fds = uvwasi__calloc(uvwasi,
                               init_size,
                               sizeof(struct uvwasi_fd_wrap_t*));
 
-  if (table->fds == NULL) {
-    err = UVWASI_ENOMEM;
-    goto error_exit;
+  if (table->fds == NULL)
+    return UVWASI_ENOMEM;
+
+  r = uv_rwlock_init(&table->rwlock);
+  if (r != 0) {
+    err = uvwasi__translate_uv_error(r);
+    /* Free table->fds and set it to NULL here. This is done explicitly instead
+       of jumping to error_exit because uvwasi_fd_table_free() relies on fds
+       being NULL to know whether or not to destroy the rwlock.
+    */
+    uvwasi__free(uvwasi, table->fds);
+    table->fds = NULL;
+    return err;
   }
 
   /* Create the stdio FDs. */
@@ -357,11 +363,13 @@ void uvwasi_fd_table_free(uvwasi_t* uvwasi, struct uvwasi_fd_table_t* table) {
     uvwasi__free(uvwasi, entry);
   }
 
-  uvwasi__free(uvwasi, table->fds);
-  table->fds = NULL;
-  table->size = 0;
-  table->used = 0;
-  uv_rwlock_destroy(&table->rwlock);
+  if (table->fds != NULL) {
+    uvwasi__free(uvwasi, table->fds);
+    table->fds = NULL;
+    table->size = 0;
+    table->used = 0;
+    uv_rwlock_destroy(&table->rwlock);
+  }
 }
 
 
