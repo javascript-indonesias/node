@@ -1979,7 +1979,7 @@ changes:
 -->
 
 * `fd` {integer}
-* `mode` {integer}
+* `mode` {string|integer}
 * `callback` {Function}
   * `err` {Error}
 
@@ -1992,7 +1992,7 @@ added: v0.4.7
 -->
 
 * `fd` {integer}
-* `mode` {integer}
+* `mode` {string|integer}
 
 Synchronous fchmod(2). Returns `undefined`.
 
@@ -2459,7 +2459,7 @@ changes:
 * `path` {string|Buffer|URL}
 * `options` {Object|integer}
   * `recursive` {boolean} **Default:** `false`
-  * `mode` {integer} Not supported on Windows. **Default:** `0o777`.
+  * `mode` {string|integer} Not supported on Windows. **Default:** `0o777`.
 * `callback` {Function}
   * `err` {Error}
 
@@ -2507,7 +2507,7 @@ changes:
 * `path` {string|Buffer|URL}
 * `options` {Object|integer}
   * `recursive` {boolean} **Default:** `false`
-  * `mode` {integer} Not supported on Windows. **Default:** `0o777`.
+  * `mode` {string|integer} Not supported on Windows. **Default:** `0o777`.
 
 Synchronously creates a directory. Returns `undefined`.
 This is the synchronous version of [`fs.mkdir()`][].
@@ -2627,7 +2627,7 @@ changes:
 * `path` {string|Buffer|URL}
 * `flags` {string|number} See [support of file system `flags`][].
   **Default:** `'r'`.
-* `mode` {integer} **Default:** `0o666` (readable and writable)
+* `mode` {string|integer} **Default:** `0o666` (readable and writable)
 * `callback` {Function}
   * `err` {Error}
   * `fd` {integer}
@@ -2719,7 +2719,7 @@ changes:
 * `path` {string|Buffer|URL}
 * `flags` {string|number} **Default:** `'r'`.
    See [support of file system `flags`][].
-* `mode` {integer} **Default:** `0o666`
+* `mode` {string|integer} **Default:** `0o666`
 * Returns: {number}
 
 Returns an integer representing the file descriptor.
@@ -4680,7 +4680,7 @@ added: v10.0.0
 -->
 
 * `path` {string|Buffer|URL}
-* `mode` {integer}
+* `mode` {string|integer}
 * Returns: {Promise}
 
 Changes the permissions of a file then resolves the `Promise` with no
@@ -4819,7 +4819,7 @@ added: v10.0.0
 * `path` {string|Buffer|URL}
 * `options` {Object|integer}
   * `recursive` {boolean} **Default:** `false`
-  * `mode` {integer} Not supported on Windows. **Default:** `0o777`.
+  * `mode` {string|integer} Not supported on Windows. **Default:** `0o777`.
 * Returns: {Promise}
 
 Asynchronously creates a directory then resolves the `Promise` with no
@@ -4874,7 +4874,7 @@ changes:
 * `path` {string|Buffer|URL}
 * `flags` {string|number} See [support of file system `flags`][].
   **Default:** `'r'`.
-* `mode` {integer} **Default:** `0o666` (readable and writable)
+* `mode` {string|integer} **Default:** `0o666` (readable and writable)
 * Returns: {Promise}
 
 Asynchronous file open that returns a `Promise` that, when resolved, yields a
