@@ -22,10 +22,11 @@ be connected to any Node.js [stream][].
 
 Instances of [`repl.REPLServer`][] support automatic completion of inputs,
 completion preview, simplistic Emacs-style line editing, multi-line inputs,
-[ZSH][] like reverse-i-search, ANSI-styled output, saving and restoring current
-REPL session state, error recovery, and customizable evaluation functions.
-Terminals that do not support ANSI-styles and Emacs-style line editing
-automatically fall back to a limited feature set.
+[ZSH][]-like reverse-i-search, [ZSH][]-like substring-based history search,
+ANSI-styled output, saving and restoring current REPL session state, error
+recovery, and customizable evaluation functions. Terminals that do not support
+ANSI styles and Emacs-style line editing automatically fall back to a limited
+feature set.
 
 ### Commands and Special Keys
 
@@ -596,8 +597,9 @@ changes:
     `SIGINT` is received, such as when `Ctrl+C` is pressed. This cannot be used
     together with a custom `eval` function. **Default:** `false`.
   * `preview` {boolean} Defines if the repl prints autocomplete and output
-    previews or not. **Default:** `true`. If `terminal` is falsy, then there are
-    no previews and the value of `preview` has no effect.
+    previews or not. **Default:** `true` with the default eval function and
+    `false` in case a custom eval function is used. If `terminal` is falsy, then
+    there are no previews and the value of `preview` has no effect.
 * Returns: {repl.REPLServer}
 
 The `repl.start()` method creates and starts a [`repl.REPLServer`][] instance.
