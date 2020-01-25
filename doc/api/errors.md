@@ -831,6 +831,11 @@ A signing `key` was not provided to the [`sign.sign()`][] method.
 [`crypto.timingSafeEqual()`][] was called with `Buffer`, `TypedArray`, or
 `DataView` arguments of different lengths.
 
+<a id="ERR_CRYPTO_UNKNOWN_CIPHER"></a>
+### `ERR_CRYPTO_UNKNOWN_CIPHER`
+
+An unknown cipher was specified.
+
 <a id="ERR_CRYPTO_UNKNOWN_DH_GROUP"></a>
 ### `ERR_CRYPTO_UNKNOWN_DH_GROUP`
 
@@ -1179,7 +1184,7 @@ To fix the error, open an issue at https://github.com/nodejs/node/issues.
 <a id="ERR_INCOMPATIBLE_OPTION_PAIR"></a>
 ### `ERR_INCOMPATIBLE_OPTION_PAIR`
 
-An option pair is incompatible with each other and can not be used at the same
+An option pair is incompatible with each other and cannot be used at the same
 time.
 
 <a id="ERR_INPUT_TYPE_NOT_ALLOWED"></a>
