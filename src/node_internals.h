@@ -268,6 +268,8 @@ class ThreadPoolWork {
   virtual void DoThreadPoolWork() = 0;
   virtual void AfterThreadPoolWork(int status) = 0;
 
+  Environment* env() const { return env_; }
+
  private:
   Environment* env_;
   uv_work_t work_req_;
@@ -381,6 +383,16 @@ class TraceEventScope {
   const char* name_;
   void* id_;
 };
+
+namespace heap {
+
+void DeleteHeapSnapshot(const v8::HeapSnapshot* snapshot);
+using HeapSnapshotPointer =
+  DeleteFnPtr<const v8::HeapSnapshot, DeleteHeapSnapshot>;
+
+BaseObjectPtr<AsyncWrap> CreateHeapSnapshotStream(
+    Environment* env, HeapSnapshotPointer&& snapshot);
+}  // namespace heap
 
 }  // namespace node
 
