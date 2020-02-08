@@ -371,6 +371,13 @@ constexpr size_t kFsStatsBufferLength =
   V(type_string, "type")                                                       \
   V(uid_string, "uid")                                                         \
   V(unknown_string, "<unknown>")                                               \
+  V(url_special_ftp_string, "ftp:")                                            \
+  V(url_special_file_string, "file:")                                          \
+  V(url_special_gopher_string, "gopher:")                                      \
+  V(url_special_http_string, "http:")                                          \
+  V(url_special_https_string, "https:")                                        \
+  V(url_special_ws_string, "ws:")                                              \
+  V(url_special_wss_string, "wss:")                                            \
   V(url_string, "url")                                                         \
   V(username_string, "username")                                               \
   V(valid_from_string, "valid_from")                                           \
@@ -403,7 +410,6 @@ constexpr size_t kFsStatsBufferLength =
   V(http2stream_constructor_template, v8::ObjectTemplate)                      \
   V(http2ping_constructor_template, v8::ObjectTemplate)                        \
   V(libuv_stream_wrap_ctor_template, v8::FunctionTemplate)                     \
-  V(message_event_object_template, v8::ObjectTemplate)                         \
   V(message_port_constructor_template, v8::FunctionTemplate)                   \
   V(pipe_constructor_template, v8::FunctionTemplate)                           \
   V(promise_wrap_template, v8::ObjectTemplate)                                 \
@@ -1073,6 +1079,9 @@ class Environment : public MemoryRetainer {
   inline node_module* extra_linked_bindings_head();
   inline const Mutex& extra_linked_bindings_mutex() const;
 
+  inline bool filehandle_close_warning() const;
+  inline void set_filehandle_close_warning(bool on);
+
   inline void ThrowError(const char* errmsg);
   inline void ThrowTypeError(const char* errmsg);
   inline void ThrowRangeError(const char* errmsg);
@@ -1288,6 +1297,7 @@ class Environment : public MemoryRetainer {
   bool trace_sync_io_ = false;
   bool emit_env_nonstring_warning_ = true;
   bool emit_err_name_warning_ = true;
+  bool emit_filehandle_warning_ = true;
   size_t async_callback_scope_depth_ = 0;
   std::vector<double> destroy_async_id_list_;
 
