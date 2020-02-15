@@ -655,14 +655,16 @@ class AsyncHooks : public MemoryRetainer {
   inline AliasedUint32Array& fields();
   inline AliasedFloat64Array& async_id_fields();
   inline AliasedFloat64Array& async_ids_stack();
+  inline v8::Local<v8::Array> execution_async_resources();
 
   inline v8::Local<v8::String> provider_string(int idx);
 
   inline void no_force_checks();
   inline Environment* env();
 
-  inline void push_async_ids(double async_id, double trigger_async_id);
-  inline bool pop_async_id(double async_id);
+  inline void push_async_context(double async_id, double trigger_async_id,
+      v8::Local<v8::Value> execution_async_resource_);
+  inline bool pop_async_context(double async_id);
   inline void clear_async_id_stack();  // Used in fatal exceptions.
 
   AsyncHooks(const AsyncHooks&) = delete;
@@ -707,6 +709,8 @@ class AsyncHooks : public MemoryRetainer {
   AliasedFloat64Array async_id_fields_;
 
   void grow_async_ids_stack();
+
+  v8::Global<v8::Array> execution_async_resources_;
 };
 
 class ImmediateInfo : public MemoryRetainer {
@@ -1223,7 +1227,7 @@ class Environment : public MemoryRetainer {
                                  void* data);
 
   inline std::shared_ptr<EnvironmentOptions> options();
-  inline std::shared_ptr<HostPort> inspector_host_port();
+  inline std::shared_ptr<ExclusiveAccess<HostPort>> inspector_host_port();
 
   // The BaseObject count is a debugging helper that makes sure that there are
   // no memory leaks caused by BaseObjects staying alive longer than expected
@@ -1322,7 +1326,7 @@ class Environment : public MemoryRetainer {
   // server starts listening), but when the inspector server starts
   // the inspector_host_port_->port() will be the actual port being
   // used.
-  std::shared_ptr<HostPort> inspector_host_port_;
+  std::shared_ptr<ExclusiveAccess<HostPort>> inspector_host_port_;
   std::vector<std::string> exec_argv_;
   std::vector<std::string> argv_;
   std::string exec_path_;
