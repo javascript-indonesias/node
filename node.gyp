@@ -141,6 +141,7 @@
       'lib/internal/fs/watchers.js',
       'lib/internal/http.js',
       'lib/internal/heap_utils.js',
+      'lib/internal/histogram.js',
       'lib/internal/idna.js',
       'lib/internal/inspector_async_hook.js',
       'lib/internal/js_stream_socket.js',
@@ -313,6 +314,19 @@
   },
 
   'targets': [
+    {
+      'target_name': 'node_text_start',
+      'type': 'none',
+      'conditions': [
+        [ 'OS=="linux" and '
+          'target_arch=="x64"', {
+          'type': 'static_library',
+          'sources': [
+            'src/large_pages/node_text_start.S'
+          ]
+        }],
+      ]
+    },
     {
       'target_name': '<(node_core_target_name)',
       'type': 'executable',
@@ -498,6 +512,13 @@
             'src/node_snapshot_stub.cc'
           ],
         }],
+        [ 'OS=="linux" and '
+          'target_arch=="x64"', {
+          'dependencies': [ 'node_text_start' ],
+          'ldflags+': [
+            '<(PRODUCT_DIR)/obj.target/node_text_start/src/large_pages/node_text_start.o'
+          ]
+        }],
       ],
     }, # node_core_target_name
     {
@@ -534,6 +555,7 @@
         'src/fs_event_wrap.cc',
         'src/handle_wrap.cc',
         'src/heap_utils.cc',
+        'src/histogram.cc',
         'src/js_native_api.h',
         'src/js_native_api_types.h',
         'src/js_native_api_v8.cc',
@@ -821,9 +843,11 @@
         [ 'node_use_openssl=="true"', {
           'sources': [
             'src/node_crypto.cc',
+            'src/node_crypto_common.cc',
             'src/node_crypto_bio.cc',
             'src/node_crypto_clienthello.cc',
             'src/node_crypto.h',
+            'src/node_crypto_common.h',
             'src/node_crypto_bio.h',
             'src/node_crypto_clienthello.h',
             'src/node_crypto_clienthello-inl.h',
