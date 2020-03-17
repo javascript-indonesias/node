@@ -518,11 +518,17 @@ process.on('SIGTERM', handle);
    the process hanging in an endless loop, since listeners attached using
    `process.on()` are called asynchronously and therefore unable to correct the
    underlying problem.
+* `0` can be sent to test for the existence of a process, it has no effect if
+   the process exists, but will throw an error if the process does not exist.
 
-Windows does not support sending signals, but Node.js offers some emulation
-with [`process.kill()`][], and [`subprocess.kill()`][]. Sending signal `0` can
-be used to test for the existence of a process. Sending `SIGINT`, `SIGTERM`,
-and `SIGKILL` cause the unconditional termination of the target process.
+Windows does not support signals so has no equivalent to termination by signal,
+but Node.js offers some emulation with [`process.kill()`][], and
+[`subprocess.kill()`][]:
+* Sending `SIGINT`, `SIGTERM`, and `SIGKILL` will cause the unconditional
+  termination of the target process, and afterwards, subprocess will report that
+  the process was terminated by signal.
+* Sending signal `0` can be used as a platform independent way to test for the
+  existence of a process.
 
 ## `process.abort()`
 <!-- YAML
@@ -1777,9 +1783,11 @@ relied upon to exist.
 ## `process.report`
 <!-- YAML
 added: v11.8.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/32242
+    description: This API is no longer considered experimental.
 -->
-
-> Stability: 1 - Experimental
 
 * {Object}
 
@@ -1790,9 +1798,11 @@ reports for the current process. Additional documentation is available in the
 ### `process.report.directory`
 <!-- YAML
 added: v11.12.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/32242
+    description: This API is no longer considered experimental.
 -->
-
-> Stability: 1 - Experimental
 
 * {string}
 
@@ -1807,9 +1817,11 @@ console.log(`Report directory is ${process.report.directory}`);
 ### `process.report.filename`
 <!-- YAML
 added: v11.12.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/32242
+    description: This API is no longer considered experimental.
 -->
-
-> Stability: 1 - Experimental
 
 * {string}
 
@@ -1824,9 +1836,11 @@ console.log(`Report filename is ${process.report.filename}`);
 ### `process.report.getReport([err])`
 <!-- YAML
 added: v11.8.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/32242
+    description: This API is no longer considered experimental.
 -->
-
-> Stability: 1 - Experimental
 
 * `err` {Error} A custom error used for reporting the JavaScript stack.
 * Returns: {Object}
@@ -1865,9 +1879,11 @@ console.log(`Report on fatal error: ${process.report.reportOnFatalError}`);
 ### `process.report.reportOnSignal`
 <!-- YAML
 added: v11.12.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/32242
+    description: This API is no longer considered experimental.
 -->
-
-> Stability: 1 - Experimental
 
 * {boolean}
 
@@ -1881,9 +1897,11 @@ console.log(`Report on signal: ${process.report.reportOnSignal}`);
 ### `process.report.reportOnUncaughtException`
 <!-- YAML
 added: v11.12.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/32242
+    description: This API is no longer considered experimental.
 -->
-
-> Stability: 1 - Experimental
 
 * {boolean}
 
@@ -1896,9 +1914,11 @@ console.log(`Report on exception: ${process.report.reportOnUncaughtException}`);
 ### `process.report.signal`
 <!-- YAML
 added: v11.12.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/32242
+    description: This API is no longer considered experimental.
 -->
-
-> Stability: 1 - Experimental
 
 * {string}
 
@@ -1912,9 +1932,11 @@ console.log(`Report signal: ${process.report.signal}`);
 ### `process.report.writeReport([filename][, err])`
 <!-- YAML
 added: v11.8.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/32242
+    description: This API is no longer considered experimental.
 -->
-
-> Stability: 1 - Experimental
 
 * `filename` {string} Name of the file where the report is written. This
   should be a relative path, that will be appended to the directory specified in

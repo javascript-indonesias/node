@@ -30,16 +30,12 @@
     'openssl_fips%': '',
     'openssl_no_asm%': 0,
 
-    # Some STL containers (e.g. std::vector) do not preserve ABI compatibility
-    # between debug and non-debug mode.
-    'disable_glibcxx_debug': 1,
-
     # Don't use ICU data file (icudtl.dat) from V8, we use our own.
     'icu_use_data_file_flag%': 0,
 
     # Reset this number to 0 on major V8 upgrades.
     # Increment by one for each non-official patch applied to deps/v8.
-    'v8_embedder_string': '-node.30',
+    'v8_embedder_string': '-node.31',
 
     ##### V8 defaults for Node.js #####
 
@@ -416,6 +412,10 @@
           ['_toolset=="target"', {
             'defines': [ '_GLIBCXX_USE_C99_MATH' ],
             'libraries': [ '-llog' ],
+          }],
+          ['_toolset=="host"', {
+            'cflags': [ '-pthread' ],
+            'ldflags': [ '-pthread' ],
           }],
         ],
       }],
