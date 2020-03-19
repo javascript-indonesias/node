@@ -577,6 +577,10 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
             "generate diagnostic report on uncaught exceptions",
             &PerIsolateOptions::report_uncaught_exception,
             kAllowedInEnvironment);
+  AddOption("--report-compact",
+            "output compact single-line JSON",
+            &PerIsolateOptions::report_compact,
+            kAllowedInEnvironment);
   AddOption("--report-on-signal",
             "generate diagnostic report upon receiving signals",
             &PerIsolateOptions::report_on_signal,
@@ -635,7 +639,10 @@ PerProcessOptionsParser::PerProcessOptionsParser(
             "", /* undocumented, only for debugging */
             &PerProcessOptions::debug_arraybuffer_allocations,
             kAllowedInEnvironment);
-
+  AddOption("--disable-proto",
+            "disable Object.prototype.__proto__",
+            &PerProcessOptions::disable_proto,
+            kAllowedInEnvironment);
 
   // 12.x renamed this inadvertently, so alias it for consistency within the
   // release line, while using the original name for consistency with older

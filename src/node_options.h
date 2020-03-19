@@ -187,6 +187,7 @@ class PerIsolateOptions : public Options {
   bool report_uncaught_exception = false;
   bool report_on_signal = false;
   bool report_on_fatalerror = false;
+  bool report_compact = false;
   std::string report_signal = "SIGUSR2";
   std::string report_filename;
   std::string report_directory;
@@ -204,6 +205,7 @@ class PerProcessOptions : public Options {
   int64_t v8_thread_pool_size = 4;
   bool zero_fill_all_buffers = false;
   bool debug_arraybuffer_allocations = false;
+  std::string disable_proto;
 
   std::vector<std::string> security_reverts;
   bool print_bash_completion = false;
