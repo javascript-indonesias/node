@@ -569,6 +569,11 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
             "disallow eval and friends",
             V8Option{},
             kAllowedInEnvironment);
+  AddOption("--huge-max-old-generation-size",
+             "increase default maximum heap size on machines with 16GB memory "
+             "or more",
+             V8Option{},
+             kAllowedInEnvironment);
   AddOption("--jitless",
              "disable runtime allocation of executable memory",
              V8Option{},
@@ -584,10 +589,6 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
   AddOption("--report-on-signal",
             "generate diagnostic report upon receiving signals",
             &PerIsolateOptions::report_on_signal,
-            kAllowedInEnvironment);
-  AddOption("--report-on-fatalerror",
-            "generate diagnostic report on fatal (internal) errors",
-            &PerIsolateOptions::report_on_fatalerror,
             kAllowedInEnvironment);
   AddOption("--report-signal",
             "causes diagnostic report to be produced on provided signal,"
@@ -662,6 +663,10 @@ PerProcessOptionsParser::PerProcessOptionsParser(
   AddOption("--v8-options",
             "print V8 command line options",
             &PerProcessOptions::print_v8_help);
+  AddOption("--report-on-fatalerror",
+              "generate diagnostic report on fatal (internal) errors",
+              &PerProcessOptions::report_on_fatalerror,
+              kAllowedInEnvironment);
 
 #ifdef NODE_HAVE_I18N_SUPPORT
   AddOption("--icu-data-dir",
