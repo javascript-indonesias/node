@@ -409,7 +409,7 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
       "the profile to the current working directory.",
       &EnvironmentOptions::heap_prof);
   AddOption("--heap-prof-name",
-            "specified file name of the V8 CPU profile generated with "
+            "specified file name of the V8 heap profile generated with "
             "--heap-prof",
             &EnvironmentOptions::heap_prof_name);
   AddOption("--heap-prof-dir",
@@ -422,7 +422,7 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
             &EnvironmentOptions::heap_prof_interval);
 #endif  // HAVE_INSPECTOR
   AddOption("--max-http-header-size",
-            "set the maximum size of HTTP headers (default: 8192 (8KB))",
+            "set the maximum size of HTTP headers (default: 16384 (16KB))",
             &EnvironmentOptions::max_http_header_size,
             kAllowedInEnvironment);
   AddOption("--redirect-warnings",
