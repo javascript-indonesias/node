@@ -207,7 +207,7 @@ void InitThreadLocalOnce() {
 }
 
 void TrackingTraceStateObserver::UpdateTraceCategoryState() {
-  if (!env_->owns_process_state()) {
+  if (!env_->owns_process_state() || !env_->can_call_into_js()) {
     // Ideally, we’d have a consistent story that treats all threads/Environment
     // instances equally here. However, tracing is essentially global, and this
     // callback is called from whichever thread calls `StartTracing()` or
@@ -228,8 +228,7 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
   TryCatchScope try_catch(env_);
   try_catch.SetVerbose(true);
   Local<Value> args[] = {Boolean::New(isolate, async_hooks_enabled)};
-  cb->Call(env_->context(), Undefined(isolate), arraysize(args), args)
-      .ToLocalChecked();
+  USE(cb->Call(env_->context(), Undefined(isolate), arraysize(args), args));
 }
 
 void Environment::CreateProperties() {
@@ -986,6 +985,7 @@ void Environment::Exit(int exit_code) {
                         isolate(), stack_trace_limit(), StackTrace::kDetailed));
   }
   if (is_main_thread()) {
+    set_can_call_into_js(false);
     stop_sub_worker_contexts();
     DisposePlatform();
     exit(exit_code);
