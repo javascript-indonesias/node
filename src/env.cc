@@ -1,18 +1,19 @@
 #include "env.h"
 
 #include "async_wrap.h"
+#include "base_object-inl.h"
 #include "debug_utils-inl.h"
 #include "memory_tracker-inl.h"
 #include "node_buffer.h"
 #include "node_context_data.h"
 #include "node_errors.h"
-#include "node_file.h"
 #include "node_internals.h"
 #include "node_options-inl.h"
 #include "node_process.h"
 #include "node_v8_platform-inl.h"
 #include "node_worker.h"
 #include "req_wrap-inl.h"
+#include "stream_base.h"
 #include "tracing/agent.h"
 #include "tracing/traced_value.h"
 #include "util-inl.h"
@@ -258,18 +259,30 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
   USE(cb->Call(env_->context(), Undefined(isolate), arraysize(args), args));
 }
 
+class NoBindingData : public BaseObject {
+ public:
+  NoBindingData(Environment* env, Local<Object> obj) : BaseObject(env, obj) {}
+
+  SET_NO_MEMORY_INFO()
+  SET_MEMORY_INFO_NAME(NoBindingData)
+  SET_SELF_SIZE(NoBindingData)
+};
+
 void Environment::CreateProperties() {
   HandleScope handle_scope(isolate_);
   Local<Context> ctx = context();
-  Local<FunctionTemplate> templ = FunctionTemplate::New(isolate());
-  templ->InstanceTemplate()->SetInternalFieldCount(1);
-  Local<Object> obj = templ->GetFunction(ctx)
-                          .ToLocalChecked()
-                          ->NewInstance(ctx)
-                          .ToLocalChecked();
-  obj->SetAlignedPointerInInternalField(0, this);
-  set_as_callback_data(obj);
-  set_as_callback_data_template(templ);
+  {
+    Context::Scope context_scope(ctx);
+    Local<FunctionTemplate> templ = FunctionTemplate::New(isolate());
+    templ->InstanceTemplate()->SetInternalFieldCount(
+        BaseObject::kInternalFieldCount);
+    set_as_callback_data_template(templ);
+
+    Local<Object> obj = MakeBindingCallbackData<NoBindingData>()
+        .ToLocalChecked();
+    set_as_callback_data(obj);
+    set_current_callback_data(obj);
+  }
 
   // Store primordials setup by the per-context script in the environment.
   Local<Object> per_context_bindings =
@@ -329,8 +342,6 @@ Environment::Environment(IsolateData* isolate_data,
       flags_(flags),
       thread_id_(thread_id.id == static_cast<uint64_t>(-1) ?
           AllocateEnvironmentThreadId().id : thread_id.id),
-      fs_stats_field_array_(isolate_, kFsStatsBufferLength),
-      fs_stats_field_bigint_array_(isolate_, kFsStatsBufferLength),
       context_(context->GetIsolate(), context) {
   // We'll be creating new objects so make sure we've entered the context.
   HandleScope handle_scope(isolate());
@@ -417,6 +428,10 @@ Environment::Environment(IsolateData* isolate_data,
   // TODO(joyeecheung): deserialize when the snapshot covers the environment
   // properties.
   CreateProperties();
+
+  // This adjusts the return value of base_object_count() so that tests that
+  // check the count do not have to account for internally created BaseObjects.
+  initial_base_object_count_ = base_object_count();
 }
 
 Environment::~Environment() {
@@ -427,10 +442,6 @@ Environment::~Environment() {
 
   isolate()->GetHeapProfiler()->RemoveBuildEmbedderGraphCallback(
       BuildEmbedderGraph, this);
-
-  // Make sure there are no re-used libuv wrapper objects.
-  // CleanupHandles() should have removed all of them.
-  CHECK(file_handle_read_wrap_freelist_.empty());
 
   HandleScope handle_scope(isolate());
 
@@ -450,8 +461,6 @@ Environment::~Environment() {
       tracing_controller->RemoveTraceStateObserver(trace_state_observer_.get());
   }
 
-  delete[] http_parser_buffer_;
-
   TRACE_EVENT_NESTABLE_ASYNC_END0(
     TRACING_CATEGORY_NODE1(environment), "Environment", this);
 
@@ -467,7 +476,7 @@ Environment::~Environment() {
     }
   }
 
-  CHECK_EQ(base_object_count(), 0);
+  CHECK_EQ(base_object_count_, 0);
 }
 
 void Environment::InitializeLibuv(bool start_profiler_idle_notifier) {
@@ -599,8 +608,6 @@ void Environment::CleanupHandles() {
          !handle_wrap_queue_.IsEmpty()) {
     uv_run(event_loop(), UV_RUN_ONCE);
   }
-
-  file_handle_read_wrap_freelist_.clear();
 }
 
 void Environment::StartProfilerIdleNotifier() {
@@ -1082,9 +1089,6 @@ void Environment::MemoryInfo(MemoryTracker* tracker) const {
   tracker->TrackField("should_abort_on_uncaught_toggle",
                       should_abort_on_uncaught_toggle_);
   tracker->TrackField("stream_base_state", stream_base_state_);
-  tracker->TrackField("fs_stats_field_array", fs_stats_field_array_);
-  tracker->TrackField("fs_stats_field_bigint_array",
-                      fs_stats_field_bigint_array_);
   tracker->TrackField("cleanup_hooks", cleanup_hooks_);
   tracker->TrackField("async_hooks", async_hooks_);
   tracker->TrackField("immediate_info", immediate_info_);
