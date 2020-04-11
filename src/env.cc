@@ -43,11 +43,13 @@ using v8::NewStringType;
 using v8::Number;
 using v8::Object;
 using v8::Private;
+using v8::Script;
 using v8::SnapshotCreator;
 using v8::StackTrace;
 using v8::String;
 using v8::Symbol;
 using v8::TracingController;
+using v8::TryCatch;
 using v8::Undefined;
 using v8::Value;
 using worker::Worker;
@@ -435,7 +437,30 @@ Environment::Environment(IsolateData* isolate_data,
 }
 
 Environment::~Environment() {
-  if (interrupt_data_ != nullptr) *interrupt_data_ = nullptr;
+  if (Environment** interrupt_data = interrupt_data_.load()) {
+    // There are pending RequestInterrupt() callbacks. Tell them not to run,
+    // then force V8 to run interrupts by compiling and running an empty script
+    // so as not to leak memory.
+    *interrupt_data = nullptr;
+
+    Isolate::AllowJavascriptExecutionScope allow_js_here(isolate());
+    HandleScope handle_scope(isolate());
+    TryCatch try_catch(isolate());
+    Context::Scope context_scope(context());
+
+#ifdef DEBUG
+    bool consistency_check = false;
+    isolate()->RequestInterrupt([](Isolate*, void* data) {
+      *static_cast<bool*>(data) = true;
+    }, &consistency_check);
+#endif
+
+    Local<Script> script;
+    if (Script::Compile(context(), String::Empty(isolate())).ToLocal(&script))
+      USE(script->Run(context()));
+
+    DCHECK(consistency_check);
+  }
 
   // FreeEnvironment() should have set this.
   CHECK(is_stopping());
@@ -768,12 +793,23 @@ void Environment::RunAndClearNativeImmediates(bool only_refed) {
 }
 
 void Environment::RequestInterruptFromV8() {
-  if (interrupt_data_ != nullptr) return;  // Already scheduled.
-
   // The Isolate may outlive the Environment, so some logic to handle the
   // situation in which the Environment is destroyed before the handler runs
   // is required.
-  interrupt_data_ = new Environment*(this);
+
+  // We allocate a new pointer to a pointer to this Environment instance, and
+  // try to set it as interrupt_data_. If interrupt_data_ was already set, then
+  // callbacks are already scheduled to run and we can delete our own pointer
+  // and just return. If it was nullptr previously, the Environment** is stored;
+  // ~Environment sets the Environment* contained in it to nullptr, so that
+  // the callback can check whether ~Environment has already run and it is thus
+  // not safe to access the Environment instance itself.
+  Environment** interrupt_data = new Environment*(this);
+  Environment** dummy = nullptr;
+  if (!interrupt_data_.compare_exchange_strong(dummy, interrupt_data)) {
+    delete interrupt_data;
+    return;  // Already scheduled.
+  }
 
   isolate()->RequestInterrupt([](Isolate* isolate, void* data) {
     std::unique_ptr<Environment*> env_ptr { static_cast<Environment**>(data) };
@@ -784,9 +820,9 @@ void Environment::RequestInterruptFromV8() {
       // handled during cleanup.
       return;
     }
-    env->interrupt_data_ = nullptr;
+    env->interrupt_data_.store(nullptr);
     env->RunAndClearInterrupts();
-  }, interrupt_data_);
+  }, interrupt_data);
 }
 
 void Environment::ScheduleTimer(int64_t duration_ms) {
