@@ -1,4 +1,4 @@
-name: test-linux
+name: test-asan
 
 on: [push, pull_request]
 
@@ -7,8 +7,13 @@ env:
   FLAKY_TESTS: dontcare
 
 jobs:
-  test-linux:
+  test-asan:
     runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+      LINK: clang++
+      CONFIG_FLAGS: --enable-asan
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -19,5 +24,5 @@ jobs:
         run: npx envinfo
       - name: Build
         run: make build-ci -j2 V=1
-      - name: Test
-        run: make run-ci -j2 V=1 TEST_CI_ARGS="-p dots"
+      - name: Test cctest
+        run: make cctest -j2 V=1
