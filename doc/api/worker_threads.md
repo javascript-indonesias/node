@@ -165,13 +165,16 @@ When this function is used, no `'message'` event will be emitted and the
 
 ## `worker.resourceLimits`
 <!-- YAML
-added: v13.2.0
+added:
+ - v13.2.0
+ - v12.16.0
 -->
 
 * {Object}
   * `maxYoungGenerationSizeMb` {number}
   * `maxOldGenerationSizeMb` {number}
   * `codeRangeSizeMb` {number}
+  * `stackSizeMb` {number}
 
 Provides the set of JS engine resource constraints inside this Worker thread.
 If the `resourceLimits` option was passed to the [`Worker`][] constructor,
@@ -520,10 +523,14 @@ changes:
     pr-url: https://github.com/nodejs/node/pull/31664
     description: The `filename` parameter can be a WHATWG `URL` object using
                  `file:` protocol.
-  - version: v13.2.0
+  - version:
+     - v13.2.0
+     - v12.16.0
     pr-url: https://github.com/nodejs/node/pull/26628
     description: The `resourceLimits` option was introduced.
-  - version: v13.4.0
+  - version:
+     - v13.4.0
+     - v12.16.0
     pr-url: https://github.com/nodejs/node/pull/30559
     description: The `argv` option was introduced.
 -->
@@ -578,6 +585,8 @@ changes:
       recently created objects.
     * `codeRangeSizeMb` {number} The size of a pre-allocated memory range
       used for generated code.
+    * `stackSizeMb` {number} The default maximum stack size for the thread.
+      Small values may lead to unusable Worker instances. **Default:** `4`.
 
 ### Event: `'error'`
 <!-- YAML
@@ -664,13 +673,16 @@ no effect.
 
 ### `worker.resourceLimits`
 <!-- YAML
-added: v13.2.0
+added:
+ - v13.2.0
+ - v12.16.0
 -->
 
 * {Object}
   * `maxYoungGenerationSizeMb` {number}
   * `maxOldGenerationSizeMb` {number}
   * `codeRangeSizeMb` {number}
+  * `stackSizeMb` {number}
 
 Provides the set of JS engine resource constraints for this Worker thread.
 If the `resourceLimits` option was passed to the [`Worker`][] constructor,
