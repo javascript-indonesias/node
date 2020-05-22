@@ -581,7 +581,7 @@ Stop watching for changes on the given `fs.FSWatcher`. Once stopped, the
 
 ### `watcher.ref()`
 <!-- YAML
-added: REPLACEME
+added: v14.3.0
 -->
 
 * Returns: {fs.FSWatcher}
@@ -596,7 +596,7 @@ called previously.
 
 ### `watcher.unref()`
 <!-- YAML
-added: REPLACEME
+added: v14.3.0
 -->
 
 * Returns: {fs.FSWatcher}
@@ -609,7 +609,7 @@ no effect.
 
 ## Class: `fs.StatWatcher`
 <!-- YAML
-added: REPLACEME
+added: v14.3.0
 -->
 
 * Extends {EventEmitter}
@@ -619,7 +619,7 @@ object.
 
 ### `watcher.ref()`
 <!-- YAML
-added: REPLACEME
+added: v14.3.0
 -->
 
 * Returns: {fs.StatWatcher}
@@ -634,7 +634,7 @@ called previously.
 
 ### `watcher.unref()`
 <!-- YAML
-added: REPLACEME
+added: v14.3.0
 -->
 
 * Returns: {fs.StatWatcher}
@@ -5433,6 +5433,24 @@ without waiting for the `Promise` to be resolved (or rejected).
 The following constants are exported by `fs.constants`.
 
 Not every constant will be available on every operating system.
+
+To use more than one constant, use the bitwise OR `|` operator.
+
+Example:
+
+```js
+const fs = require('fs');
+
+const {
+  O_RDWR,
+  O_CREAT,
+  O_EXCL
+} = fs.constants;
+
+fs.open('/path/to/my/file', O_RDWR | O_CREAT | O_EXCL, (err, fd) => {
+  // ...
+});
+```
 
 ### File Access Constants
 

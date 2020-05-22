@@ -567,30 +567,15 @@ void Environment::RegisterHandleCleanups() {
     });
   };
 
-  RegisterHandleCleanup(
-      reinterpret_cast<uv_handle_t*>(timer_handle()),
-      close_and_finish,
-      nullptr);
-  RegisterHandleCleanup(
-      reinterpret_cast<uv_handle_t*>(immediate_check_handle()),
-      close_and_finish,
-      nullptr);
-  RegisterHandleCleanup(
-      reinterpret_cast<uv_handle_t*>(immediate_idle_handle()),
-      close_and_finish,
-      nullptr);
-  RegisterHandleCleanup(
-      reinterpret_cast<uv_handle_t*>(&idle_prepare_handle_),
-      close_and_finish,
-      nullptr);
-  RegisterHandleCleanup(
-      reinterpret_cast<uv_handle_t*>(&idle_check_handle_),
-      close_and_finish,
-      nullptr);
-  RegisterHandleCleanup(
-      reinterpret_cast<uv_handle_t*>(&task_queues_async_),
-      close_and_finish,
-      nullptr);
+  auto register_handle = [&](uv_handle_t* handle) {
+    RegisterHandleCleanup(handle, close_and_finish, nullptr);
+  };
+  register_handle(reinterpret_cast<uv_handle_t*>(timer_handle()));
+  register_handle(reinterpret_cast<uv_handle_t*>(immediate_check_handle()));
+  register_handle(reinterpret_cast<uv_handle_t*>(immediate_idle_handle()));
+  register_handle(reinterpret_cast<uv_handle_t*>(&idle_prepare_handle_));
+  register_handle(reinterpret_cast<uv_handle_t*>(&idle_check_handle_));
+  register_handle(reinterpret_cast<uv_handle_t*>(&task_queues_async_));
 }
 
 void Environment::CleanupHandles() {
@@ -602,7 +587,7 @@ void Environment::CleanupHandles() {
   Isolate::DisallowJavascriptExecutionScope disallow_js(isolate(),
       Isolate::DisallowJavascriptExecutionScope::THROW_ON_FAILURE);
 
-  RunAndClearNativeImmediates(true /* skip SetUnrefImmediate()s */);
+  RunAndClearNativeImmediates(true /* skip unrefed SetImmediate()s */);
 
   for (ReqWrapBase* request : req_wrap_queue_)
     request->Cancel();
@@ -745,10 +730,11 @@ void Environment::RunAndClearNativeImmediates(bool only_refed) {
     TryCatchScope try_catch(this);
     DebugSealHandleScope seal_handle_scope(isolate());
     while (auto head = queue->Shift()) {
-      if (head->is_refed())
+      bool is_refed = head->flags() & CallbackFlags::kRefed;
+      if (is_refed)
         ref_count++;
 
-      if (head->is_refed() || !only_refed)
+      if (is_refed || !only_refed)
         head->Call(this);
 
       head.reset();  // Destroy now so that this is also observed by try_catch.
