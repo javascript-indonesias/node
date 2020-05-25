@@ -1059,6 +1059,9 @@ class Environment : public MemoryRetainer {
   inline bool emit_insecure_umask_warning() const;
   inline void set_emit_insecure_umask_warning(bool on);
 
+  inline void set_source_maps_enabled(bool on);
+  inline bool source_maps_enabled() const;
+
   inline void ThrowError(const char* errmsg);
   inline void ThrowTypeError(const char* errmsg);
   inline void ThrowRangeError(const char* errmsg);
@@ -1103,8 +1106,6 @@ class Environment : public MemoryRetainer {
                                          const char* name,
                                          v8::FunctionCallback callback);
 
-  void BeforeExit(void (*cb)(void* arg), void* arg);
-  void RunBeforeExitCallbacks();
   void AtExit(void (*cb)(void* arg), void* arg);
   void RunAtExitCallbacks();
 
@@ -1279,6 +1280,8 @@ class Environment : public MemoryRetainer {
   bool emit_err_name_warning_ = true;
   bool emit_filehandle_warning_ = true;
   bool emit_insecure_umask_warning_ = true;
+  bool source_maps_enabled_ = false;
+
   size_t async_callback_scope_depth_ = 0;
   std::vector<double> destroy_async_id_list_;
 
@@ -1362,7 +1365,6 @@ class Environment : public MemoryRetainer {
     void (*cb_)(void* arg);
     void* arg_;
   };
-  std::list<ExitCallback> before_exit_functions_;
 
   std::list<ExitCallback> at_exit_functions_;
 
