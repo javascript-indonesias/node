@@ -903,6 +903,11 @@ Encoding provided to `TextDecoder()` API was not one of the
 
 `--print` cannot be used with ESM input.
 
+<a id="ERR_EVENT_RECURSION"></a>
+### `ERR_EVENT_RECURSION`
+
+Thrown when an attempt is made to recursively dispatch an event on `EventTarget`.
+
 <a id="ERR_EXECUTION_ENVIRONMENT_NOT_AVAILABLE"></a>
 ### `ERR_EXECUTION_ENVIRONMENT_NOT_AVAILABLE`
 
@@ -1574,14 +1579,6 @@ strict compliance with the API specification (which in some cases may accept
 `func(undefined)` but not `func()`). In most native Node.js APIs,
 `func(undefined)` and `func()` are treated identically, and the
 [`ERR_INVALID_ARG_TYPE`][] error code may be used instead.
-
-<a id="ERR_MISSING_DYNAMIC_INSTANTIATE_HOOK"></a>
-### `ERR_MISSING_DYNAMIC_INSTANTIATE_HOOK`
-
-> Stability: 1 - Experimental
-
-An [ES Module][] loader hook specified `format: 'dynamic'` but did not provide
-a `dynamicInstantiate` hook.
 
 <a id="ERR_MISSING_OPTION"></a>
 ### `ERR_MISSING_OPTION`
@@ -2525,12 +2522,6 @@ while trying to read and parse it.
 > Stability: 1 - Experimental
 
 The `--entry-type=...` flag is not compatible with the Node.js REPL.
-
-<a id="ERR_MISSING_DYNAMIC_INSTANTIATE_HOOK"></a>
-#### `ERR_MISSING_DYNAMIC_INSTANTIATE_HOOK`
-
-Used when an [ES Module][] loader hook specifies `format: 'dynamic'` but does
-not provide a `dynamicInstantiate` hook.
 
 <a id="ERR_FEATURE_UNAVAILABLE_ON_PLATFORM"></a>
 #### `ERR_FEATURE_UNAVAILABLE_ON_PLATFORM`
