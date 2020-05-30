@@ -639,7 +639,7 @@ Write reports in a compact format, single-line JSON, more easily consumable
 by log processing systems than the default multi-line format designed for
 human consumption.
 
-### `--report-directory=directory`
+### --report-dir=directory`, `report-directory=directory`
 <!-- YAML
 added: v11.8.0
 changes:
@@ -1245,7 +1245,7 @@ Node.js options that are allowed are:
 * `--prof-process`
 * `--redirect-warnings`
 * `--report-compact`
-* `--report-directory`
+* `--report-dir`, `--report-directory`
 * `--report-filename`
 * `--report-on-fatalerror`
 * `--report-on-signal`
@@ -1365,6 +1365,15 @@ added:
 
 Path to a Node.js module which will be loaded in place of the built-in REPL.
 Overriding this value to an empty string (`''`) will use the built-in REPL.
+
+### `NODE_SKIP_PLATFORM_CHECK=value`
+<!-- YAML
+added: REPLACEME
+-->
+
+If `value` equals `'1'`, the check for a supported platform is skipped during
+Node.js startup. Node.js might not execute correctly. Any issues encountered
+on unsupported platforms will not be fixed.
 
 ### `NODE_TLS_REJECT_UNAUTHORIZED=value`
 

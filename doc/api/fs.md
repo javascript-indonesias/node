@@ -3209,6 +3209,9 @@ from the current position.
 The callback will be given three arguments: `err`, `bytesRead`, and
 `buffers`. `bytesRead` is how many bytes were read from the file.
 
+If this method is invoked as its [`util.promisify()`][]ed version, it returns
+a `Promise` for an `Object` with `bytesRead` and `buffers` properties.
+
 ## `fs.readvSync(fd, buffers[, position])`
 <!-- YAML
 added:
@@ -3564,7 +3567,7 @@ is recommended.
 
 For example, given the following directory structure:
 
-```fundamental
+```text
 - txtDir
 -- file.txt
 - app.js
@@ -4280,7 +4283,7 @@ recommended.
 When `file` is a file descriptor, the behavior is almost identical to directly
 calling `fs.write()` like:
 
-```javascript
+```js
 fs.write(fd, Buffer.from(data, options.encoding), callback);
 ```
 

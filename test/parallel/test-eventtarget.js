@@ -50,7 +50,10 @@ ok(EventTarget);
   ev.preventDefault();
   strictEqual(ev.defaultPrevented, true);
 }
-
+{
+  const ev = new Event('foo');
+  deepStrictEqual(Object.keys(ev), ['isTrusted']);
+}
 {
   const eventTarget = new EventTarget();
 
@@ -75,7 +78,15 @@ ok(EventTarget);
   eventTarget.removeEventListener('foo', ev1);
   eventTarget.dispatchEvent(new Event('foo'));
 }
-
+{
+  // event subclassing
+  const SubEvent = class extends Event {};
+  const ev = new SubEvent('foo');
+  const eventTarget = new EventTarget();
+  const fn = common.mustCall((event) => strictEqual(event, ev));
+  eventTarget.addEventListener('foo', fn, { once: true });
+  eventTarget.dispatchEvent(ev);
+}
 {
   const eventTarget = new NodeEventTarget();
   strictEqual(eventTarget.listenerCount('foo'), 0);
@@ -383,4 +394,11 @@ ok(EventTarget);
   target.dispatchEvent(new Event('foo'));
   target.removeEventListener('foo', a, { capture: false });
   target.dispatchEvent(new Event('foo'));
+}
+
+{
+  const target = new EventTarget();
+  strictEqual(target.toString(), '[object EventTarget]');
+  const event = new Event();
+  strictEqual(event.toString(), '[object Event]');
 }
