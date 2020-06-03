@@ -472,6 +472,7 @@ constexpr size_t kFsStatsBufferLength =
   V(url_constructor_function, v8::Function)
 
 class Environment;
+struct AllocatedBuffer;
 
 class IsolateData : public MemoryRetainer {
  public:
@@ -557,38 +558,6 @@ struct ContextInfo {
 };
 
 class EnabledDebugList;
-
-// A unique-pointer-ish object that is compatible with the JS engine's
-// ArrayBuffer::Allocator.
-struct AllocatedBuffer {
- public:
-  explicit inline AllocatedBuffer(Environment* env = nullptr);
-  inline AllocatedBuffer(Environment* env, uv_buf_t buf);
-  inline ~AllocatedBuffer();
-  inline void Resize(size_t len);
-
-  inline uv_buf_t release();
-  inline char* data();
-  inline const char* data() const;
-  inline size_t size() const;
-  inline void clear();
-
-  inline v8::MaybeLocal<v8::Object> ToBuffer();
-  inline v8::Local<v8::ArrayBuffer> ToArrayBuffer();
-
-  inline AllocatedBuffer(AllocatedBuffer&& other);
-  inline AllocatedBuffer& operator=(AllocatedBuffer&& other);
-  AllocatedBuffer(const AllocatedBuffer& other) = delete;
-  AllocatedBuffer& operator=(const AllocatedBuffer& other) = delete;
-
- private:
-  Environment* env_;
-  // We do not pass this to libuv directly, but uv_buf_t is a convenient way
-  // to represent a chunk of memory, and plays nicely with other parts of core.
-  uv_buf_t buffer_;
-
-  friend class Environment;
-};
 
 class KVStore {
  public:
@@ -957,15 +926,6 @@ class Environment : public MemoryRetainer {
 
   inline IsolateData* isolate_data() const;
 
-  // Utilities that allocate memory using the Isolate's ArrayBuffer::Allocator.
-  // In particular, using AllocateManaged() will provide a RAII-style object
-  // with easy conversion to `Buffer` and `ArrayBuffer` objects.
-  inline AllocatedBuffer AllocateManaged(size_t size, bool checked = true);
-  inline char* Allocate(size_t size);
-  inline char* AllocateUnchecked(size_t size);
-  char* Reallocate(char* data, size_t old_size, size_t size);
-  inline void Free(char* data, size_t size);
-
   inline bool printed_error() const;
   inline void set_printed_error(bool value);
 
@@ -1253,6 +1213,9 @@ class Environment : public MemoryRetainer {
   void RunAndClearNativeImmediates(bool only_refed = false);
   void RunAndClearInterrupts();
 
+  inline std::unordered_map<char*, std::unique_ptr<v8::BackingStore>>*
+      released_allocated_buffers();
+
  private:
   inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
                          const char* errmsg);
@@ -1413,6 +1376,11 @@ class Environment : public MemoryRetainer {
   // We should probably find a way to just use plain `v8::String`s created from
   // the source passed to LoadEnvironment() directly instead.
   std::unique_ptr<v8::String::Value> main_utf16_;
+
+  // Used by AllocatedBuffer::release() to keep track of the BackingStore for
+  // a given pointer.
+  std::unordered_map<char*, std::unique_ptr<v8::BackingStore>>
+      released_allocated_buffers_;
 };
 
 }  // namespace node
