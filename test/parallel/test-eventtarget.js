@@ -29,18 +29,46 @@ ok(EventTarget);
   strictEqual(ev.defaultPrevented, false);
   strictEqual(typeof ev.timeStamp, 'number');
 
+  // Compatibility properties with the DOM
   deepStrictEqual(ev.composedPath(), []);
   strictEqual(ev.returnValue, true);
   strictEqual(ev.bubbles, false);
   strictEqual(ev.composed, false);
   strictEqual(ev.isTrusted, false);
   strictEqual(ev.eventPhase, 0);
+  strictEqual(ev.cancelBubble, false);
 
   // Not cancelable
   ev.preventDefault();
   strictEqual(ev.defaultPrevented, false);
 }
-
+{
+  const ev = new Event('foo');
+  strictEqual(ev.cancelBubble, false);
+  ev.cancelBubble = true;
+  strictEqual(ev.cancelBubble, true);
+}
+{
+  const ev = new Event('foo');
+  strictEqual(ev.cancelBubble, false);
+  ev.stopPropagation();
+  strictEqual(ev.cancelBubble, true);
+}
+{
+  const ev = new Event('foo');
+  strictEqual(ev.cancelBubble, false);
+  ev.cancelBubble = 'some-truthy-value';
+  strictEqual(ev.cancelBubble, true);
+}
+{
+  // No argument behavior - throw TypeError
+  throws(() => {
+    new Event();
+  }, TypeError);
+  // Too many arguments passed behavior - ignore additional arguments
+  const ev = new Event('foo', {}, {});
+  strictEqual(ev.type, 'foo');
+}
 {
   const ev = new Event('foo', { cancelable: true });
   strictEqual(ev.type, 'foo');
@@ -49,6 +77,7 @@ ok(EventTarget);
 
   ev.preventDefault();
   strictEqual(ev.defaultPrevented, true);
+  throws(() => new Event(Symbol()), TypeError);
 }
 {
   const ev = new Event('foo');
@@ -123,7 +152,14 @@ ok(EventTarget);
   eventTarget.addEventListener('foo', (event) => event.preventDefault());
   ok(!eventTarget.dispatchEvent(event));
 }
-
+{
+  // Adding event listeners with a boolean useCapture
+  const eventTarget = new EventTarget();
+  const event = new Event('foo');
+  const fn = common.mustCall((event) => strictEqual(event.type, 'foo'));
+  eventTarget.addEventListener('foo', fn, false);
+  eventTarget.dispatchEvent(event);
+}
 {
   const eventTarget = new NodeEventTarget();
   strictEqual(eventTarget.listenerCount('foo'), 0);
@@ -350,6 +386,7 @@ ok(EventTarget);
 {
   const target = new EventTarget();
   const event = new Event('foo');
+  strictEqual(event.target, null);
   target.addEventListener('foo', common.mustCall((event) => {
     strictEqual(event.target, target);
     strictEqual(event.currentTarget, target);
@@ -399,6 +436,6 @@ ok(EventTarget);
 {
   const target = new EventTarget();
   strictEqual(target.toString(), '[object EventTarget]');
-  const event = new Event();
+  const event = new Event('');
   strictEqual(event.toString(), '[object Event]');
 }
