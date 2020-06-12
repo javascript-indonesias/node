@@ -1967,16 +1967,6 @@ category.
 The `trace_events` module could not be loaded because Node.js was compiled with
 the `--without-v8-platform` flag.
 
-<a id="ERR_TRANSFERRING_EXTERNALIZED_SHAREDARRAYBUFFER"></a>
-### `ERR_TRANSFERRING_EXTERNALIZED_SHAREDARRAYBUFFER`
-
-A `SharedArrayBuffer` whose memory is not managed by the JavaScript engine
-or by Node.js was encountered during serialization. Such a `SharedArrayBuffer`
-cannot be serialized.
-
-This can only happen when native addons create `SharedArrayBuffer`s in
-"externalized" mode, or put existing `SharedArrayBuffer` into externalized mode.
-
 <a id="ERR_TRANSFORM_ALREADY_TRANSFORMING"></a>
 ### `ERR_TRANSFORM_ALREADY_TRANSFORMING`
 
@@ -2413,6 +2403,20 @@ removed: v10.0.0
 
 Used when a TLS renegotiation request has failed in a non-specific way.
 
+<a id="ERR_TRANSFERRING_EXTERNALIZED_SHAREDARRAYBUFFER"></a>
+### `ERR_TRANSFERRING_EXTERNALIZED_SHAREDARRAYBUFFER`
+<!-- YAML
+added: v10.5.0
+removed: v14.0.0
+-->
+
+A `SharedArrayBuffer` whose memory is not managed by the JavaScript engine
+or by Node.js was encountered during serialization. Such a `SharedArrayBuffer`
+cannot be serialized.
+
+This can only happen when native addons create `SharedArrayBuffer`s in
+"externalized" mode, or put existing `SharedArrayBuffer` into externalized mode.
+
 <a id="ERR_UNKNOWN_BUILTIN_MODULE"></a>
 ### `ERR_UNKNOWN_BUILTIN_MODULE`
 <!-- YAML
@@ -2587,8 +2591,8 @@ such as `process.stdout.on('data')`.
 [`https`]: https.html
 [`libuv Error handling`]: http://docs.libuv.org/en/v1.x/errors.html
 [`net`]: net.html
-[`new URL(input)`]: url.html#url_constructor_new_url_input_base
-[`new URLSearchParams(iterable)`]: url.html#url_constructor_new_urlsearchparams_iterable
+[`new URL(input)`]: url.html#url_new_url_input_base
+[`new URLSearchParams(iterable)`]: url.html#url_new_urlsearchparams_iterable
 [`process.on('exit')`]: process.html#Event:-`'exit'`
 [`process.send()`]: process.html#process_process_send_message_sendhandle_options_callback
 [`process.setUncaughtExceptionCaptureCallback()`]: process.html#process_process_setuncaughtexceptioncapturecallback_fn
