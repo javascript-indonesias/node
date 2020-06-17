@@ -1566,6 +1566,17 @@ behavior. See the documentation for [policy][] manifests for more information.
 An attempt was made to allocate memory (usually in the C++ layer) but it
 failed.
 
+<a id="ERR_MESSAGE_TARGET_CONTEXT_UNAVAILABLE"></a>
+### `ERR_MESSAGE_TARGET_CONTEXT_UNAVAILABLE`
+<!-- YAML
+added: REPLACEME
+-->
+
+A message posted to a [`MessagePort`][] could not be deserialized in the target
+[vm][] `Context`. Not all Node.js objects can be successfully instantiated in
+any context at this time, and attempting to transfer them using `postMessage()`
+can fail on the receiving side in that case.
+
 <a id="ERR_METHOD_NOT_IMPLEMENTED"></a>
 ### `ERR_METHOD_NOT_IMPLEMENTED`
 
@@ -1589,8 +1600,9 @@ is thrown if a required option is missing.
 <a id="ERR_MISSING_MESSAGE_PORT_IN_TRANSFER_LIST"></a>
 ### `ERR_MISSING_MESSAGE_PORT_IN_TRANSFER_LIST`
 
-A `MessagePort` was found in the object passed to a `postMessage()` call,
-but not provided in the `transferList` for that call.
+An object that needs to be explicitly listed in the `transferList` argument
+was found in the object passed to a `postMessage()` call, but not provided in
+the `transferList` for that call. Usually, this is a `MessagePort`.
 
 <a id="ERR_MISSING_PASSPHRASE"></a>
 ### `ERR_MISSING_PASSPHRASE`
@@ -1704,6 +1716,125 @@ Accessing `Object.prototype.__proto__` has been forbidden using
 [`--disable-proto=throw`][]. [`Object.getPrototypeOf`][] and
 [`Object.setPrototypeOf`][] should be used to get and set the prototype of an
 object.
+
+<a id="ERR_QUIC_CANNOT_SET_GROUPS"></a>
+### `ERR_QUIC_CANNOT_SET_GROUPS`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUIC_ERROR"></a>
+### `ERR_QUIC_ERROR`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUIC_TLS13_REQUIRED"></a>
+### `ERR_QUIC_TLS13_REQUIRED`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICCLIENTSESSION_FAILED"></a>
+### `ERR_QUICCLIENTSESSION_FAILED`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICCLIENTSESSION_FAILED_SETSOCKET"></a>
+### `ERR_QUICCLIENTSESSION_FAILED_SETSOCKET`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSESSION_DESTROYED"></a>
+### `ERR_QUICSESSION_DESTROYED`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSESSION_INVALID_DCID"></a>
+### `ERR_QUICSESSION_INVALID_DCID`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSESSION_UPDATEKEY"></a>
+### `ERR_QUICSESSION_UPDATEKEY`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSESSION_VERSION_NEGOTIATION"></a>
+### `ERR_QUICSESSION_VERSION_NEGOTIATION`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSOCKET_DESTROYED"></a>
+### `ERR_QUICSOCKET_DESTROYED`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSOCKET_INVALID_STATELESS_RESET_SECRET_LENGTH"></a>
+### `ERR_QUICSOCKET_INVALID_STATELESS_RESET_SECRET_LENGTH`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSOCKET_LISTENING"></a>
+### `ERR_QUICSOCKET_LISTENING`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSOCKET_UNBOUND"></a>
+### `ERR_QUICSOCKET_UNBOUND`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSTREAM_DESTROYED"></a>
+### `ERR_QUICSTREAM_DESTROYED`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSTREAM_INVALID_PUSH"></a>
+### `ERR_QUICSTREAM_INVALID_PUSH`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSTREAM_OPEN_FAILED"></a>
+### `ERR_QUICSTREAM_OPEN_FAILED`
+
+> Stability: 1 - Experimental
+
+TBD
+
+<a id="ERR_QUICSTREAM_UNSUPPORTED_PUSH"></a>
+### `ERR_QUICSTREAM_UNSUPPORTED_PUSH`
+
+> Stability: 1 - Experimental
+
+TBD
 
 <a id="ERR_REQUIRE_ESM"></a>
 ### `ERR_REQUIRE_ESM`
@@ -2563,6 +2694,7 @@ such as `process.stdout.on('data')`.
 [`Class: assert.AssertionError`]: assert.html#assert_class_assert_assertionerror
 [`ERR_INVALID_ARG_TYPE`]: #ERR_INVALID_ARG_TYPE
 [`EventEmitter`]: events.html#events_class_eventemitter
+[`MessagePort`]: worker_threads.html#worker_threads_class_messageport
 [`Object.getPrototypeOf`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getPrototypeOf
 [`Object.setPrototypeOf`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/setPrototypeOf
 [`REPL`]: repl.html

@@ -41,6 +41,7 @@ void OnFatalError(const char* location, const char* message);
   V(ERR_INVALID_ARG_TYPE, TypeError)                                           \
   V(ERR_INVALID_TRANSFER_OBJECT, TypeError)                                    \
   V(ERR_MEMORY_ALLOCATION_FAILED, Error)                                       \
+  V(ERR_MESSAGE_TARGET_CONTEXT_UNAVAILABLE, Error)                             \
   V(ERR_MISSING_ARGS, TypeError)                                               \
   V(ERR_MISSING_MESSAGE_PORT_IN_TRANSFER_LIST, TypeError)                      \
   V(ERR_MISSING_PASSPHRASE, TypeError)                                         \
@@ -55,7 +56,9 @@ void OnFatalError(const char* location, const char* message);
   V(ERR_VM_MODULE_CACHED_DATA_REJECTED, Error)                                 \
   V(ERR_WASI_NOT_STARTED, Error)                                               \
   V(ERR_WORKER_INIT_FAILED, Error)                                             \
-  V(ERR_PROTO_ACCESS, Error)
+  V(ERR_PROTO_ACCESS, Error)                                                   \
+  V(ERR_QUIC_CANNOT_SET_GROUPS, Error)                                         \
+  V(ERR_QUIC_FAILURE_SETTING_SNI_CONTEXT, Error)
 
 #define V(code, type)                                                         \
   inline v8::Local<v8::Value> code(v8::Isolate* isolate,                      \
@@ -92,8 +95,12 @@ void OnFatalError(const char* location, const char* message);
   V(ERR_INVALID_TRANSFER_OBJECT, "Found invalid object in transferList")       \
   V(ERR_MEMORY_ALLOCATION_FAILED, "Failed to allocate memory")                 \
   V(ERR_OSSL_EVP_INVALID_DIGEST, "Invalid digest used")                        \
+  V(ERR_MESSAGE_TARGET_CONTEXT_UNAVAILABLE,                                    \
+    "A message object could not be deserialized successfully in the target "   \
+    "vm.Context")                                                              \
   V(ERR_MISSING_MESSAGE_PORT_IN_TRANSFER_LIST,                                 \
-    "MessagePort was found in message but not listed in transferList")         \
+    "Object that needs transfer was found in message but not listed "          \
+    "in transferList")                                                         \
   V(ERR_MISSING_PLATFORM_FOR_WORKER,                                           \
     "The V8 platform used by this instance of Node does not support "          \
     "creating Workers")                                                        \
@@ -106,7 +113,9 @@ void OnFatalError(const char* location, const char* message);
   V(ERR_WORKER_INIT_FAILED, "Worker initialization failure")                   \
   V(ERR_PROTO_ACCESS,                                                          \
     "Accessing Object.prototype.__proto__ has been "                           \
-    "disallowed with --disable-proto=throw")
+    "disallowed with --disable-proto=throw")                                   \
+  V(ERR_QUIC_CANNOT_SET_GROUPS, "Cannot set groups")                           \
+  V(ERR_QUIC_FAILURE_SETTING_SNI_CONTEXT, "Failure setting SNI context")
 
 #define V(code, message)                                                     \
   inline v8::Local<v8::Value> code(v8::Isolate* isolate) {                   \
