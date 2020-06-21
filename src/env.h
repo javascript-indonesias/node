@@ -479,13 +479,13 @@ constexpr size_t kFsStatsBufferLength =
 #define ENVIRONMENT_STRONG_PERSISTENT_VALUES(V)                                \
   V(async_hooks_after_function, v8::Function)                                  \
   V(async_hooks_before_function, v8::Function)                                 \
+  V(async_hooks_callback_trampoline, v8::Function)                             \
   V(async_hooks_binding, v8::Object)                                           \
   V(async_hooks_destroy_function, v8::Function)                                \
   V(async_hooks_init_function, v8::Function)                                   \
   V(async_hooks_promise_resolve_function, v8::Function)                        \
   V(buffer_prototype_object, v8::Object)                                       \
   V(crypto_key_object_constructor, v8::Function)                               \
-  V(domain_callback, v8::Function)                                             \
   V(domexception_function, v8::Function)                                       \
   V(enhance_fatal_stack_after_inspector, v8::Function)                         \
   V(enhance_fatal_stack_before_inspector, v8::Function)                        \
