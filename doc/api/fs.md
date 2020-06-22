@@ -284,7 +284,7 @@ synchronous use libuv's threadpool, which can have surprising and negative
 performance implications for some applications. See the
 [`UV_THREADPOOL_SIZE`][] documentation for more information.
 
-## Class `fs.Dir`
+## Class: `fs.Dir`
 <!-- YAML
 added: v12.12.0
 -->
@@ -4440,7 +4440,7 @@ The `fs.promises` API provides an alternative set of asynchronous file system
 methods that return `Promise` objects rather than using callbacks. The
 API is accessible via `require('fs').promises` or `require('fs/promises')`.
 
-### class: `FileHandle`
+### Class: `FileHandle`
 <!-- YAML
 added: v10.0.0
 -->

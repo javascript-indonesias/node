@@ -2295,7 +2295,7 @@ int QuicSession::set_session(SSL_SESSION* session) {
   if (size > SecureContext::kMaxSessionSize)
     return 0;
   listener_->OnSessionTicket(size, session);
-  return 1;
+  return 0;
 }
 
 // A client QuicSession can be migrated to a different QuicSocket instance.
@@ -3723,7 +3723,7 @@ void QuicSession::Initialize(
     session->SetClassName(class_name);
     session->Inherit(AsyncWrap::GetConstructorTemplate(env));
     Local<ObjectTemplate> sessiont = session->InstanceTemplate();
-    sessiont->SetInternalFieldCount(1);
+    sessiont->SetInternalFieldCount(QuicSession::kInternalFieldCount);
     sessiont->Set(env->owner_symbol(), Null(env->isolate()));
     AddMethods(env, session);
     env->set_quicserversession_instance_template(sessiont);
@@ -3736,7 +3736,7 @@ void QuicSession::Initialize(
     session->SetClassName(class_name);
     session->Inherit(AsyncWrap::GetConstructorTemplate(env));
     Local<ObjectTemplate> sessiont = session->InstanceTemplate();
-    sessiont->SetInternalFieldCount(1);
+    sessiont->SetInternalFieldCount(QuicSession::kInternalFieldCount);
     sessiont->Set(env->owner_symbol(), Null(env->isolate()));
     AddMethods(env, session);
     env->SetProtoMethod(session,

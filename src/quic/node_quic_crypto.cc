@@ -31,7 +31,6 @@ namespace node {
 
 using crypto::EntropySource;
 using v8::Local;
-using v8::String;
 using v8::Value;
 
 namespace quic {
@@ -384,7 +383,7 @@ bool CheckCertNames(
       return false;
   }
 
-  if (name_parts[0].find("*") == std::string::npos ||
+  if (name_parts[0].find('*') == std::string::npos ||
       name_parts[0].find("xn--") != std::string::npos) {
     return host_parts[0] == name_parts[0];
   }
@@ -560,7 +559,9 @@ Local<Value> GetALPNProtocol(const QuicSession& session) {
   QuicCryptoContext* ctx = session.crypto_context();
   Environment* env = session.env();
   std::string alpn = ctx->selected_alpn();
-  if (alpn == NGTCP2_ALPN_H3 + 1) {
+  // This supposed to be `NGTCP2_ALPN_H3 + 1`
+  // Details see https://github.com/nodejs/node/issues/33959
+  if (alpn == &NGTCP2_ALPN_H3[1]) {
     return env->quic_alpn_string();
   } else {
     return ToV8Value(
