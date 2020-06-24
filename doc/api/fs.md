@@ -2396,6 +2396,38 @@ changes:
 
 Synchronous lchown(2). Returns `undefined`.
 
+## `fs.lutimes(path, atime, mtime, callback)`
+<!-- YAML
+addded: REPLACEME
+-->
+
+* `path` {string|Buffer|URL}
+* `atime` {number|string|Date}
+* `mtime` {number|string|Date}
+* `callback` {Function}
+  * `err` {Error}
+
+Changes the access and modification times of a file in the same way as
+[`fs.utimes()`][], with the difference that if the path refers to a symbolic
+link, then the link is not dereferenced: instead, the timestamps of the
+symbolic link itself are changed.
+
+No arguments other than a possible exception are given to the completion
+callback.
+
+## `fs.lutimesSync(path, atime, mtime)`
+<!-- YAML
+added: REPLACEME
+-->
+
+* `path` {string|Buffer|URL}
+* `atime` {number|string|Date}
+* `mtime` {number|string|Date}
+
+Change the file system timestamps of the symbolic link referenced by `path`.
+Returns `undefined`, or throws an exception when parameters are incorrect or
+the operation fails. This is the synchronous version of [`fs.lutimes()`][].
+
 ## `fs.link(existingPath, newPath, callback)`
 <!-- YAML
 added: v0.1.31
@@ -3679,14 +3711,14 @@ changes:
   * `err` {Error}
 
 Asynchronous symlink(2) which creates the link called `path` pointing to
-`target`.  No arguments other than a possible exception are given to the
+`target`. No arguments other than a possible exception are given to the
 completion callback.
 
 The `type` argument is only available on Windows and ignored on other platforms.
 It can be set to `'dir'`, `'file'`, or `'junction'`. If the `type` argument is
 not set, Node.js will autodetect `target` type and use `'file'` or `'dir'`. If
 the `target` does not exist, `'file'` will be used. Windows junction points
-require the destination path to be absolute.  When using `'junction'`, the
+require the destination path to be absolute. When using `'junction'`, the
 `target` argument will automatically be normalized to absolute path.
 
 Relative targets are relative to the link’s parent directory.
@@ -4300,7 +4332,7 @@ before and/or after the newly written data.
 For example, if `fs.writeFile()` is called twice in a row, first to write the
 string `'Hello'`, then to write the string `', World'`, the file would contain
 `'Hello, World'`, and might contain some of the file's original data (depending
-on the size of the original file, and the position of the file descriptor).  If
+on the size of the original file, and the position of the file descriptor). If
 a file name had been used instead of a descriptor, the file would be guaranteed
 to contain only `', World'`.
 
@@ -5034,6 +5066,23 @@ changes:
 
 Changes the ownership on a symbolic link then resolves the `Promise` with
 no arguments upon success.
+
+### `fsPromises.lutimes(path, atime, mtime)`
+<!-- YAML
+added: REPLACEME
+-->
+
+* `path` {string|Buffer|URL}
+* `atime` {number|string|Date}
+* `mtime` {number|string|Date}
+* Returns: {Promise}
+
+Changes the access and modification times of a file in the same way as
+[`fsPromises.utimes()`][], with the difference that if the path refers to a
+symbolic link, then the link is not dereferenced: instead, the timestamps of
+the symbolic link itself are changed.
+
+Upon success, the `Promise` is resolved without arguments.
 
 ### `fsPromises.link(existingPath, newPath)`
 <!-- YAML
@@ -5853,6 +5902,7 @@ the file contents.
 [`fs.ftruncate()`]: #fs_fs_ftruncate_fd_len_callback
 [`fs.futimes()`]: #fs_fs_futimes_fd_atime_mtime_callback
 [`fs.lstat()`]: #fs_fs_lstat_path_options_callback
+[`fs.lutimes()`]: #fs_fs_lutimes_path_atime_mtime_callback
 [`fs.mkdir()`]: #fs_fs_mkdir_path_options_callback
 [`fs.mkdtemp()`]: #fs_fs_mkdtemp_prefix_options_callback
 [`fs.open()`]: #fs_fs_open_path_flags_mode_callback
@@ -5876,6 +5926,7 @@ the file contents.
 [`fs.writev()`]: #fs_fs_writev_fd_buffers_position_callback
 [`fsPromises.open()`]: #fs_fspromises_open_path_flags_mode
 [`fsPromises.opendir()`]: #fs_fspromises_opendir_path_options
+[`fsPromises.utimes()`]: #fs_fspromises_utimes_path_atime_mtime
 [`inotify(7)`]: http://man7.org/linux/man-pages/man7/inotify.7.html
 [`kqueue(2)`]: https://www.freebsd.org/cgi/man.cgi?query=kqueue&sektion=2
 [`net.Socket`]: net.html#net_class_net_socket

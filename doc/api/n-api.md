@@ -391,6 +391,7 @@ napi_status napi_set_instance_data(napi_env env,
 * `[in] data`: The data item to make available to bindings of this instance.
 * `[in] finalize_cb`: The function to call when the environment is being torn
   down. The function receives `data` so that it might free it.
+  [`napi_finalize`][] provides more details.
 * `[in] finalize_hint`: Optional hint to pass to the finalize callback during
   collection.
 
@@ -597,6 +598,7 @@ minimum lifetimes explicitly.
 For more details, review the [Object lifetime management][].
 
 ### N-API callback types
+
 #### napi_callback_info
 <!-- YAML
 added: v8.0.0
@@ -619,6 +621,9 @@ following signature:
 typedef napi_value (*napi_callback)(napi_env, napi_callback_info);
 ```
 
+Unless for reasons discussed in [Object Lifetime Management][], creating a
+handle and/or callback scope inside a `napi_callback` is not necessary.
+
 #### napi_finalize
 <!-- YAML
 added: v8.0.0
@@ -637,6 +642,9 @@ typedef void (*napi_finalize)(napi_env env,
                               void* finalize_hint);
 ```
 
+Unless for reasons discussed in [Object Lifetime Management][], creating a
+handle and/or callback scope inside the function body is not necessary.
+
 #### napi_async_execute_callback
 <!-- YAML
 added: v8.0.0
@@ -649,12 +657,10 @@ operations. Callback functions must satisfy the following signature:
 typedef void (*napi_async_execute_callback)(napi_env env, void* data);
 ```
 
-Implementations of this function must avoid making N-API calls
-that execute JavaScript or interact with
-JavaScript objects.  N-API
-calls should be in the `napi_async_complete_callback` instead.
-Do not use the `napi_env` parameter as it will likely
-result in execution of JavaScript.
+Implementations of this function must avoid making N-API calls that execute
+JavaScript or interact with JavaScript objects. N-API calls should be in the
+`napi_async_complete_callback` instead. Do not use the `napi_env` parameter as
+it will likely result in execution of JavaScript.
 
 #### napi_async_complete_callback
 <!-- YAML
@@ -669,6 +675,9 @@ typedef void (*napi_async_complete_callback)(napi_env env,
                                              napi_status status,
                                              void* data);
 ```
+
+Unless for reasons discussed in [Object Lifetime Management][], creating a
+handle and/or callback scope inside the function body is not necessary.
 
 #### napi_threadsafe_function_call_js
 <!-- YAML
@@ -712,6 +721,9 @@ typedef void (*napi_threadsafe_function_call_js)(napi_env env,
   functions) that can be passed as parameters when `js_callback` is invoked.
   This pointer is managed entirely by the threads and this callback. Thus this
   callback should free the data.
+
+Unless for reasons discussed in [Object Lifetime Management][], creating a
+handle and/or callback scope inside the function body is not necessary.
 
 ## Error handling
 
@@ -1958,7 +1970,7 @@ napi_status napi_create_external(napi_env env,
 * `[in] env`: The environment that the API is invoked under.
 * `[in] data`: Raw pointer to the external data.
 * `[in] finalize_cb`: Optional callback to call when the external value is being
-  collected.
+  collected. [`napi_finalize`][] provides more details.
 * `[in] finalize_hint`: Optional hint to pass to the finalize callback during
   collection.
 * `[out] result`: A `napi_value` representing an external value.
@@ -2002,7 +2014,7 @@ napi_create_external_arraybuffer(napi_env env,
   `ArrayBuffer`.
 * `[in] byte_length`: The length in bytes of the underlying buffer.
 * `[in] finalize_cb`: Optional callback to call when the `ArrayBuffer` is being
-  collected.
+  collected. [`napi_finalize`][] provides more details.
 * `[in] finalize_hint`: Optional hint to pass to the finalize callback during
   collection.
 * `[out] result`: A `napi_value` representing a JavaScript `ArrayBuffer`.
@@ -2045,7 +2057,7 @@ napi_status napi_create_external_buffer(napi_env env,
   size of the new buffer).
 * `[in] data`: Raw pointer to the underlying buffer to copy from.
 * `[in] finalize_cb`: Optional callback to call when the `ArrayBuffer` is being
-  collected.
+  collected. [`napi_finalize`][] provides more details.
 * `[in] finalize_hint`: Optional hint to pass to the finalize callback during
   collection.
 * `[out] result`: A `napi_value` representing a `node::Buffer`.
@@ -3572,16 +3584,16 @@ typedef struct {
   If this is passed in, set `value` and `method` to `NULL` (since these members
   won't be used). The given function is called implicitly by the runtime when
   the property is accessed from JavaScript code (or if a get on the property is
-  performed using a N-API call).
+  performed using a N-API call). [`napi_callback`][] provides more details.
 * `setter`: A function to call when a set access of the property is performed.
   If this is passed in, set `value` and `method` to `NULL` (since these members
   won't be used). The given function is called implicitly by the runtime when
   the property is set from JavaScript code (or if a set on the property is
-  performed using a N-API call).
+  performed using a N-API call). [`napi_callback`][] provides more details.
 * `method`: Set this to make the property descriptor object's `value`
   property to be a JavaScript function represented by `method`. If this is
   passed in, set `value`, `getter` and `setter` to `NULL` (since these members
-  won't be used).
+  won't be used). [`napi_callback`][] provides more details.
 * `attributes`: The attributes associated with the particular property. See
   [`napi_property_attributes`][].
 * `data`: The callback data passed into `method`, `getter` and `setter` if this
@@ -4059,7 +4071,7 @@ napi_status napi_create_function(napi_env env,
 * `[in] length`: The length of the `utf8name` in bytes, or `NAPI_AUTO_LENGTH` if
   it is null-terminated.
 * `[in] cb`: The native function which should be called when this function
-  object is invoked.
+  object is invoked. [`napi_callback`][] provides more details.
 * `[in] data`: User-provided data context. This will be passed back into the
   function when invoked later.
 * `[out] result`: `napi_value` representing the JavaScript function object for
@@ -4293,8 +4305,8 @@ napi_status napi_define_class(napi_env env,
 * `[in] length`: The length of the `utf8name` in bytes, or `NAPI_AUTO_LENGTH`
   if it is null-terminated.
 * `[in] constructor`: Callback function that handles constructing instances
-  of the class. (This should be a static method on the class, not an actual
-  C++ constructor function.)
+  of the class. This should be a static method on the class, not an actual
+  C++ constructor function. [`napi_callback`][] provides more details.
 * `[in] data`: Optional data to be passed to the constructor callback as
   the `data` property of the callback info.
 * `[in] property_count`: Number of items in the `properties` array argument.
@@ -4356,6 +4368,7 @@ napi_status napi_wrap(napi_env env,
   JavaScript object.
 * `[in] finalize_cb`: Optional native callback that can be used to free the
   native instance when the JavaScript object is ready for garbage-collection.
+  [`napi_finalize`][] provides more details.
 * `[in] finalize_hint`: Optional contextual hint that is passed to the
   finalize callback.
 * `[out] result`: Optional reference to the wrapped object.
@@ -4464,6 +4477,7 @@ napi_status napi_add_finalizer(napi_env env,
   object.
 * `[in] finalize_cb`: Native callback that will be used to free the
   native data when the JavaScript object is ready for garbage-collection.
+  [`napi_finalize`][] provides more details.
 * `[in] finalize_hint`: Optional contextual hint that is passed to the
   finalize callback.
 * `[out] result`: Optional reference to the JavaScript object.
@@ -4571,7 +4585,8 @@ napi_status napi_create_async_work(napi_env env,
   and can execute in parallel with the main event loop thread.
 * `[in] complete`: The native function which will be called when the
   asynchronous logic is completed or is cancelled. The given function is called
-  from the main event loop thread.
+  from the main event loop thread. [`napi_async_complete_callback`][] provides
+  more details.
 * `[in] data`: User-provided data context. This will be passed back into the
   execute and complete functions.
 * `[out] result`: `napi_async_work*` which is the handle to the newly created
@@ -5122,7 +5137,9 @@ The `context` given during the call to `napi_create_threadsafe_function()` can
 be retrieved from any thread with a call to
 `napi_get_threadsafe_function_context()`.
 
-`napi_call_threadsafe_function()` can then be used for initiating a call into
+### Calling a thread-safe function
+
+`napi_call_threadsafe_function()` can be used for initiating a call into
 JavaScript. `napi_call_threadsafe_function()` accepts a parameter which controls
 whether the API behaves blockingly. If set to `napi_tsfn_nonblocking`, the API
 behaves non-blockingly, returning `napi_queue_full` if the queue was full,
@@ -5154,6 +5171,8 @@ Node.js process exits while there is a thread-safe function still active.
 It is not necessary to call into JavaScript via `napi_make_callback()` because
 N-API runs `call_js_cb` in a context appropriate for callbacks.
 
+### Reference counting of thread-safe functions
+
 Threads can be added to and removed from a `napi_threadsafe_function` object
 during its existence. Thus, in addition to specifying an initial number of
 threads upon creation, `napi_acquire_threadsafe_function` can be called to
@@ -5173,7 +5192,10 @@ reason, do not make use of a thread-safe function
 after receiving a return value of `napi_closing` in response to a call to
 `napi_call_threadsafe_function`. Data associated with the
 `napi_threadsafe_function` can be freed in its `napi_finalize` callback which
-was passed to `napi_create_threadsafe_function()`.
+was passed to `napi_create_threadsafe_function()`. The parameter
+`initial_thread_count` of `napi_create_threadsafe_function` marks the initial
+number of aquisitions of the thread-safe functions, instead of calling
+`napi_acquire_threadsafe_function` multiple times at creation.
 
 Once the number of threads making use of a `napi_threadsafe_function` reaches
 zero, no further threads can start making use of it by calling
@@ -5193,12 +5215,18 @@ of `napi_closing` from `napi_call_threadsafe_function()` a thread must make no
 further use of the thread-safe function because it is no longer guaranteed to
 be allocated.**
 
+### Deciding whether to keep the process running
+
 Similarly to libuv handles, thread-safe functions can be "referenced" and
 "unreferenced". A "referenced" thread-safe function will cause the event loop on
 the thread on which it is created to remain alive until the thread-safe function
 is destroyed. In contrast, an "unreferenced" thread-safe function will not
 prevent the event loop from exiting. The APIs `napi_ref_threadsafe_function` and
 `napi_unref_threadsafe_function` exist for this purpose.
+
+Neither does `napi_unref_threadsafe_function` mark the thread-safe functions as
+able to be destroyed nor does `napi_ref_threadsafe_function` prevent it from
+being destroyed.
 
 ### napi_create_threadsafe_function
 
@@ -5237,8 +5265,9 @@ napi_create_threadsafe_function(napi_env env,
   the kind of resource that is being provided for diagnostic information exposed
   by the `async_hooks` API.
 * `[in] max_queue_size`: Maximum size of the queue. `0` for no limit.
-* `[in] initial_thread_count`: The initial number of threads, including the main
-  thread, which will be making use of this function.
+* `[in] initial_thread_count`: The initial number of acquisitions, i.e. the
+  initial number of threads, including the main thread, which will be making use
+  of this function.
 * `[in] thread_finalize_data`: Optional data to be passed to `thread_finalize_cb`.
 * `[in] thread_finalize_cb`: Optional function to call when the
   `napi_threadsafe_function` is being destroyed.
@@ -5248,6 +5277,7 @@ napi_create_threadsafe_function(napi_env env,
   response to a call on a different thread. This callback will be called on the
   main thread. If not given, the JavaScript function will be called with no
   parameters and with `undefined` as its `this` value.
+  [`napi_threadsafe_function_call_js`][] provides more details.
 * `[out] result`: The asynchronous thread-safe JavaScript function.
 
 ### napi_get_threadsafe_function_context
@@ -5380,6 +5410,11 @@ This API is used to indicate that the event loop running on the main thread
 should not exit until `func` has been destroyed. Similar to [`uv_ref`][] it is
 also idempotent.
 
+Neither does `napi_unref_threadsafe_function` mark the thread-safe functions as
+able to be destroyed nor does `napi_ref_threadsafe_function` prevent it from
+being destroyed. `napi_acquire_threadsafe_function` and
+`napi_release_threadsafe_function` are available for that purpose.
+
 This API may only be called from the main thread.
 
 ### napi_unref_threadsafe_function
@@ -5455,7 +5490,9 @@ This API may only be called from the main thread.
 [`init` hooks]: async_hooks.html#async_hooks_init_asyncid_type_triggerasyncid_resource
 [`napi_add_env_cleanup_hook`]: #n_api_napi_add_env_cleanup_hook
 [`napi_add_finalizer`]: #n_api_napi_add_finalizer
+[`napi_async_complete_callback`]: #n_api_napi_async_complete_callback
 [`napi_async_init`]: #n_api_napi_async_init
+[`napi_callback`]: #n_api_napi_callback
 [`napi_cancel_async_work`]: #n_api_napi_cancel_async_work
 [`napi_close_callback_scope`]: #n_api_napi_close_callback_scope
 [`napi_close_escapable_handle_scope`]: #n_api_napi_close_escapable_handle_scope
@@ -5470,6 +5507,7 @@ This API may only be called from the main thread.
 [`napi_delete_async_work`]: #n_api_napi_delete_async_work
 [`napi_delete_reference`]: #n_api_napi_delete_reference
 [`napi_escape_handle`]: #n_api_napi_escape_handle
+[`napi_finalize`]: #n_api_napi_finalize
 [`napi_get_and_clear_last_exception`]: #n_api_napi_get_and_clear_last_exception
 [`napi_get_array_length`]: #n_api_napi_get_array_length
 [`napi_get_element`]: #n_api_napi_get_element
@@ -5491,6 +5529,7 @@ This API may only be called from the main thread.
 [`napi_reference_unref`]: #n_api_napi_reference_unref
 [`napi_set_instance_data`]: #n_api_napi_set_instance_data
 [`napi_set_property`]: #n_api_napi_set_property
+[`napi_threadsafe_function_call_js`]: #n_api_napi_threadsafe_function_call_js
 [`napi_throw_error`]: #n_api_napi_throw_error
 [`napi_throw_range_error`]: #n_api_napi_throw_range_error
 [`napi_throw_type_error`]: #n_api_napi_throw_type_error
