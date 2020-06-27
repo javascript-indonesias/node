@@ -146,12 +146,12 @@ constexpr size_t kFsStatsBufferLength =
 // "node:" prefix to avoid name clashes with third-party code.
 #define PER_ISOLATE_PRIVATE_SYMBOL_PROPERTIES(V)                              \
   V(alpn_buffer_private_symbol, "node:alpnBuffer")                            \
-  V(arraybuffer_untransferable_private_symbol, "node:untransferableBuffer")   \
   V(arrow_message_private_symbol, "node:arrowMessage")                        \
   V(contextify_context_private_symbol, "node:contextify:context")             \
   V(contextify_global_private_symbol, "node:contextify:global")               \
   V(decorated_private_symbol, "node:decorated")                               \
   V(napi_wrapper, "node:napi:wrapper")                                        \
+  V(untransferable_object_private_symbol, "node:untransferableObject")        \
 
 // Symbols are per-isolate primitives but Environment proxies them
 // for the sake of convenience.
@@ -335,7 +335,7 @@ constexpr size_t kFsStatsBufferLength =
   V(psk_string, "psk")                                                         \
   V(pubkey_string, "pubkey")                                                   \
   V(query_string, "query")                                                     \
-  V(quic_alpn_string, "h3-27")                                                 \
+  V(http3_alpn_string, "h3-29")                                                \
   V(rate_string, "rate")                                                       \
   V(raw_string, "raw")                                                         \
   V(read_host_object_string, "_readHostObject")                                \
@@ -433,6 +433,7 @@ constexpr size_t kFsStatsBufferLength =
   V(i18n_converter_template, v8::ObjectTemplate)                               \
   V(libuv_stream_wrap_ctor_template, v8::FunctionTemplate)                     \
   V(message_port_constructor_template, v8::FunctionTemplate)                   \
+  V(microtask_queue_ctor_template, v8::FunctionTemplate)                       \
   V(pipe_constructor_template, v8::FunctionTemplate)                           \
   V(promise_wrap_template, v8::ObjectTemplate)                                 \
   V(sab_lifetimepartner_constructor_template, v8::FunctionTemplate)            \
@@ -925,7 +926,7 @@ class Environment : public MemoryRetainer {
               ThreadId thread_id);
   ~Environment() override;
 
-  void InitializeLibuv(bool start_profiler_idle_notifier);
+  void InitializeLibuv();
   inline const std::vector<std::string>& exec_argv();
   inline const std::vector<std::string>& argv();
   const std::string& exec_path() const;
@@ -954,10 +955,6 @@ class Environment : public MemoryRetainer {
 
   inline void AssignToContext(v8::Local<v8::Context> context,
                               const ContextInfo& info);
-
-  void StartProfilerIdleNotifier();
-  void StopProfilerIdleNotifier();
-  inline bool profiler_idle_notifier_started() const;
 
   inline v8::Isolate* isolate() const;
   inline uv_loop_t* event_loop() const;
@@ -1285,11 +1282,8 @@ class Environment : public MemoryRetainer {
   uv_timer_t timer_handle_;
   uv_check_t immediate_check_handle_;
   uv_idle_t immediate_idle_handle_;
-  uv_prepare_t idle_prepare_handle_;
-  uv_check_t idle_check_handle_;
   uv_async_t task_queues_async_;
   int64_t task_queues_async_refs_ = 0;
-  bool profiler_idle_notifier_started_ = false;
 
   AsyncHooks async_hooks_;
   ImmediateInfo immediate_info_;
