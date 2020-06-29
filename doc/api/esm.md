@@ -124,12 +124,12 @@ as ES modules and `.cjs` files are always treated as CommonJS.
 ### Package scope and file extensions
 
 A folder containing a `package.json` file, and all subfolders below that folder
-down until the next folder containing another `package.json`, is considered a
-_package scope_. The `"type"` field defines how `.js` files should be treated
-within a particular `package.json` file’s package scope. Every package in a
+until the next folder containing another `package.json`, are a
+_package scope_. The `"type"` field defines how to treat `.js` files
+within the package scope. Every package in a
 project’s `node_modules` folder contains its own `package.json` file, so each
-project’s dependencies have their own package scopes. A `package.json` lacking a
-`"type"` field is treated as if it contained `"type": "commonjs"`.
+project’s dependencies have their own package scopes. If a `package.json` file
+does not have a `"type"` field, the default `"type"` is `"commonjs"`.
 
 The package scope applies not only to initial entry points (`node my-app.js`)
 but also to files referenced by `import` statements and `import()` expressions.
@@ -424,8 +424,10 @@ Node.js supports the following conditions:
 * `"import"` - matched when the package is loaded via `import` or
    `import()`. Can reference either an ES module or CommonJS file, as both
    `import` and `import()` can load either ES module or CommonJS sources.
+   _Always matched when the `"require"` condition is not matched._
 * `"require"` - matched when the package is loaded via `require()`.
    As `require()` only supports CommonJS, the referenced file must be CommonJS.
+   _Always matched when the `"import"` condition is not matched._
 * `"node"` - matched for any Node.js environment. Can be a CommonJS or ES
    module file. _This condition should always come after `"import"` or
    `"require"`._
