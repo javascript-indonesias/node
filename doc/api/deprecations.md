@@ -2722,9 +2722,9 @@ native modules. It was incomplete so far and instead it's better to rely upon
 ### DEP0143: `module.parent`
 <!-- YAML
 changes:
-  - version: REPLACEME
-    pr-url: https://github.com/nodejs/node/pull/32217
-    description: Documentation-only deprecation.
+  - version: v14.5.0
+    pr-url: https://github.com/nodejs/node/pull/33126
+    description: Runtime deprecation.
 -->
 
 Type: Documentation-only (supports [`--pending-deprecation`][])
@@ -2750,6 +2750,19 @@ When looking for the CommonJS modules that have required the current one,
 const moduleParents = Object.values(require.cache)
   .filter((m) => m.children.includes(module));
 ```
+
+<a id="DEP0XXX"></a>
+### DEP0XXX: `socket.bufferSize`
+<!-- YAML
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/REPLACEME
+    description: Documentation-only deprecation.
+-->
+
+Type: Documentation-only
+
+[`socket.bufferSize`][] is just an alias for [`writable.writableLength`][].
 
 [`--pending-deprecation`]: cli.html#cli_pending_deprecation
 [`--throw-deprecation`]: cli.html#cli_throw_deprecation
@@ -2824,6 +2837,7 @@ const moduleParents = Object.values(require.cache)
 [`script.createCachedData()`]: vm.html#vm_script_createcacheddata
 [`setInterval()`]: timers.html#timers_setinterval_callback_delay_args
 [`setTimeout()`]: timers.html#timers_settimeout_callback_delay_args
+[`socket.bufferSize`]: net.html#net_socket_buffersize
 [`timeout.ref()`]: timers.html#timers_timeout_ref
 [`timeout.refresh()`]: timers.html#timers_timeout_refresh
 [`timeout.unref()`]: timers.html#timers_timeout_unref
@@ -2860,6 +2874,7 @@ const moduleParents = Object.values(require.cache)
 [`util`]: util.html
 [`worker.exitedAfterDisconnect`]: cluster.html#cluster_worker_exitedafterdisconnect
 [`worker.terminate()`]: worker_threads.html#worker_threads_worker_terminate
+[`writable.writableLength`]: stream.html#stream_writable_writablelength
 [`zlib.bytesWritten`]: zlib.html#zlib_zlib_byteswritten
 [Legacy URL API]: url.html#url_legacy_url_api
 [NIST SP 800-38D]: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf

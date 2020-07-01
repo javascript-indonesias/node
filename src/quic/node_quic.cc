@@ -55,19 +55,16 @@ void QuicSetCallbacks(const FunctionCallbackInfo<Value>& args) {
   } while (0)
 
   SETFUNCTION("onSocketClose", socket_close);
-  SETFUNCTION("onSocketError", socket_error);
   SETFUNCTION("onSessionReady", session_ready);
   SETFUNCTION("onSessionCert", session_cert);
   SETFUNCTION("onSessionClientHello", session_client_hello);
   SETFUNCTION("onSessionClose", session_close);
   SETFUNCTION("onSessionDestroyed", session_destroyed);
-  SETFUNCTION("onSessionError", session_error);
   SETFUNCTION("onSessionHandshake", session_handshake);
   SETFUNCTION("onSessionKeylog", session_keylog);
   SETFUNCTION("onSessionUsePreferredAddress", session_use_preferred_address);
   SETFUNCTION("onSessionPathValidation", session_path_validation);
   SETFUNCTION("onSessionQlog", session_qlog);
-  SETFUNCTION("onSessionSilentClose", session_silent_close);
   SETFUNCTION("onSessionStatus", session_status);
   SETFUNCTION("onSessionTicket", session_ticket);
   SETFUNCTION("onSessionVersionNegotiation", session_version_negotiation);
@@ -192,7 +189,6 @@ void Initialize(Local<Object> target,
   V(NGTCP2_APP_NOERROR)                                                        \
   V(NGTCP2_PATH_VALIDATION_RESULT_FAILURE)                                     \
   V(NGTCP2_PATH_VALIDATION_RESULT_SUCCESS)                                     \
-  V(NGTCP2_DEFAULT_MAX_PKTLEN)                                                 \
   V(NGTCP2_CC_ALGO_CUBIC)                                                      \
   V(NGTCP2_CC_ALGO_RENO)                                                       \
   V(QUIC_ERROR_APPLICATION)                                                    \
@@ -235,11 +231,29 @@ void Initialize(Local<Object> target,
   QUIC_CONSTANTS(V)
 #undef V
 
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_DEFAULT_MAX_PKTLEN);
   NODE_DEFINE_CONSTANT(constants, NGTCP2_PROTO_VER);
   NODE_DEFINE_CONSTANT(constants, NGTCP2_DEFAULT_MAX_ACK_DELAY);
   NODE_DEFINE_CONSTANT(constants, NGTCP2_MAX_CIDLEN);
   NODE_DEFINE_CONSTANT(constants, NGTCP2_MIN_CIDLEN);
+
   NODE_DEFINE_CONSTANT(constants, NGTCP2_NO_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_INTERNAL_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_CONNECTION_REFUSED);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_FLOW_CONTROL_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_STREAM_LIMIT_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_STREAM_STATE_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_FINAL_SIZE_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_FRAME_ENCODING_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_TRANSPORT_PARAMETER_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_CONNECTION_ID_LIMIT_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_PROTOCOL_VIOLATION);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_INVALID_TOKEN);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_APPLICATION_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_CRYPTO_BUFFER_EXCEEDED);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_KEY_UPDATE_ERROR);
+  NODE_DEFINE_CONSTANT(constants, NGTCP2_CRYPTO_ERROR);
+
   NODE_DEFINE_CONSTANT(constants, AF_INET);
   NODE_DEFINE_CONSTANT(constants, AF_INET6);
   NODE_DEFINE_STRING_CONSTANT(constants,

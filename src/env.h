@@ -450,20 +450,17 @@ constexpr size_t kFsStatsBufferLength =
 #if defined(NODE_EXPERIMENTAL_QUIC) && NODE_EXPERIMENTAL_QUIC
 # define QUIC_ENVIRONMENT_STRONG_PERSISTENT_VALUES(V)                          \
   V(quic_on_socket_close_function, v8::Function)                               \
-  V(quic_on_socket_error_function, v8::Function)                               \
   V(quic_on_socket_server_busy_function, v8::Function)                         \
   V(quic_on_session_cert_function, v8::Function)                               \
   V(quic_on_session_client_hello_function, v8::Function)                       \
   V(quic_on_session_close_function, v8::Function)                              \
   V(quic_on_session_destroyed_function, v8::Function)                          \
-  V(quic_on_session_error_function, v8::Function)                              \
   V(quic_on_session_handshake_function, v8::Function)                          \
   V(quic_on_session_keylog_function, v8::Function)                             \
   V(quic_on_session_path_validation_function, v8::Function)                    \
   V(quic_on_session_use_preferred_address_function, v8::Function)              \
   V(quic_on_session_qlog_function, v8::Function)                               \
   V(quic_on_session_ready_function, v8::Function)                              \
-  V(quic_on_session_silent_close_function, v8::Function)                       \
   V(quic_on_session_status_function, v8::Function)                             \
   V(quic_on_session_ticket_function, v8::Function)                             \
   V(quic_on_session_version_negotiation_function, v8::Function)                \
