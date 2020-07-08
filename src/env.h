@@ -441,6 +441,7 @@ constexpr size_t kFsStatsBufferLength =
   V(secure_context_constructor_template, v8::FunctionTemplate)                 \
   V(shutdown_wrap_template, v8::ObjectTemplate)                                \
   V(streambaseoutputstream_constructor_template, v8::ObjectTemplate)           \
+  V(qlogoutputstream_constructor_template, v8::ObjectTemplate)                 \
   V(tcp_constructor_template, v8::FunctionTemplate)                            \
   V(tty_constructor_template, v8::FunctionTemplate)                            \
   V(write_wrap_template, v8::ObjectTemplate)                                   \
@@ -454,7 +455,6 @@ constexpr size_t kFsStatsBufferLength =
   V(quic_on_session_cert_function, v8::Function)                               \
   V(quic_on_session_client_hello_function, v8::Function)                       \
   V(quic_on_session_close_function, v8::Function)                              \
-  V(quic_on_session_destroyed_function, v8::Function)                          \
   V(quic_on_session_handshake_function, v8::Function)                          \
   V(quic_on_session_keylog_function, v8::Function)                             \
   V(quic_on_session_path_validation_function, v8::Function)                    \

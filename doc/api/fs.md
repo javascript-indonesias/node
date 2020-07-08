@@ -654,8 +654,8 @@ added: v0.1.93
 
 * Extends: {stream.Readable}
 
-A successful call to `fs.createReadStream()` will return a new `fs.ReadStream`
-object.
+Instances of `fs.ReadStream` are created and returned using the
+[`fs.createReadStream()`][] function.
 
 ### Event: `'close'`
 <!-- YAML
@@ -1078,6 +1078,9 @@ added: v0.1.93
 -->
 
 * Extends {stream.Writable}
+
+Instances of `fs.WriteStream` are created and returned using the
+[`fs.createWriteStream()`][] function.
 
 ### Event: `'close'`
 <!-- YAML
@@ -5898,6 +5901,7 @@ the file contents.
 [`fs.chmod()`]: #fs_fs_chmod_path_mode_callback
 [`fs.chown()`]: #fs_fs_chown_path_uid_gid_callback
 [`fs.copyFile()`]: #fs_fs_copyfile_src_dest_mode_callback
+[`fs.createReadStream()`]: #fs_fs_createreadstream_path_options
 [`fs.createWriteStream()`]: #fs_fs_createwritestream_path_options
 [`fs.exists()`]: fs.html#fs_fs_exists_path_callback
 [`fs.fstat()`]: #fs_fs_fstat_fd_options_callback
@@ -5929,7 +5933,7 @@ the file contents.
 [`fsPromises.open()`]: #fs_fspromises_open_path_flags_mode
 [`fsPromises.opendir()`]: #fs_fspromises_opendir_path_options
 [`fsPromises.utimes()`]: #fs_fspromises_utimes_path_atime_mtime
-[`inotify(7)`]: http://man7.org/linux/man-pages/man7/inotify.7.html
+[`inotify(7)`]: https://man7.org/linux/man-pages/man7/inotify.7.html
 [`kqueue(2)`]: https://www.freebsd.org/cgi/man.cgi?query=kqueue&sektion=2
 [`net.Socket`]: net.html#net_class_net_socket
 [`stat()`]: fs.html#fs_fs_stat_path_options_callback

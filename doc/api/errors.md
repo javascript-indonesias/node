@@ -919,6 +919,15 @@ for the JS engine are not set up properly.
 A `Promise` that was callbackified via `util.callbackify()` was rejected with a
 falsy value.
 
+<a id="ERR_FEATURE_UNAVAILABLE_ON_PLATFORM"></a>
+#### `ERR_FEATURE_UNAVAILABLE_ON_PLATFORM`
+<!-- YAML
+added: v14.0.0
+-->
+
+Used when a feature that is not available
+to the current platform which is running Node.js is used.
+
 <a id="ERR_FS_FILE_TOO_LARGE"></a>
 ### `ERR_FS_FILE_TOO_LARGE`
 
@@ -2622,88 +2631,6 @@ removed: v10.0.0
 Used when an attempt is made to use a `zlib` object after it has already been
 closed.
 
-### Other error codes
-
-These errors have never been released, but had been present on master between
-releases.
-
-<a id="ERR_ENTRY_TYPE_MISMATCH"></a>
-#### `ERR_ENTRY_TYPE_MISMATCH`
-
-> Stability: 1 - Experimental
-
-The `--entry-type=commonjs` flag was used to attempt to execute an `.mjs` file
-or a `.js` file where the nearest parent `package.json` contains
-`"type": "module"`; or
-the `--entry-type=module` flag was used to attempt to execute a `.cjs` file or
-a `.js` file where the nearest parent `package.json` either lacks a `"type"`
-field or contains `"type": "commonjs"`.
-
-<a id="ERR_FS_WATCHER_ALREADY_STARTED"></a>
-#### `ERR_FS_WATCHER_ALREADY_STARTED`
-
-An attempt was made to start a watcher returned by `fs.watch()` that has
-already been started.
-
-<a id="ERR_FS_WATCHER_NOT_STARTED"></a>
-#### `ERR_FS_WATCHER_NOT_STARTED`
-
-An attempt was made to initiate operations on a watcher returned by
-`fs.watch()` that has not yet been started.
-
-<a id="ERR_HTTP2_ALREADY_SHUTDOWN"></a>
-#### `ERR_HTTP2_ALREADY_SHUTDOWN`
-
-Occurs with multiple attempts to shutdown an HTTP/2 session.
-
-<a id="ERR_HTTP2_ERROR"></a>
-#### `ERR_HTTP2_ERROR`
-
-A non-specific HTTP/2 error has occurred.
-
-<a id="ERR_INVALID_REPL_HISTORY"></a>
-#### `ERR_INVALID_REPL_HISTORY`
-
-Used in the `repl` in case the old history file is used and an error occurred
-while trying to read and parse it.
-
-<a id="ERR_INVALID_REPL_TYPE"></a>
-#### `ERR_INVALID_REPL_TYPE`
-
-> Stability: 1 - Experimental
-
-The `--entry-type=...` flag is not compatible with the Node.js REPL.
-
-<a id="ERR_FEATURE_UNAVAILABLE_ON_PLATFORM"></a>
-#### `ERR_FEATURE_UNAVAILABLE_ON_PLATFORM`
-
-Used when a feature that is not available
-to the current platform which is running Node.js is used.
-
-<a id="ERR_STREAM_HAS_STRINGDECODER"></a>
-#### `ERR_STREAM_HAS_STRINGDECODER`
-
-Used to prevent an abort if a string decoder was set on the Socket.
-
-```js
-const Socket = require('net').Socket;
-const instance = new Socket();
-
-instance.setEncoding('utf8');
-```
-
-<a id="ERR_STRING_TOO_LARGE"></a>
-#### `ERR_STRING_TOO_LARGE`
-
-An attempt has been made to create a string larger than the maximum allowed
-size.
-
-<a id="ERR_TTY_WRITABLE_NOT_READABLE"></a>
-#### `ERR_TTY_WRITABLE_NOT_READABLE`
-
-This `Error` is thrown when a read is attempted on a TTY `WriteStream`,
-such as `process.stdout.on('data')`.
-
 [`'uncaughtException'`]: process.html#process_event_uncaughtexception
 [`--disable-proto=throw`]: cli.html#cli_disable_proto_mode
 [`--force-fips`]: cli.html#cli_force_fips
@@ -2727,7 +2654,7 @@ such as `process.stdout.on('data')`.
 [`dgram.createSocket()`]: dgram.html#dgram_dgram_createsocket_options_callback
 [`dgram.disconnect()`]: dgram.html#dgram_socket_disconnect
 [`dgram.remoteAddress()`]: dgram.html#dgram_socket_remoteaddress
-[`errno`(3) man page]: http://man7.org/linux/man-pages/man3/errno.3.html
+[`errno`(3) man page]: https://man7.org/linux/man-pages/man3/errno.3.html
 [`fs.Dir`]: fs.html#fs_class_fs_dir
 [`fs.readFileSync`]: fs.html#fs_fs_readfilesync_path_options
 [`fs.readdir`]: fs.html#fs_fs_readdir_path_options_callback
@@ -2739,7 +2666,7 @@ such as `process.stdout.on('data')`.
 [`hash.update()`]: crypto.html#crypto_hash_update_data_inputencoding
 [`http`]: http.html
 [`https`]: https.html
-[`libuv Error handling`]: http://docs.libuv.org/en/v1.x/errors.html
+[`libuv Error handling`]: https://docs.libuv.org/en/v1.x/errors.html
 [`net`]: net.html
 [`new URL(input)`]: url.html#url_new_url_input_base
 [`new URLSearchParams(iterable)`]: url.html#url_new_urlsearchparams_iterable
@@ -2775,7 +2702,7 @@ such as `process.stdout.on('data')`.
 [policy]: policy.html
 [RFC 7230 Section 3]: https://tools.ietf.org/html/rfc7230#section-3
 [stream-based]: stream.html
-[syscall]: http://man7.org/linux/man-pages/man2/syscalls.2.html
+[syscall]: https://man7.org/linux/man-pages/man2/syscalls.2.html
 [Subresource Integrity specification]: https://www.w3.org/TR/SRI/#the-integrity-attribute
 [try-catch]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/try...catch
 [vm]: vm.html
