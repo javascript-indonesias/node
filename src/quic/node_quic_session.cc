@@ -1453,6 +1453,9 @@ QuicSession::QuicSession(
       state_.GetArrayBuffer(),
       PropertyAttribute::ReadOnly).Check();
 
+  idle_.Unref();
+  retransmit_.Unref();
+
   // TODO(@jasnell): memory accounting
   // env_->isolate()->AdjustAmountOfExternalAllocatedMemory(kExternalSize);
 }
@@ -1679,11 +1682,6 @@ void QuicSession::Close(int close_flags) {
     listener()->OnSessionClose(error, close_flags);
   else
     Destroy();
-
-  // At this point, the QuicSession should have been destroyed, indicating
-  // that all cleanup on the JavaScript side has completed and the
-  // QuicSession::Destroy() method has been called.
-  CHECK(is_destroyed());
 }
 
 // Mark the QuicSession instance destroyed. This will either be invoked

@@ -1319,10 +1319,7 @@ added: REPLACEME
 -->
 
 New instances of `QuicSocket` are created using the `net.createQuicSocket()`
-method.
-
-Once created, a `QuicSocket` can be configured to work as both a client and a
-server.
+method, and can be used as both a client and a server.
 
 #### Event: `'busy'`
 <!-- YAML
@@ -1330,24 +1327,24 @@ added: REPLACEME
 -->
 
 Emitted when the server busy state has been toggled using
-`quicSocket.setServerBusy()`. The callback is invoked with a single
-boolean argument indicating `true` if busy status is enabled,
-`false` otherwise. This event is strictly informational.
+`quicSocket.serverBusy = true | false`. The callback is invoked with no
+arguments. Use the `quicsocket.serverBusy` property to determine the
+current status. This event is strictly informational.
 
 ```js
 const { createQuicSocket } = require('net');
 
 const socket = createQuicSocket();
 
-socket.on('busy', (busy) => {
-  if (busy)
+socket.on('busy', () => {
+  if (socket.serverBusy)
     console.log('Server is busy');
   else
     console.log('Server is not busy');
 });
 
-socket.setServerBusy(true);
-socket.setServerBusy(false);
+socket.serverBusy = true;
+socket.serverBusy = false;
 ```
 
 This `'busy'` event may be emitted multiple times.
@@ -1371,6 +1368,17 @@ Emitted before the `'close'` event if the `QuicSocket` was destroyed with an
 
 The `'error'` event will not be emitted multiple times.
 
+#### Event: `'listening'`
+<!-- YAML
+added: REPLACEME
+-->
+
+Emitted after `quicsocket.listen()` is called and the `QuicSocket` has started
+listening for incoming `QuicServerSession`s.  The callback is invoked with
+no arguments.
+
+The `'listening'` event will not be emitted multiple times.
+
 #### Event: `'ready'`
 <!-- YAML
 added: REPLACEME
@@ -1385,9 +1393,59 @@ The `'ready'` event will not be emitted multiple times.
 added: REPLACEME
 -->
 
-Emitted when a new `QuicServerSession` has been created.
+Emitted when a new `QuicServerSession` has been created. The callback is
+invoked with a single argument providing the newly created `QuicServerSession`
+object.
+
+```js
+const { createQuicSocket } = require('net');
+
+const options = getOptionsSomehow();
+const server = createQuicSocket({ server: options });
+server.listen();
+
+server.on('session', (session) => {
+  // Attach session event listeners.
+});
+```
 
 The `'session'` event will be emitted multiple times.
+
+The `'session'` event handler *may* be an async function.
+
+If the `'session'` event handler throws an error, or if it returns a `Promise`
+that is rejected, the error will be handled by destroying the `QuicServerSession`
+automatically and emitting a `'sessionError'` event on the `QuicSocket`.
+
+#### Event: `'sessionError'`
+<!--YAML
+added: REPLACEME
+-->
+
+Emitted when an error occurs processing an event related to a specific
+`QuicSession` instance. The callback is invoked with two arguments:
+
+* `error` {Error} The error that was either thrown or rejected.
+* `session` {QuicSession} The `QuicSession` instance that was destroyed.
+
+The `QuicSession` instance will have been destroyed by the time the
+`'sessionError'` event is emitted.
+
+```js
+const { createQuicSocket } = require('net');
+
+const options = getOptionsSomehow();
+const server = createQuicSocket({ server: options });
+server.listen();
+
+server.on('session', (session) => {
+  throw new Error('boom');
+});
+
+server.on('sessionError', (error, session) => {
+  console.log('error:', error.message);
+});
+```
 
 #### quicsocket.addEndpoint(options)
 <!-- YAML
@@ -1416,46 +1474,60 @@ added: REPLACEME
 
 * Type: {boolean}
 
-Will be `true` if the `QuicSocket` has been successfully bound to the local UDP
-port.
+Will be `true` if the `QuicSocket` has been successfully bound to a local UDP
+port. Initially the value is `false`.
+
+`QuicSocket` instances are not bound to a local UDP port until the first time
+eithe `quicsocket.listen()` or `quicsocket.connect()` is called. The `'ready'`
+event will be emitted once the `QuicSocket` has been bound and the value of
+`quicsocket.bound` will become `true`.
+
+Read-only.
 
 #### quicsocket.boundDuration
 <!-- YAML
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the length of time this `QuicSocket` has been bound
-to a local port.
+The length of time this `QuicSocket` has been bound to a local port.
+
+Read-only.
 
 #### quicsocket.bytesReceived
 <!-- YAML
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the number of bytes received by this `QuicSocket`.
+The number of bytes received by this `QuicSocket`.
+
+Read-only.
 
 #### quicsocket.bytesSent
 <!-- YAML
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the number of bytes sent by this `QuicSocket`.
+The number of bytes sent by this `QuicSocket`.
+
+Read-only.
 
 #### quicsocket.clientSessions
 <!-- YAML
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the number of client `QuicSession` instances that
-have been associated with this `QuicSocket`.
+The number of client `QuicSession` instances that have been associated
+with this `QuicSocket`.
+
+Read-only.
 
 #### quicsocket.close(\[callback\])
 <!-- YAML
@@ -1629,9 +1701,11 @@ Will be `true` if the `QuicSocket` has been destroyed.
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the length of time this `QuicSocket` has been active,
+The length of time this `QuicSocket` has been active,
+
+Read-only.
 
 #### quicsocket.endpoints
 <!-- YAML
@@ -1767,10 +1841,11 @@ If a `callback` is given, it is registered as a handler for the
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the length of time this `QuicSocket` has been listening
-for connections.
+The length of time this `QuicSocket` has been listening for connections.
+
+Read-only
 
 #### quicsocket.listening
 <!-- YAML
@@ -1786,29 +1861,33 @@ Set to `true` if the `QuicSocket` is listening for new connections.
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the number of packets received by this `QuicSocket` that
-have been ignored.
+The number of packets received by this `QuicSocket` that have been ignored.
+
+Read-only.
 
 #### quicsocket.packetsReceived
 <!-- YAML
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the number of packets successfully received by this
-`QuicSocket`.
+The number of packets successfully received by this `QuicSocket`.
+
+Read-only
 
 #### quicsocket.packetsSent
 <!-- YAML
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the number of packets sent by this `QuicSocket`.
+The number of packets sent by this `QuicSocket`.
+
+Read-only
 
 #### quicsocket.pending
 <!-- YAML
@@ -1824,25 +1903,40 @@ Set to `true` if the socket is not yet bound to the local UDP port.
 added: REPLACEME
 -->
 
+#### quicsocket.serverBusy
+<!-- YAML
+added: REPLACEME
+-->
+
+* Type: {boolean} When `true`, the `QuicSocket` will reject new connections.
+
+Setting `quicsocket.serverBusy` to `true` will tell the `QuicSocket`
+to reject all new incoming connection requests using the `SERVER_BUSY` QUIC
+error code. To begin receiving connections again, disable busy mode by setting
+`quicsocket.serverBusy = false`.
+
 #### quicsocket.serverBusyCount
 <!-- YAML
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the number of `QuicSession` instances rejected
-due to server busy status.
+The number of `QuicSession` instances rejected due to server busy status.
+
+Read-only.
 
 #### quicsocket.serverSessions
 <!-- YAML
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` representing the number of server `QuicSession` instances that
-have been associated with this `QuicSocket`.
+The number of server `QuicSession` instances that have been associated with
+this `QuicSocket`.
+
+Read-only.
 
 #### quicsocket.setDiagnosticPacketLoss(options)
 <!-- YAML
@@ -1861,27 +1955,16 @@ by artificially dropping received or transmitted packets.
 
 This method is *not* to be used in production applications.
 
-#### quicsocket.setServerBusy(\[on\])
-<!-- YAML
-added: REPLACEME
--->
-
-* `on` {boolean} When `true`, the `QuicSocket` will reject new connections.
-  **Defaults**: `true`.
-
-Calling `setServerBusy()` or `setServerBusy(true)` will tell the `QuicSocket`
-to reject all new incoming connection requests using the `SERVER_BUSY` QUIC
-error code. To begin receiving connections again, disable busy mode by calling
-`setServerBusy(false)`.
-
 #### quicsocket.statelessResetCount
 <!-- YAML
 added: REPLACEME
 -->
 
-* Type: {bigint}
+* Type: {number}
 
-A `BigInt` that represents the number of stateless resets that have been sent.
+The number of stateless resets that have been sent.
+
+Read-only.
 
 #### quicsocket.toggleStatelessReset()
 <!-- YAML
