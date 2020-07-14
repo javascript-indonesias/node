@@ -5,21 +5,21 @@
 
 namespace node {
 
-TimerWrap::TimerWrap(Environment* env, TimerCb fn, void* user_data)
+TimerWrap::TimerWrap(Environment* env, const TimerCb& fn)
     : env_(env),
-      fn_(fn),
-      user_data_(user_data) {
+      fn_(fn) {
   uv_timer_init(env->event_loop(), &timer_);
   timer_.data = this;
 }
 
-void TimerWrap::Stop(bool close) {
+void TimerWrap::Stop() {
   if (timer_.data == nullptr) return;
   uv_timer_stop(&timer_);
-  if (LIKELY(close)) {
-    timer_.data = nullptr;
-    env_->CloseHandle(reinterpret_cast<uv_handle_t*>(&timer_), TimerClosedCb);
-  }
+}
+
+void TimerWrap::Close() {
+  timer_.data = nullptr;
+  env_->CloseHandle(reinterpret_cast<uv_handle_t*>(&timer_), TimerClosedCb);
 }
 
 void TimerWrap::TimerClosedCb(uv_handle_t* handle) {
@@ -45,24 +45,24 @@ void TimerWrap::Unref() {
 
 void TimerWrap::OnTimeout(uv_timer_t* timer) {
   TimerWrap* t = ContainerOf(&TimerWrap::timer_, timer);
-  t->fn_(t->user_data_);
+  t->fn_();
 }
 
 TimerWrapHandle::TimerWrapHandle(
     Environment* env,
-    TimerWrap::TimerCb fn,
-    void* user_data) {
-  timer_ = new TimerWrap(env, fn, user_data);
+    const TimerWrap::TimerCb& fn) {
+  timer_ = new TimerWrap(env, fn);
   env->AddCleanupHook(CleanupHook, this);
 }
 
-void TimerWrapHandle::Stop(bool close) {
-  if (UNLIKELY(!close))
-    return timer_->Stop(close);
+void TimerWrapHandle::Stop() {
+  return timer_->Stop();
+}
 
+void TimerWrapHandle::Close() {
   if (timer_ != nullptr) {
     timer_->env()->RemoveCleanupHook(CleanupHook, this);
-    timer_->Stop();
+    timer_->Close();
   }
   timer_ = nullptr;
 }
@@ -82,13 +82,13 @@ void TimerWrapHandle::Update(uint64_t interval, uint64_t repeat) {
     timer_->Update(interval, repeat);
 }
 
-void TimerWrapHandle::CleanupHook(void* data) {
-  static_cast<TimerWrapHandle*>(data)->Stop();
-}
-
-void TimerWrapHandle::MemoryInfo(node::MemoryTracker* tracker) const {
+void TimerWrapHandle::MemoryInfo(MemoryTracker* tracker) const {
   if (timer_ != nullptr)
     tracker->TrackField("timer", *timer_);
+}
+
+void TimerWrapHandle::CleanupHook(void* data) {
+  static_cast<TimerWrapHandle*>(data)->Close();
 }
 
 }  // namespace node

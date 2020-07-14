@@ -275,6 +275,7 @@ constexpr size_t kFsStatsBufferLength =
   V(issuercert_string, "issuerCertificate")                                    \
   V(kill_signal_string, "killSignal")                                          \
   V(kind_string, "kind")                                                       \
+  V(length_string, "length")                                                   \
   V(library_string, "library")                                                 \
   V(mac_string, "mac")                                                         \
   V(max_buffer_string, "maxBuffer")                                            \
@@ -661,6 +662,7 @@ class AsyncHooks : public MemoryRetainer {
     kTotals,
     kCheck,
     kStackLength,
+    kUsesExecutionAsyncResource,
     kFieldsCount,
   };
 
@@ -675,7 +677,12 @@ class AsyncHooks : public MemoryRetainer {
   inline AliasedUint32Array& fields();
   inline AliasedFloat64Array& async_id_fields();
   inline AliasedFloat64Array& async_ids_stack();
-  inline v8::Local<v8::Array> execution_async_resources();
+  inline v8::Local<v8::Array> js_execution_async_resources();
+  // Returns the native executionAsyncResource value at stack index `index`.
+  // Resources provided on the JS side are not stored on the native stack,
+  // in which case an empty `Local<>` is returned.
+  // The `js_execution_async_resources` array contains the value in that case.
+  inline v8::Local<v8::Object> native_execution_async_resource(size_t index);
 
   inline v8::Local<v8::String> provider_string(int idx);
 
@@ -683,7 +690,7 @@ class AsyncHooks : public MemoryRetainer {
   inline Environment* env();
 
   inline void push_async_context(double async_id, double trigger_async_id,
-      v8::Local<v8::Value> execution_async_resource_);
+      v8::Local<v8::Object> execution_async_resource_);
   inline bool pop_async_context(double async_id);
   inline void clear_async_id_stack();  // Used in fatal exceptions.
 
@@ -728,7 +735,8 @@ class AsyncHooks : public MemoryRetainer {
 
   void grow_async_ids_stack();
 
-  v8::Global<v8::Array> execution_async_resources_;
+  v8::Global<v8::Array> js_execution_async_resources_;
+  std::vector<v8::Global<v8::Object>> native_execution_async_resources_;
 };
 
 class ImmediateInfo : public MemoryRetainer {
@@ -1050,6 +1058,7 @@ class Environment : public MemoryRetainer {
   inline bool should_not_register_esm_loader() const;
   inline bool owns_process_state() const;
   inline bool owns_inspector() const;
+  inline bool tracks_unmanaged_fds() const;
   inline uint64_t thread_id() const;
   inline worker::Worker* worker_context() const;
   Environment* worker_parent_env() const;
@@ -1266,6 +1275,9 @@ class Environment : public MemoryRetainer {
   inline std::unordered_map<char*, std::unique_ptr<v8::BackingStore>>*
       released_allocated_buffers();
 
+  void AddUnmanagedFd(int fd);
+  void RemoveUnmanagedFd(int fd);
+
  private:
   inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
                          const char* errmsg);
@@ -1405,6 +1417,8 @@ class Environment : public MemoryRetainer {
   int64_t base_object_count_ = 0;
   int64_t initial_base_object_count_ = 0;
   std::atomic_bool is_stopping_ { false };
+
+  std::unordered_set<int> unmanaged_fds_;
 
   std::function<void(Environment*, int)> process_exit_handler_ {
       DefaultProcessExitHandler };
