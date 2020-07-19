@@ -4,6 +4,7 @@
 #include "memory_tracker-inl.h"
 #include "node.h"
 #include "node_errors.h"
+#include "node_external_reference.h"
 #include "node_internals.h"
 #include "node_process.h"
 #include "util-inl.h"
@@ -504,6 +505,16 @@ class FastHrtime : public BaseObject {
   std::shared_ptr<BackingStore> backing_store_;
 };
 
+static void GetFastAPIs(const FunctionCallbackInfo<Value>& args) {
+  Environment* env = Environment::GetCurrent(args);
+  Local<Object> ret = Object::New(env->isolate());
+  ret->Set(env->context(),
+           FIXED_ONE_BYTE_STRING(env->isolate(), "hrtime"),
+           FastHrtime::New(env))
+      .ToChecked();
+  args.GetReturnValue().Set(ret);
+}
+
 static void InitializeProcessMethods(Local<Object> target,
                                      Local<Value> unused,
                                      Local<Context> context,
@@ -534,12 +545,33 @@ static void InitializeProcessMethods(Local<Object> target,
   env->SetMethod(target, "reallyExit", ReallyExit);
   env->SetMethodNoSideEffect(target, "uptime", Uptime);
   env->SetMethod(target, "patchProcessObject", PatchProcessObject);
+  env->SetMethod(target, "getFastAPIs", GetFastAPIs);
+}
 
-  target
-      ->Set(env->context(),
-            FIXED_ONE_BYTE_STRING(env->isolate(), "hrtime"),
-            FastHrtime::New(env))
-      .ToChecked();
+void RegisterProcessMethodsExternalReferences(
+    ExternalReferenceRegistry* registry) {
+  registry->Register(DebugProcess);
+  registry->Register(DebugEnd);
+  registry->Register(Abort);
+  registry->Register(CauseSegfault);
+  registry->Register(Chdir);
+
+  registry->Register(Umask);
+  registry->Register(RawDebug);
+  registry->Register(MemoryUsage);
+  registry->Register(CPUUsage);
+  registry->Register(ResourceUsage);
+
+  registry->Register(GetActiveRequests);
+  registry->Register(GetActiveHandles);
+  registry->Register(Kill);
+
+  registry->Register(Cwd);
+  registry->Register(binding::DLOpen);
+  registry->Register(ReallyExit);
+  registry->Register(Uptime);
+  registry->Register(PatchProcessObject);
+  registry->Register(GetFastAPIs);
 }
 
 }  // namespace node
@@ -557,3 +589,5 @@ class WrapperTraits<node::FastHrtime> {
 
 NODE_MODULE_CONTEXT_AWARE_INTERNAL(process_methods,
                                    node::InitializeProcessMethods)
+NODE_MODULE_EXTERNAL_REFERENCE(process_methods,
+                               node::RegisterProcessMethodsExternalReferences)

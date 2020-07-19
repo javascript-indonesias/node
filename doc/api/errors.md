@@ -1748,12 +1748,36 @@ Accessing `Object.prototype.__proto__` has been forbidden using
 [`Object.setPrototypeOf`][] should be used to get and set the prototype of an
 object.
 
-<a id="ERR_QUICSESSION_VERSION_NEGOTIATION"></a>
-### `ERR_QUICSESSION_VERSION_NEGOTIATION`
+<a id="ERR_QUIC_FAILED_TO_CREATE_SESSION"></a>
+### `ERR_QUIC_FAILED_TO_CREATE_SESSION`
 
 > Stability: 1 - Experimental
 
-TBD
+An unspecified failure occured trying to initialize a new `QuicClientSession`.
+
+<a id="ERR_QUIC_INVALID_REMOTE_TRANSPORT_PARAMS"></a>
+### `ERR_QUIC_INVALID_REMOTE_TRANSPORT_PARAMS`
+
+> Stability: 1 - Experimental
+
+An attempt to resume a `QuicClientSession` using remembered remote transport
+parameters failed because the transport parameters were invalid.
+
+<a id="ERR_QUIC_INVALID_TLS_SESSION_TICKET"></a>
+### `ERR_QUIC_INVALID_TLS_SESSION_TICKET`
+
+> Stability: 1 - Experimental
+
+An attempt resume a `QuicClientSession` using a remembered TLS session ticket
+failed because the session ticket was invalid.
+
+<a id="ERR_QUIC_VERSION_NEGOTIATION"></a>
+### `ERR_QUIC_VERSION_NEGOTIATION`
+
+> Stability: 1 - Experimental
+
+A `QuicClientSession` received a version negotiation request from the
+server and was shutdown accordingly.
 
 <a id="ERR_REQUIRE_ESM"></a>
 ### `ERR_REQUIRE_ESM`
@@ -2099,7 +2123,7 @@ signal (such as [`subprocess.kill()`][]).
 <a id="ERR_UNSUPPORTED_DIR_IMPORT"></a>
 ### `ERR_UNSUPPORTED_DIR_IMPORT`
 
-`import` a directory URL is unsupported. Instead, you can
+`import` a directory URL is unsupported. Instead,
 [self-reference a package using its name][] and [define a custom subpath][] in
 the `"exports"` field of the `package.json` file.
 
