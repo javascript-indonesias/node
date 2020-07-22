@@ -109,9 +109,10 @@ markAsUntransferable(pooledBuffer);
 const { port1 } = new MessageChannel();
 port1.postMessage(typedArray1, [ typedArray1.buffer ]);
 
-// The following line prints the contents of typedArray1 -- it still owns its
-// memory and has been cloned, not transfered. Without `markAsUntransferable()`,
-// this would print an empty Uint8Array. typedArray2 is intact as well.
+// The following line prints the contents of typedArray1 -- it still owns
+// its memory and has been cloned, not transferred. Without
+// `markAsUntransferable()`, this would print an empty Uint8Array.
+// typedArray2 is intact as well.
 console.log(typedArray1);
 console.log(typedArray2);
 ```
@@ -621,8 +622,8 @@ if (isMainThread) {
 added: v10.5.0
 changes:
   - version:
-    - REPLACEME
-    pr-url: ???
+    - v14.6.0
+    pr-url: https://github.com/nodejs/node/pull/34303
     description: The `trackUnmanagedFds` option was introduced.
   - version:
      - v13.13.0
