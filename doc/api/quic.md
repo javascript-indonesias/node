@@ -25,16 +25,8 @@ const { createQuicSocket } = require('net');
 // Create the QUIC UDP IPv4 socket bound to local IP port 1234
 const socket = createQuicSocket({ endpoint: { port: 1234 } });
 
-socket.on('session', (session) => {
+socket.on('session', async (session) => {
   // A new server side session has been created!
-
-  session.on('secure', () => {
-    // Once the TLS handshake is completed, we can
-    // open streams...
-    const uni = session.openStream({ halfOpen: true });
-    uni.write('hi ');
-    uni.end('from the server!');
-  });
 
   // The peer opened a new stream!
   session.on('stream', (stream) => {
@@ -46,6 +38,10 @@ socket.on('session', (session) => {
     stream.on('data', console.log);
     stream.on('end', () => console.log('stream ended'));
   });
+
+  const uni = await session.openStream({ halfOpen: true });
+  uni.write('hi ');
+  uni.end('from the server!');
 });
 
 // Tell the socket to operate as a server using the given
@@ -187,10 +183,12 @@ The `openStream()` method is used to create a new `QuicStream`:
 
 ```js
 // Create a new bidirectional stream
-const stream1 = session.openStream();
+async function createStreams(session) {
+  const stream1 = await session.openStream();
 
-// Create a new unidirectional stream
-const stream2 = session.openStream({ halfOpen: true });
+  // Create a new unidirectional stream
+  const stream2 = await session.openStream({ halfOpen: true });
+}
 ```
 
 As suggested by the names, a bidirectional stream allows data to be sent on
@@ -1045,12 +1043,13 @@ added: REPLACEME
   * `defaultEncoding` {string} The default encoding that is used when no
     encoding is specified as an argument to `quicstream.write()`. Default:
     `'utf8'`.
-* Returns: {QuicStream}
+* Returns: {Promise} containing {QuicStream}
 
-Returns a new `QuicStream`.
+Returns a `Promise` that resolves a new `QuicStream`.
 
-An error will be thrown if the `QuicSession` has been destroyed or is in the
-process of a graceful shutdown.
+The `Promise` will be rejected if the `QuicSession` has been destroyed, is in
+the process of a graceful shutdown, or the `QuicSession` is otherwise blocked
+from opening a new stream.
 
 #### `quicsession.ping()`
 <!--YAML
@@ -2117,15 +2116,6 @@ stream('initialHeaders', (headers) => {
 });
 ```
 
-#### Event: `'ready'`
-<!-- YAML
-added: REPLACEME
--->
-
-Emitted when the underlying `QuicSession` has emitted its `secure` event
-this stream has received its id, which is accessible as `stream.id` once this
-event is emitted.
-
 #### Event: `'trailingHeaders'`
 <!-- YAML
 added: REPLACEME
@@ -2153,14 +2143,6 @@ stream('trailingHeaders', (headers) => {
 added: REPLACEME
 -->
 
-#### `quicstream.aborted`
-<!-- YAML
-added: REPLACEME
--->
-* Type: {boolean}
-
-True if dataflow on the `QuicStream` was prematurely terminated.
-
 #### `quicstream.bidirectional`
 <!--YAML
 added: REPLACEME
@@ -2168,7 +2150,10 @@ added: REPLACEME
 
 * Type: {boolean}
 
-Set to `true` if the `QuicStream` is bidirectional.
+When `true`, the `QuicStream` is bidirectional. Both the readable and
+writable sides of the `QuicStream` `Duplex` are open.
+
+Read-only.
 
 #### `quicstream.bytesReceived`
 <!-- YAML
@@ -2179,6 +2164,8 @@ added: REPLACEME
 
 The total number of bytes received for this `QuicStream`.
 
+Read-only.
+
 #### `quicstream.bytesSent`
 <!-- YAML
 added: REPLACEME
@@ -2188,6 +2175,8 @@ added: REPLACEME
 
 The total number of bytes sent by this `QuicStream`.
 
+Read-only.
+
 #### `quicstream.clientInitiated`
 <!-- YAML
 added: REPLACEME
@@ -2195,17 +2184,20 @@ added: REPLACEME
 
 * Type: {boolean}
 
-Set to `true` if the `QuicStream` was initiated by a `QuicClientSession`
+Will be `true` if the `QuicStream` was initiated by a `QuicClientSession`
 instance.
 
-#### `quicstream.close(code)`
+Read-only.
+
+#### `quicstream.close()`
 <!-- YAML
 added: REPLACEME
 -->
 
-* `code` {number}
+* Returns: {Promise`}
 
-Closes the `QuicStream`.
+Closes the `QuicStream` by ending both sides of the `QuicStream` `Duplex`.
+Returns a `Promise` that is resolved once the `QuicStream` has been destroyed.
 
 #### `quicstream.dataAckHistogram`
 <!-- YAML
@@ -2236,6 +2228,8 @@ added: REPLACEME
 
 The length of time the `QuicStream` has been active.
 
+Read-only.
+
 #### `quicstream.finalSize`
 <!-- YAML
 added: REPLACEME
@@ -2244,6 +2238,8 @@ added: REPLACEME
 * Type: {number}
 
 The total number of bytes successfully received by the `QuicStream`.
+
+Read-only.
 
 #### `quicstream.id`
 <!-- YAML
@@ -2254,6 +2250,8 @@ added: REPLACEME
 
 The numeric identifier of the `QuicStream`.
 
+Read-only.
+
 #### `quicstream.maxAcknowledgedOffset`
 <!-- YAML
 added: REPLACEME
@@ -2262,6 +2260,8 @@ added: REPLACEME
 * Type: {number}
 
 The highest acknowledged data offset received for this `QuicStream`.
+
+Read-only.
 
 #### `quicstream.maxExtendedOffset`
 <!-- YAML
@@ -2272,6 +2272,8 @@ added: REPLACEME
 
 The maximum extended data offset that has been reported to the connected peer.
 
+Read-only.
+
 #### `quicstream.maxReceivedOffset`
 <!-- YAML
 added: REPLACEME
@@ -2281,15 +2283,7 @@ added: REPLACEME
 
 The maximum received offset for this `QuicStream`.
 
-#### `quicstream.pending`
-<!-- YAML
-added: REPLACEME
--->
-
-* {boolean}
-
-This property is `true` if the underlying session is not finished yet,
-i.e. before the `'ready'` event is emitted.
+Read-only.
 
 #### `quicstream.pushStream(headers\[, options\])`
 <!-- YAML
@@ -2324,8 +2318,10 @@ added: REPLACEME
 
 * Type: {boolean}
 
-Set to `true` if the `QuicStream` was initiated by a `QuicServerSession`
+Will be `true` if the `QuicStream` was initiated by a `QuicServerSession`
 instance.
+
+Read-only.
 
 #### `quicstream.session`
 <!-- YAML
@@ -2334,7 +2330,10 @@ added: REPLACEME
 
 * Type: {QuicSession}
 
-The `QuicServerSession` or `QuicClientSession`.
+The `QuicServerSession` or `QuicClientSession` to which the
+`QuicStream` belongs.
+
+Read-only.
 
 #### `quicstream.sendFD(fd\[, options\])`
 <!-- YAML
@@ -2415,7 +2414,26 @@ added: REPLACEME
 
 * Type: {boolean}
 
-Set to `true` if the `QuicStream` is unidirectional.
+Will be `true` if the `QuicStream` is undirectional. Whether the `QuicStream`
+will be readable or writable depends on whether the `quicstream.session` is
+a `QuicClientSession` or `QuicServerSession`, and whether the `QuicStream`
+was initiated locally or remotely.
+
+| `quicstream.session` | `quicstream.serverInitiated` | Readable | Writable |
+| -------------------- | ---------------------------- | -------- | -------- |
+|  `QuicClientSession` |            `true`            |     Y    |     N    |
+|  `QuicServerSession` |            `true`            |     N    |     Y    |
+|  `QuicClientSession` |            `false`           |     N    |     Y    |
+|  `QuicServerSession` |            `false`           |     Y    |     N    |
+
+| `quicstream.session` | `quicstream.clientInitiated` | Readable | Writable |
+| -------------------- | ---------------------------- | -------- | -------- |
+|  `QuicClientSession` |            `true`            |     N    |     Y    |
+|  `QuicServerSession` |            `true`            |     Y    |     N    |
+|  `QuicClientSession` |            `false`           |     Y    |     N    |
+|  `QuicServerSession` |            `false`           |     N    |     Y    |
+
+Read-only.
 
 ## Additional notes
 

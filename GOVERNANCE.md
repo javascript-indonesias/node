@@ -2,6 +2,7 @@
 
 <!-- TOC -->
 
+* [Triagers](#triagers)
 * [Collaborators](#collaborators)
   * [Collaborator Activities](#collaborator-activities)
 * [Technical Steering Committee](#technical-steering-committee)
@@ -11,6 +12,19 @@
 * [Consensus Seeking Process](#consensus-seeking-process)
 
 <!-- /TOC -->
+
+## Triagers
+
+Triagers assess newly-opened issues in the nodejs/node and nodejs/help
+repositories. There is no GitHub team for triagers at the moment.
+
+Triagers have:
+* ability to label issues
+* ability to comment, close, and reopen issues
+
+See:
+
+* [A guide for triagers](./doc/guides/contributing/issues.md#triaging-a-bug-report)
 
 ## Collaborators
 
