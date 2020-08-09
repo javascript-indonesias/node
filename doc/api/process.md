@@ -2423,11 +2423,9 @@ allowed for longer process title strings by also overwriting the `environ`
 memory but that was potentially insecure and confusing in some (rather obscure)
 cases.
 
-Assigning a value to `process.title` _may_ not reflect an accurate
-(or any) label within the process manager application of the underlying
-operating system (i.e. macOS Activity Monitor, Windows Services Manager, etc).
-Inconsistencies and breaking changes within the _operating systems process
-interface_ make synchronization with these applications unreliable.
+Assigning a value to `process.title` might not result in an accurate label
+within process manager applications such as macOS Activity Monitor or Windows
+Services Manager.
 
 ## `process.traceDeprecation`
 <!-- YAML
@@ -2588,6 +2586,8 @@ cases:
   and generally can only happen during development of Node.js itself.
 * `12` **Invalid Debug Argument**: The `--inspect` and/or `--inspect-brk`
   options were set, but the port number chosen was invalid or unavailable.
+* `13` **Unfinished Top-Level Await**: `await` was used outside of a function
+  in the top-level code, but the passed `Promise` never resolved.
 * `>128` **Signal Exits**: If Node.js receives a fatal signal such as
   `SIGKILL` or `SIGHUP`, then its exit code will be `128` plus the
   value of the signal code. This is a standard POSIX practice, since
