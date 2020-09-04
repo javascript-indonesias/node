@@ -93,12 +93,14 @@ function toHTML({ input, content, filename, nodeVersion, versions }) {
 // Set the section name based on the first header.  Default to 'Index'.
 function firstHeader() {
   return (tree, file) => {
-    file.section = 'Index';
-
     const heading = find(tree, { type: 'heading' });
-    if (heading) {
-      const text = find(heading, { type: 'text' });
-      if (text) file.section = text.value;
+
+    if (heading && heading.children.length) {
+      const recursiveTextContent = (node) =>
+        node.value || node.children.map(recursiveTextContent).join('');
+      file.section = recursiveTextContent(heading);
+    } else {
+      file.section = 'Index';
     }
   };
 }
@@ -325,6 +327,7 @@ function versionSort(a, b) {
   return +b.match(numberRe)[0] - +a.match(numberRe)[0];
 }
 
+const DEPRECATION_HEADING_PATTERN = /^DEP\d+:/;
 function buildToc({ filename, apilinks }) {
   return (tree, file) => {
     const idCounters = Object.create(null);
@@ -347,10 +350,20 @@ function buildToc({ filename, apilinks }) {
         node.position.end.offset).trim();
       const id = getId(`${realFilename}_${headingText}`, idCounters);
 
+      const isDeprecationHeading =
+        DEPRECATION_HEADING_PATTERN.test(headingText);
+      if (isDeprecationHeading) {
+        if (!node.data) node.data = {};
+        if (!node.data.hProperties) node.data.hProperties = {};
+        node.data.hProperties.id =
+          headingText.substring(0, headingText.indexOf(':'));
+      }
+
       const hasStability = node.stability !== undefined;
       toc += ' '.repeat((depth - 1) * 2) +
         (hasStability ? `* <span class="stability_${node.stability}">` : '* ') +
-        `<a href="#${id}">${headingText}</a>${hasStability ? '</span>' : ''}\n`;
+        `<a href="#${isDeprecationHeading ? node.data.hProperties.id : id}">` +
+        `${headingText}</a>${hasStability ? '</span>' : ''}\n`;
 
       let anchor =
          `<span><a class="mark" href="#${id}" id="${id}">#</a></span>`;

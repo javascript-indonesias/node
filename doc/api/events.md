@@ -835,8 +835,7 @@ added:
 * `emitter` {EventEmitter}
 * `name` {string}
 * `options` {Object}
-  * `signal` {AbortSignal} An {AbortSignal} that may be used to cancel waiting
-    for the event.
+  * `signal` {AbortSignal} Can be used to cancel waiting for the event.
 * Returns: {Promise}
 
 Creates a `Promise` that is fulfilled when the `EventEmitter` emits the given
@@ -895,7 +894,7 @@ ee.emit('error', new Error('boom'));
 // Prints: ok boom
 ```
 
-An {AbortSignal} may be used to cancel waiting for the event early:
+An {AbortSignal} can be used to cancel waiting for the event:
 
 ```js
 const { EventEmitter, once } = require('events');
@@ -918,6 +917,7 @@ async function foo(emitter, event, signal) {
 
 foo(ee, 'foo', ac.signal);
 ac.abort(); // Abort waiting for the event
+ee.emit('foo'); // Prints: Waiting for the event was canceled!
 ```
 
 ### Awaiting multiple events emitted on `process.nextTick()`
@@ -1010,8 +1010,7 @@ added:
 * `emitter` {EventEmitter}
 * `eventName` {string|symbol} The name of the event being listened for
 * `options` {Object}
-  * `signal` {AbortSignal} An {AbortSignal} that can be used to cancel awaiting
-    events.
+  * `signal` {AbortSignal} Can be used to cancel awaiting events.
 * Returns: {AsyncIterator} that iterates `eventName` events emitted by the `emitter`
 
 ```js
@@ -1041,7 +1040,7 @@ if the `EventEmitter` emits `'error'`. It removes all listeners when
 exiting the loop. The `value` returned by each iteration is an array
 composed of the emitted event arguments.
 
-An {AbortSignal} may be used to cancel waiting on events:
+An {AbortSignal} can be used to cancel waiting on events:
 
 ```js
 const { on, EventEmitter } = require('events');
