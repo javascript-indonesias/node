@@ -1378,26 +1378,16 @@ An IP address is not valid.
 The imported module string is an invalid URL, package name, or package subpath
 specifier.
 
-<a id="ERR_INVALID_OPT_VALUE"></a>
-### `ERR_INVALID_OPT_VALUE`
-
-An invalid or unexpected value was passed in an options object.
-
-<a id="ERR_INVALID_OPT_VALUE_ENCODING"></a>
-### `ERR_INVALID_OPT_VALUE_ENCODING`
-
-An invalid or unknown file encoding was passed.
-
 <a id="ERR_INVALID_PACKAGE_CONFIG"></a>
 ### `ERR_INVALID_PACKAGE_CONFIG`
 
-An invalid `package.json` file was found which failed parsing.
+An invalid [`package.json`][] file was found which failed parsing.
 
 <a id="ERR_INVALID_PACKAGE_TARGET"></a>
 ### `ERR_INVALID_PACKAGE_TARGET`
 
-The `package.json` [exports][] field contains an invalid target mapping value
-for the attempted module resolution.
+The `package.json` [`"exports"`][] field contains an invalid target mapping
+value for the attempted module resolution.
 
 <a id="ERR_INVALID_PERFORMANCE_MARK"></a>
 ### `ERR_INVALID_PERFORMANCE_MARK`
@@ -1730,13 +1720,13 @@ A given value is out of the accepted range.
 <a id="ERR_PACKAGE_IMPORT_NOT_DEFINED"></a>
 ### `ERR_PACKAGE_IMPORT_NOT_DEFINED`
 
-The `package.json` ["imports" field][] does not define the given internal
+The `package.json` [`"imports"`][] field does not define the given internal
 package specifier mapping.
 
 <a id="ERR_PACKAGE_PATH_NOT_EXPORTED"></a>
 ### `ERR_PACKAGE_PATH_NOT_EXPORTED`
 
-The `package.json` [exports][] field does not export the requested subpath.
+The `package.json` [`"exports"`][] field does not export the requested subpath.
 Because exports are encapsulated, private internal modules that are not exported
 cannot be imported through the package resolution, unless using an absolute URL.
 
@@ -2125,7 +2115,7 @@ signal (such as [`subprocess.kill()`][]).
 
 `import` a directory URL is unsupported. Instead,
 [self-reference a package using its name][] and [define a custom subpath][] in
-the `"exports"` field of the `package.json` file.
+the [`"exports"`][] field of the [`package.json`][] file.
 
 <!-- eslint-skip -->
 ```js
@@ -2391,6 +2381,24 @@ Used when an invalid character is found in an HTTP response status message
 -->
 A given index was out of the accepted range (e.g. negative offsets).
 
+<a id="ERR_INVALID_OPT_VALUE"></a>
+### `ERR_INVALID_OPT_VALUE`
+<!-- YAML
+added: v8.0.0
+removed: REPLACEME
+-->
+
+An invalid or unexpected value was passed in an options object.
+
+<a id="ERR_INVALID_OPT_VALUE_ENCODING"></a>
+### `ERR_INVALID_OPT_VALUE_ENCODING`
+<!-- YAML
+added: v9.0.0
+removed: REPLACEME
+-->
+
+An invalid or unknown file encoding was passed.
+
 <a id="ERR_MISSING_MESSAGE_PORT_IN_TRANSFER_LIST"></a>
 ### `ERR_MISSING_MESSAGE_PORT_IN_TRANSFER_LIST`
 <!-- YAML
@@ -2633,7 +2641,8 @@ closed.
 [crypto digest algorithm]: crypto.html#crypto_crypto_gethashes
 [domains]: domain.html
 [event emitter-based]: events.html#events_class_eventemitter
-[exports]: packages.html#packages_package_entry_points
+[`package.json`]: packages.html#packages_node_js_package_json_field_definitions
+[`"exports"`]: packages.html#packages_exports
 [file descriptors]: https://en.wikipedia.org/wiki/File_descriptor
 [policy]: policy.html
 [RFC 7230 Section 3]: https://tools.ietf.org/html/rfc7230#section-3
@@ -2644,4 +2653,4 @@ closed.
 [vm]: vm.html
 [self-reference a package using its name]: packages.html#packages_self_referencing_a_package_using_its_name
 [define a custom subpath]: packages.html#packages_subpath_exports
-["imports" field]: packages.html#packages_internal_package_imports
+[`"imports"`]: packages.html#packages_imports
