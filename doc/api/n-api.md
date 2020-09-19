@@ -337,6 +337,18 @@ listed as supporting a later version.
 version 1 but continued to evolve until Node.js 8.6.0. The API is different in
 versions prior to Node.js 8.6.0. We recommend N-API version 3 or later.
 
+Each API documented for N-API will have a header named `added in:`, and APIs
+which are stable will have the additional header `N-API version:`.
+APIs are directly usable when using a Node.js version which supports
+the N-API version shown in `N-API version:` or higher.
+When using a Node.js version that does not support the
+`N-API version:` listed or if there is no `N-API version:` listed,
+then the API will only be available if
+`#define NAPI_EXPERIMENTAL` precedes the inclusion of `node_api.h`
+or `js_native_api.h`. If an API appears not to be available on
+a version of Node.js which is later than the one shown in `added in:` then
+this is most likely the reason for the apparent absence.
+
 The N-APIs associated strictly with accessing ECMAScript features from native
 code can be found separately in `js_native_api.h` and `js_native_api_types.h`.
 The APIs defined in these headers are included in `node_api.h` and
@@ -1777,8 +1789,16 @@ provided by the addon:
 ```c
 napi_value Init(napi_env env, napi_value exports) {
   napi_status status;
-  napi_property_descriptor desc =
-    {"hello", NULL, Method, NULL, NULL, NULL, napi_default, NULL};
+  napi_property_descriptor desc = {
+    "hello",
+    NULL,
+    Method,
+    NULL,
+    NULL,
+    NULL,
+    napi_writable | napi_enumerable | napi_configurable,
+    NULL
+  };
   status = napi_define_properties(env, exports, 1, &desc);
   if (status != napi_ok) return NULL;
   return exports;
@@ -1805,7 +1825,7 @@ To define a class so that new instances can be created (often used with
 napi_value Init(napi_env env, napi_value exports) {
   napi_status status;
   napi_property_descriptor properties[] = {
-    { "value", NULL, NULL, GetValue, SetValue, NULL, napi_default, NULL },
+    { "value", NULL, NULL, GetValue, SetValue, NULL, napi_writable | napi_configurable, NULL },
     DECLARE_NAPI_METHOD("plusOne", PlusOne),
     DECLARE_NAPI_METHOD("multiply", Multiply),
   };
@@ -3538,9 +3558,8 @@ added:
  - v13.0.0
  - v12.16.0
  - v10.22.0
+napiVersion: 7
 -->
-
-> Stability: 1 - Experimental
 
 ```c
 napi_status napi_detach_arraybuffer(napi_env env,
@@ -3567,9 +3586,8 @@ added:
  - v13.3.0
  - v12.16.0
  - v10.22.0
+napiVersion: 7
 -->
-
-> Stability: 1 - Experimental
 
 ```c
 napi_status napi_is_detached_arraybuffer(napi_env env,
@@ -3719,8 +3737,8 @@ if (status != napi_ok) return status;
 
 // Set the properties
 napi_property_descriptor descriptors[] = {
-  { "foo", NULL, NULL, NULL, NULL, fooValue, napi_default, NULL },
-  { "bar", NULL, NULL, NULL, NULL, barValue, napi_default, NULL }
+  { "foo", NULL, NULL, NULL, NULL, fooValue, napi_writable | napi_configurable, NULL },
+  { "bar", NULL, NULL, NULL, NULL, barValue, napi_writable | napi_configurable, NULL }
 }
 status = napi_define_properties(env,
                                 obj,
@@ -3731,6 +3749,12 @@ if (status != napi_ok) return status;
 
 ### Structures
 #### napi_property_attributes
+<!-- YAML
+changes:
+ - version: REPLACEME
+   pr-url: https://github.com/nodejs/node/pull/35214
+   description: added `napi_default_method` and `napi_default_property`
+-->
 
 ```c
 typedef enum {
@@ -3742,6 +3766,14 @@ typedef enum {
   // Used with napi_define_class to distinguish static properties
   // from instance properties. Ignored by napi_define_properties.
   napi_static = 1 << 10,
+
+  // Default for class methods.
+  napi_default_method = napi_writable | napi_configurable,
+
+  // Default for object properties, like in JS obj[prop].
+  napi_default_property = napi_writable |
+                          napi_enumerable |
+                          napi_configurable,
 } napi_property_attributes;
 ```
 
@@ -3760,6 +3792,10 @@ They can be one or more of the following bitflags:
 * `napi_static`: The property will be defined as a static property on a class as
   opposed to an instance property, which is the default. This is used only by
   [`napi_define_class`][]. It is ignored by `napi_define_properties`.
+* `napi_default_method`: The property is configureable, writeable but not
+  enumerable like a method in a JS class.
+* `napi_default_property`: The property is writable, enumerable and configurable
+  like a property set via JS code `obj.key = value`.
 
 #### napi_property_descriptor
 
