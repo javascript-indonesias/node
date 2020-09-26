@@ -3080,9 +3080,10 @@ napi_status napi_get_value_string_latin1(napi_env env,
 * `[in] env`: The environment that the API is invoked under.
 * `[in] value`: `napi_value` representing JavaScript string.
 * `[in] buf`: Buffer to write the ISO-8859-1-encoded string into. If `NULL` is
-  passed in, the length of the string (in bytes) is returned.
+  passed in, the length of the string in bytes and excluding the null terminator
+  is returned in `result`.
 * `[in] bufsize`: Size of the destination buffer. When this value is
-  insufficient, the returned string will be truncated.
+  insufficient, the returned string will be truncated and null-terminated.
 * `[out] result`: Number of bytes copied into the buffer, excluding the null
   terminator.
 
@@ -3109,9 +3110,10 @@ napi_status napi_get_value_string_utf8(napi_env env,
 * `[in] env`: The environment that the API is invoked under.
 * `[in] value`: `napi_value` representing JavaScript string.
 * `[in] buf`: Buffer to write the UTF8-encoded string into. If `NULL` is passed
-  in, the length of the string (in bytes) is returned.
+  in, the length of the string in bytes and excluding the null terminator is
+  returned in `result`.
 * `[in] bufsize`: Size of the destination buffer. When this value is
-  insufficient, the returned string will be truncated.
+  insufficient, the returned string will be truncated and null-terminated.
 * `[out] result`: Number of bytes copied into the buffer, excluding the null
   terminator.
 
@@ -3137,9 +3139,10 @@ napi_status napi_get_value_string_utf16(napi_env env,
 * `[in] env`: The environment that the API is invoked under.
 * `[in] value`: `napi_value` representing JavaScript string.
 * `[in] buf`: Buffer to write the UTF16-LE-encoded string into. If `NULL` is
-  passed in, the length of the string (in 2-byte code units) is returned.
+  passed in, the length of the string in 2-byte code units and excluding the
+  null terminator is returned.
 * `[in] bufsize`: Size of the destination buffer. When this value is
-  insufficient, the returned string will be truncated.
+  insufficient, the returned string will be truncated and null-terminated.
 * `[out] result`: Number of 2-byte code units copied into the buffer, excluding
   the null terminator.
 
@@ -4392,8 +4395,8 @@ napi_status napi_get_cb_info(napi_env env,
 
 * `[in] env`: The environment that the API is invoked under.
 * `[in] cbinfo`: The callback info passed into the callback function.
-* `[in-out] argc`: Specifies the size of the provided `argv` array and receives
-  the actual count of arguments.
+* `[in-out] argc`: Specifies the length of the provided `argv` array and
+  receives the actual count of arguments.
 * `[out] argv`: Buffer to which the `napi_value` representing the arguments are
   copied. If there are more arguments than the provided count, only the
   requested number of arguments are copied. If there are fewer arguments
@@ -5180,9 +5183,11 @@ NAPI_EXTERN napi_status napi_make_callback(napi_env env,
 * `[in] env`: The environment that the API is invoked under.
 * `[in] async_context`: Context for the async operation that is
    invoking the callback. This should normally be a value previously
-   obtained from [`napi_async_init`][]. However `NULL` is also allowed,
-   which indicates the current async context (if any) is to be used
-   for the callback.
+   obtained from [`napi_async_init`][].
+   In order to retain ABI compatibility with previous versions, passing `NULL`
+   for `async_context` will not result in an error. However, this will result
+   in incorrect operation of async hooks. Potential issues include loss of
+   async context when using the `AsyncLocalStorage` API.
 * `[in] recv`: The `this` object passed to the called function.
 * `[in] func`: `napi_value` representing the JavaScript function to be invoked.
 * `[in] argc`: The count of elements in the `argv` array.
