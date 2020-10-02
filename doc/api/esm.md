@@ -57,7 +57,7 @@ Node.js treats JavaScript code as CommonJS modules by default.
 Authors can tell Node.js to treat JavaScript code as ECMAScript modules
 via the `.mjs` file extension, the `package.json` [`"type"`][] field, or the
 `--input-type` flag. See
-[Modules: Packages](packages.html#packages_determining_module_system) for more
+[Modules: Packages](packages.md#packages_determining_module_system) for more
 details.
 
 <!-- Anchors to make sure old links find a target -->
@@ -78,7 +78,7 @@ details.
 
 ## Packages
 
-This section was moved to [Modules: Packages](packages.html).
+This section was moved to [Modules: Packages](packages.md).
 
 ## `import` Specifiers
 
@@ -122,13 +122,13 @@ added: v12.10.0
 
 * `text/javascript` for ES Modules
 * `application/json` for JSON
-* `application/wasm` for WASM.
+* `application/wasm` for Wasm
 
 `data:` URLs only resolve [_Bare specifiers_][Terminology] for builtin modules
 and [_Absolute specifiers_][Terminology]. Resolving
-[_Relative specifiers_][Terminology] will not work because `data:` is not a
+[_Relative specifiers_][Terminology] does not work because `data:` is not a
 [special scheme][]. For example, attempting to load `./foo`
-from `data:text/javascript,import "./foo";` will fail to resolve since there
+from `data:text/javascript,import "./foo";` fails to resolve because there
 is no concept of relative resolution for `data:` URLs. An example of a `data:`
 URLs being used is:
 
@@ -200,7 +200,7 @@ from which to resolve from:
 })();
 ```
 
-This function is asynchronous since the ES module resolver in Node.js is
+This function is asynchronous because the ES module resolver in Node.js is
 asynchronous. With the introduction of [Top-Level Await][], these use cases
 will be easier as they won't require an async function wrapper.
 
@@ -219,8 +219,8 @@ ES modules are resolved and cached based upon
 [URL](https://url.spec.whatwg.org/) semantics. This means that files containing
 special characters such as `#` and `?` need to be escaped.
 
-Modules will be loaded multiple times if the `import` specifier used to resolve
-them have a different query or fragment.
+Modules are loaded multiple times if the `import` specifier used to resolve
+them has a different query or fragment.
 
 ```js
 import './foo.mjs?query=1'; // loads ./foo.mjs with query of "?query=1"
@@ -295,8 +295,8 @@ console.log(cjs === cjsSugar);
 //   true
 ```
 
-The ECMAScript Module Namespace representation of a CommonJS module will always
-be a namespace with a `default` export key pointing to the CommonJS
+The ECMAScript Module Namespace representation of a CommonJS module is always
+a namespace with a `default` export key pointing to the CommonJS
 `module.exports` value.
 
 This Module Namespace Exotic Object can be directly observed either when using
@@ -312,19 +312,19 @@ console.log(m === await import('cjs'));
 //   true
 ```
 
-For better compatibility with existing usage in the JS ecosystem, Node.js will
-in addition attempt to determine the CommonJS named exports of every imported
+For better compatibility with existing usage in the JS ecosystem, Node.js
+in addition attempts to determine the CommonJS named exports of every imported
 CommonJS module to provide them as separate ES module exports using a static
 analysis process.
 
-For example, a CommonJS module written:
+For example, consider a CommonJS module written:
 
 ```js
 // cjs.cjs
 exports.name = 'exported';
 ```
 
-will support named imports in ES modules:
+The preceding module supports named imports in ES modules:
 
 <!-- eslint-disable no-duplicate-imports -->
 ```js
@@ -348,8 +348,8 @@ directly on the ES module namespace when the module is imported.
 Live binding updates or new exports added to `module.exports` are not detected
 for these named exports.
 
-The detection of named exports is based on common syntax patterns but will not
-always correctly detect named exports, in these cases using the default
+The detection of named exports is based on common syntax patterns but does not
+always correctly detect named exports. In these cases, using the default
 import form described above can be a better option.
 
 Named exports detection covers many common export patterns, reexport patterns
@@ -358,7 +358,7 @@ semantics implemented.
 
 ## Builtin modules
 
-[Core modules][] will provide named exports of their public API. A
+[Core modules][] provide named exports of their public API. A
 default export is also provided which is the value of the CommonJS exports.
 The default export can be used for, among other things, modifying the named
 exports. Named exports of builtin modules are updated only by calling
@@ -415,11 +415,11 @@ and are loaded using the CJS loader. [WHATWG JSON modules specification][] are
 still being standardized, and are experimentally supported by including the
 additional flag `--experimental-json-modules` when running Node.js.
 
-When the `--experimental-json-modules` flag is included both the
-`commonjs` and `module` mode will use the new experimental JSON
-loader. The imported JSON only exposes a `default`, there is no
+When the `--experimental-json-modules` flag is included, both the
+`commonjs` and `module` mode use the new experimental JSON
+loader. The imported JSON only exposes a `default`. There is no
 support for named exports. A cache entry is created in the CommonJS
-cache, to avoid duplication. The same object will be returned in
+cache to avoid duplication. The same object is returned in
 CommonJS if the JSON module has already been imported from the
 same path.
 
@@ -523,7 +523,7 @@ The `conditions` property on the `context` is an array of conditions for
 for looking up conditional mappings elsewhere or to modify the list when calling
 the default resolution logic.
 
-The current [package exports conditions][Conditional Exports] will always be in
+The current [package exports conditions][Conditional Exports] are always in
 the `context.conditions` array passed into the hook. To guarantee _default
 Node.js module specifier resolution behavior_ when calling `defaultResolve`, the
 `context.conditions` array passed to it _must_ include _all_ elements of the
@@ -593,7 +593,7 @@ Note: These types all correspond to classes defined in ECMAScript.
 * The specific [`TypedArray`][] object is a [`Uint8Array`][].
 
 Note: If the source value of a text-based format (i.e., `'json'`, `'module'`) is
-not a string, it will be converted to a string using [`util.TextDecoder`][].
+not a string, it is converted to a string using [`util.TextDecoder`][].
 
 ```js
 /**
@@ -704,15 +704,15 @@ export async function transformSource(source, context, defaultTransformSource) {
 
 * Returns: {string}
 
-Sometimes it can be necessary to run some code inside of the same global scope
-that the application will run in. This hook allows to return a string that will
-be ran as sloppy-mode script on startup.
+Sometimes it might be necessary to run some code inside of the same global scope
+that the application runs in. This hook allows the return of a string that is
+run as sloppy-mode script on startup.
 
 Similar to how CommonJS wrappers work, the code runs in an implicit function
 scope. The only argument is a `require`-like function that can be used to load
 builtins like "fs": `getBuiltin(request: string)`.
 
-If the code needs more advanced `require` features, it will have to construct
+If the code needs more advanced `require` features, it has to construct
 its own `require` using  `module.createRequire()`.
 
 ```js
@@ -807,13 +807,9 @@ import { VERSION } from 'https://coffeescript.org/browser-compiler-modern/coffee
 console.log(VERSION);
 ```
 
-With this loader, running:
-
-```bash
-node --experimental-loader ./https-loader.mjs ./main.mjs
-```
-
-Will print the current version of CoffeeScript per the module at the URL in
+With the preceding loader, running
+`node --experimental-loader ./https-loader.mjs ./main.mjs`
+prints the current version of CoffeeScript per the module at the URL in
 `main.mjs`.
 
 #### Transpiler loader
@@ -894,13 +890,9 @@ console.log "Brought to you by Node.js version #{version}"
 export scream = (str) -> str.toUpperCase()
 ```
 
-With this loader, running:
-
-```console
-node --experimental-loader ./coffeescript-loader.mjs main.coffee
-```
-
-Will cause `main.coffee` to be turned into JavaScript after its source code is
+With the preceding loader, running
+`node --experimental-loader ./coffeescript-loader.mjs main.coffee`
+causes `main.coffee` to be turned into JavaScript after its source code is
 loaded from disk but before Node.js executes it; and so on for any `.coffee`,
 `.litcoffee` or `.coffee.md` files referenced via `import` statements of any
 loaded file.
@@ -949,8 +941,7 @@ The resolver can throw the following errors:
 * _Package Import Not Defined_: Package imports do not define the specifier.
 * _Module Not Found_: The package or module requested does not exist.
 
-<details>
-<summary>Resolver algorithm specification</summary>
+### Resolver Algorithm Specification
 
 **ESM_RESOLVE**(_specifier_, _parentURL_)
 
@@ -1204,8 +1195,6 @@ _internal_, _conditions_)
 >    1. Throw an _Invalid Package Configuration_ error.
 > 1. Return the parsed JSON source of the file at _pjsonURL_.
 
-</details>
-
 ### Customizing ESM specifier resolution algorithm
 
 The current specifier resolution does not support all default behavior of
@@ -1229,36 +1218,36 @@ success!
 ```
 
 <!-- Note: The cjs-module-lexer link should be kept in-sync with the deps version -->
-[CommonJS]: modules.html
-[Conditional exports]: packages.html#packages_conditional_exports
+[6.1.7 Array Index]: https://tc39.es/ecma262/#integer-index
+[CommonJS]: modules.md
+[Conditional exports]: packages.md#packages_conditional_exports
+[Core modules]: modules.md#modules_core_modules
 [Dynamic `import()`]: https://wiki.developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#Dynamic_Imports
-[ECMAScript-modules implementation]: https://github.com/nodejs/modules/blob/master/doc/plan-for-new-modules-implementation.md
 [ECMAScript Top-Level `await` proposal]: https://github.com/tc39/proposal-top-level-await/
+[ECMAScript-modules implementation]: https://github.com/nodejs/modules/blob/master/doc/plan-for-new-modules-implementation.md
 [ES Module Integration Proposal for Web Assembly]: https://github.com/webassembly/esm-integration
 [Node.js EP for ES Modules]: https://github.com/nodejs/node-eps/blob/master/002-es-modules.md
 [Terminology]: #esm_terminology
+[Top-Level Await]: https://github.com/tc39/proposal-top-level-await
 [WHATWG JSON modules specification]: https://html.spec.whatwg.org/#creating-a-json-module-script
+[`"exports"`]: packages.md#packages_exports
+[`"type"`]: packages.md#packages_type
+[`ArrayBuffer`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
+[`SharedArrayBuffer`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
+[`TypedArray`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
+[`Uint8Array`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array
 [`data:` URLs]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs
 [`export`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export
 [`import()`]: #esm_import_expressions
 [`import.meta.url`]: #esm_import_meta
 [`import`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import
-[`module.createRequire()`]: module.html#module_module_createrequire_filename
-[`module.syncBuiltinESMExports()`]: module.html#module_module_syncbuiltinesmexports
+[`module.createRequire()`]: module.md#module_module_createrequire_filename
+[`module.syncBuiltinESMExports()`]: module.md#module_module_syncbuiltinesmexports
+[`package.json`]: packages.md#packages_node_js_package_json_field_definitions
 [`transformSource` hook]: #esm_transformsource_source_context_defaulttransformsource
-[`ArrayBuffer`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
-[`SharedArrayBuffer`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
 [`string`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String
-[`TypedArray`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
-[`Uint8Array`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array
-[`util.TextDecoder`]: util.html#util_class_util_textdecoder
+[`util.TextDecoder`]: util.md#util_class_util_textdecoder
 [cjs-module-lexer]: https://github.com/guybedford/cjs-module-lexer/tree/0.3.1
 [special scheme]: https://url.spec.whatwg.org/#special-scheme
 [the official standard format]: https://tc39.github.io/ecma262/#sec-modules
 [transpiler loader example]: #esm_transpiler_loader
-[6.1.7 Array Index]: https://tc39.es/ecma262/#integer-index
-[Top-Level Await]: https://github.com/tc39/proposal-top-level-await
-[Core modules]: modules.html#modules_core_modules
-[`package.json`]: packages.html#packages_node_js_package_json_field_definitions
-[`"exports"`]: packages.html#packages_exports
-[`"type"`]: packages.html#packages_type
