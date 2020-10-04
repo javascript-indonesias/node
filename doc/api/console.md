@@ -418,12 +418,16 @@ added: v0.1.104
 Starts a timer that can be used to compute the duration of an operation. Timers
 are identified by a unique `label`. Use the same `label` when calling
 [`console.timeEnd()`][] to stop the timer and output the elapsed time in
-milliseconds to `stdout`. Timer durations are accurate to the sub-millisecond.
+suitable time units to `stdout`. For example, if the elapsed
+time is 3869ms, `console.timeEnd()` displays "3.869s".
 
 ### `console.timeEnd([label])`
 <!-- YAML
 added: v0.1.104
 changes:
+  - version: v13.0.0
+    pr-url: https://github.com/nodejs/node/pull/29251
+    description: The elapsed time is diplayed with a suitable time unit.
   - version: v6.0.0
     pr-url: https://github.com/nodejs/node/pull/5901
     description: This method no longer supports multiple calls that don’t map

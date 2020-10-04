@@ -2917,6 +2917,9 @@ If `position` is an integer, the file position will remain unchanged.
 
 The callback is given the three arguments, `(err, bytesRead, buffer)`.
 
+If the file is not modified concurrently, the end-of-file is reached when the
+number of bytes read is zero.
+
 If this method is invoked as its [`util.promisify()`][]ed version, it returns
 a `Promise` for an `Object` with `bytesRead` and `buffer` properties.
 
@@ -3522,8 +3525,6 @@ changes:
                  it will emit a deprecation warning with id DEP0013.
 -->
 
-> Stability: 1 - Recursive removal is experimental.
-
 * `path` {string|Buffer|URL}
 * `options` {Object}
   * `maxRetries` {integer} If an `EBUSY`, `EMFILE`, `ENFILE`, `ENOTEMPTY`, or
@@ -3545,6 +3546,12 @@ to the completion callback.
 
 Using `fs.rmdir()` on a file (not a directory) results in an `ENOENT` error on
 Windows and an `ENOTDIR` error on POSIX.
+
+Setting `recursive` to `true` results in behavior similar to the Unix command
+`rm -rf`: an error will not be raised for paths that do not exist, and paths
+that represent files will be deleted. The permissive behavior of the
+`recursive` option is deprecated, `ENOTDIR` and `ENOENT` will be thrown in
+the future.
 
 ## `fs.rmdirSync(path[, options])`
 <!-- YAML
@@ -3569,8 +3576,6 @@ changes:
                  `file:` protocol. Support is currently still *experimental*.
 -->
 
-> Stability: 1 - Recursive removal is experimental.
-
 * `path` {string|Buffer|URL}
 * `options` {Object}
   * `maxRetries` {integer} If an `EBUSY`, `EMFILE`, `ENFILE`, `ENOTEMPTY`, or
@@ -3589,6 +3594,12 @@ Synchronous rmdir(2). Returns `undefined`.
 
 Using `fs.rmdirSync()` on a file (not a directory) results in an `ENOENT` error
 on Windows and an `ENOTDIR` error on POSIX.
+
+Setting `recursive` to `true` results in behavior similar to the Unix command
+`rm -rf`: an error will not be raised for paths that do not exist, and paths
+that represent files will be deleted. The permissive behavior of the
+`recursive` option is deprecated, `ENOTDIR` and `ENOENT` will be thrown in
+the future.
 
 ## `fs.stat(path[, options], callback)`
 <!-- YAML
@@ -4669,6 +4680,9 @@ Following successful read, the `Promise` is resolved with an object with a
 `bytesRead` property specifying the number of bytes read, and a `buffer`
 property that is a reference to the passed in `buffer` argument.
 
+If the file is not modified concurrently, the end-of-file is reached when the
+number of bytes read is zero.
+
 #### `filehandle.read(options)`
 <!-- YAML
 added:
@@ -5474,6 +5488,12 @@ no arguments upon success.
 Using `fsPromises.rmdir()` on a file (not a directory) results in the
 `Promise` being rejected with an `ENOENT` error on Windows and an `ENOTDIR`
 error on POSIX.
+
+Setting `recursive` to `true` results in behavior similar to the Unix command
+`rm -rf`: an error will not be raised for paths that do not exist, and paths
+that represent files will be deleted. The permissive behavior of the
+`recursive` option is deprecated, `ENOTDIR` and `ENOENT` will be thrown in
+the future.
 
 ### `fsPromises.stat(path[, options])`
 <!-- YAML
