@@ -93,6 +93,7 @@ void NativeModuleLoader::InitializeModuleCategories() {
 
 #if !HAVE_OPENSSL
       "crypto",
+      "crypto/promises",
       "https",
       "http2",
       "tls",
@@ -260,7 +261,7 @@ MaybeLocal<Function> NativeModuleLoader::LookupAndCompile(
     return {};
   }
 
-  std::string filename_s = id + std::string(".js");
+  std::string filename_s = std::string("node:") + id;
   Local<String> filename =
       OneByteString(isolate, filename_s.c_str(), filename_s.size());
   Local<Integer> line_offset = Integer::New(isolate, 0);
