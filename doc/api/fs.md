@@ -1923,12 +1923,12 @@ If `options` is a string, then it specifies the encoding.
 ## `fs.exists(path, callback)`
 <!-- YAML
 added: v0.0.2
+deprecated: v1.0.0
 changes:
   - version: v7.6.0
     pr-url: https://github.com/nodejs/node/pull/10739
     description: The `path` parameter can be a WHATWG `URL` object using
                  `file:` protocol. Support is currently still *experimental*.
-deprecated: v1.0.0
 -->
 
 > Stability: 0 - Deprecated: Use [`fs.stat()`][] or [`fs.access()`][] instead.
@@ -2158,6 +2158,10 @@ Synchronous fdatasync(2). Returns `undefined`.
 <!-- YAML
 added: v0.1.95
 changes:
+  - version: v10.5.0
+    pr-url: https://github.com/nodejs/node/pull/20220
+    description: Accepts an additional `options` object to specify whether
+                 the numeric values returned should be bigint.
   - version: v10.0.0
     pr-url: https://github.com/nodejs/node/pull/12562
     description: The `callback` parameter is no longer optional. Not passing
@@ -2166,10 +2170,6 @@ changes:
     pr-url: https://github.com/nodejs/node/pull/7897
     description: The `callback` parameter is no longer optional. Not passing
                  it will emit a deprecation warning with id DEP0013.
-  - version: v10.5.0
-    pr-url: https://github.com/nodejs/node/pull/20220
-    description: Accepts an additional `options` object to specify whether
-                 the numeric values returned should be bigint.
 -->
 
 * `fd` {integer}
@@ -2515,6 +2515,10 @@ Synchronous link(2). Returns `undefined`.
 <!-- YAML
 added: v0.1.30
 changes:
+  - version: v10.5.0
+    pr-url: https://github.com/nodejs/node/pull/20220
+    description: Accepts an additional `options` object to specify whether
+                 the numeric values returned should be bigint.
   - version: v10.0.0
     pr-url: https://github.com/nodejs/node/pull/12562
     description: The `callback` parameter is no longer optional. Not passing
@@ -2527,10 +2531,6 @@ changes:
     pr-url: https://github.com/nodejs/node/pull/7897
     description: The `callback` parameter is no longer optional. Not passing
                  it will emit a deprecation warning with id DEP0013.
-  - version: v10.5.0
-    pr-url: https://github.com/nodejs/node/pull/20220
-    description: Accepts an additional `options` object to specify whether
-                 the numeric values returned should be bigint.
 -->
 
 * `path` {string|Buffer|URL}
@@ -2550,14 +2550,14 @@ not the file that it refers to.
 <!-- YAML
 added: v0.1.30
 changes:
-  - version: v7.6.0
-    pr-url: https://github.com/nodejs/node/pull/10739
-    description: The `path` parameter can be a WHATWG `URL` object using `file:`
-                 protocol. Support is currently still *experimental*.
   - version: v10.5.0
     pr-url: https://github.com/nodejs/node/pull/20220
     description: Accepts an additional `options` object to specify whether
                  the numeric values returned should be bigint.
+  - version: v7.6.0
+    pr-url: https://github.com/nodejs/node/pull/10739
+    description: The `path` parameter can be a WHATWG `URL` object using `file:`
+                 protocol. Support is currently still *experimental*.
 -->
 
 * `path` {string|Buffer|URL}
@@ -2938,7 +2938,7 @@ changes:
      - v12.17.0
     pr-url: https://github.com/nodejs/node/pull/31402
     description: Options object can be passed in
-                 to make Buffer, offset, length and position optional
+                 to make Buffer, offset, length and position optional.
 -->
 * `fd` {integer}
 * `options` {Object}
@@ -3240,7 +3240,7 @@ changes:
      - v12.17.0
     pr-url: https://github.com/nodejs/node/pull/32460
     description: Options object can be passed in
-                 to make offset, length and position optional
+                 to make offset, length and position optional.
 -->
 
 * `fd` {integer}
@@ -3612,7 +3612,8 @@ added: REPLACEME
 
 * `path` {string|Buffer|URL}
 * `options` {Object}
-  * `force` don't error on nonexistent path
+  * `force` {boolean} When `true`, exceptions will be ignored if `path` does
+    not exist. **Default:** `false`.
   * `maxRetries` {integer} If an `EBUSY`, `EMFILE`, `ENFILE`, `ENOTEMPTY`, or
     `EPERM` error is encountered, Node.js will retry the operation with a linear
     backoff wait of `retryDelay` milliseconds longer on each try. This option
@@ -3637,7 +3638,8 @@ added: REPLACEME
 
 * `path` {string|Buffer|URL}
 * `options` {Object}
-  * `force` Ignore errors
+  * `force` {boolean} When `true`, exceptions will be ignored if `path` does
+    not exist. **Default:** `false`.
   * `maxRetries` {integer} If an `EBUSY`, `EMFILE`, `ENFILE`, `ENOTEMPTY`, or
     `EPERM` error is encountered, Node.js will retry the operation with a linear
     backoff wait of `retryDelay` milliseconds longer on each try. This option
@@ -3656,6 +3658,10 @@ utility). Returns `undefined`.
 <!-- YAML
 added: v0.0.2
 changes:
+  - version: v10.5.0
+    pr-url: https://github.com/nodejs/node/pull/20220
+    description: Accepts an additional `options` object to specify whether
+                 the numeric values returned should be bigint.
   - version: v10.0.0
     pr-url: https://github.com/nodejs/node/pull/12562
     description: The `callback` parameter is no longer optional. Not passing
@@ -3668,10 +3674,6 @@ changes:
     pr-url: https://github.com/nodejs/node/pull/7897
     description: The `callback` parameter is no longer optional. Not passing
                  it will emit a deprecation warning with id DEP0013.
-  - version: v10.5.0
-    pr-url: https://github.com/nodejs/node/pull/20220
-    description: Accepts an additional `options` object to specify whether
-                 the numeric values returned should be bigint.
 -->
 
 * `path` {string|Buffer|URL}
@@ -3769,14 +3771,14 @@ Stats {
 <!-- YAML
 added: v0.1.21
 changes:
-  - version: v7.6.0
-    pr-url: https://github.com/nodejs/node/pull/10739
-    description: The `path` parameter can be a WHATWG `URL` object using `file:`
-                 protocol. Support is currently still *experimental*.
   - version: v10.5.0
     pr-url: https://github.com/nodejs/node/pull/20220
     description: Accepts an additional `options` object to specify whether
                  the numeric values returned should be bigint.
+  - version: v7.6.0
+    pr-url: https://github.com/nodejs/node/pull/10739
+    description: The `path` parameter can be a WHATWG `URL` object using `file:`
+                 protocol. Support is currently still *experimental*.
 -->
 
 * `path` {string|Buffer|URL}
@@ -3791,15 +3793,15 @@ Synchronous stat(2).
 <!-- YAML
 added: v0.1.31
 changes:
+  - version: v12.0.0
+    pr-url: https://github.com/nodejs/node/pull/23724
+    description: If the `type` argument is left undefined, Node will autodetect
+                 `target` type and automatically select `dir` or `file`.
   - version: v7.6.0
     pr-url: https://github.com/nodejs/node/pull/10739
     description: The `target` and `path` parameters can be WHATWG `URL` objects
                  using `file:` protocol. Support is currently still
                  *experimental*.
-  - version: v12.0.0
-    pr-url: https://github.com/nodejs/node/pull/23724
-    description: If the `type` argument is left undefined, Node will autodetect
-                 `target` type and automatically select `dir` or `file`
 -->
 
 * `target` {string|Buffer|URL}
@@ -3839,15 +3841,15 @@ example/
 <!-- YAML
 added: v0.1.31
 changes:
+  - version: v12.0.0
+    pr-url: https://github.com/nodejs/node/pull/23724
+    description: If the `type` argument is left undefined, Node will autodetect
+                 `target` type and automatically select `dir` or `file`.
   - version: v7.6.0
     pr-url: https://github.com/nodejs/node/pull/10739
     description: The `target` and `path` parameters can be WHATWG `URL` objects
                  using `file:` protocol. Support is currently still
                  *experimental*.
-  - version: v12.0.0
-    pr-url: https://github.com/nodejs/node/pull/23724
-    description: If the `type` argument is left undefined, Node will autodetect
-                 `target` type and automatically select `dir` or `file`
 -->
 
 * `target` {string|Buffer|URL}
@@ -4240,7 +4242,7 @@ changes:
   - version: v10.10.0
     pr-url: https://github.com/nodejs/node/pull/22150
     description: The `buffer` parameter can now be any `TypedArray` or a
-                 `DataView`
+                 `DataView`.
   - version: v10.0.0
     pr-url: https://github.com/nodejs/node/pull/12562
     description: The `callback` parameter is no longer optional. Not passing
@@ -5555,7 +5557,8 @@ added: REPLACEME
 
 * `path` {string|Buffer|URL}
 * `options` {Object}
-  * `force` Ignore errors
+  * `force` {boolean} When `true`, exceptions will be ignored if `path` does
+    not exist. **Default:** `false`.
   * `maxRetries` {integer} If an `EBUSY`, `EMFILE`, `ENFILE`, `ENOTEMPTY`, or
     `EPERM` error is encountered, Node.js will retry the operation with a linear
     backoff wait of `retryDelay` milliseconds longer on each try. This option
@@ -5567,8 +5570,8 @@ added: REPLACEME
     retries. This option is ignored if the `recursive` option is not `true`.
     **Default:** `100`.
 
-Synchronously removes files and directories (modeled on the standard POSIX `rm`
-utility). Resolves the `Promise` with no arguments on success.
+Removes files and directories (modeled on the standard POSIX `rm` utility).
+Resolves the `Promise` with no arguments on success.
 
 ### `fsPromises.stat(path[, options])`
 <!-- YAML
