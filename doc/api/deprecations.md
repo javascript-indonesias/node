@@ -729,7 +729,7 @@ changes:
     pr-url: https://github.com/nodejs/node/pull/10116
     description: A deprecation code has been assigned.
   - version: v1.0.0
-    pr-url: https://github.com/iojs/io.js/pull/166
+    pr-url: https://github.com/nodejs/node/pull/166
     description: Documentation-only deprecation.
 -->
 
@@ -2143,6 +2143,9 @@ The `crypto._toBuf()` function was not designed to be used by modules outside
 of Node.js core and was removed.
 
 ### DEP0115: `crypto.prng()`, `crypto.pseudoRandomBytes()`, `crypto.rng()`
+
+<!--lint disable nodejs-yaml-comments -->
+
 <!-- YAML
 changes:
   - version: v11.0.0
@@ -2152,6 +2155,8 @@ changes:
     description: Added documentation-only deprecation
                  with `--pending-deprecation` support.
 -->
+
+<!--lint enable nodejs-yaml-comments -->
 
 Type: Documentation-only (supports [`--pending-deprecation`][])
 
@@ -2531,8 +2536,8 @@ purpose and is only available on CommonJS environment.
 <!-- YAML
 changes:
   - version:
-    - v12.19.0
     - v14.0.0
+    - v12.19.0
     pr-url: https://github.com/nodejs/node/pull/32499
     description: Documentation-only deprecation.
 -->
@@ -2654,6 +2659,20 @@ Type: Documentation-only
 
 The [`crypto.Certificate()` constructor][] is deprecated. Use
 [static methods of `crypto.Certificate()`][] instead.
+
+### DEP0XXX: `fs.rmdir(path, { recursive: true })`
+<!-- YAML
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/35579
+    description: Documentation-only deprecation.
+-->
+
+Type: Documentation-only
+
+In future versions of Node.js, `fs.rmdir(path, { recursive: true })` will throw
+on nonexistent paths, or when given a file as a target.
+Use `fs.rm(path, { recursive: true, force: true })` instead.
 
 [Legacy URL API]: url.md#url_legacy_url_api
 [NIST SP 800-38D]: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
