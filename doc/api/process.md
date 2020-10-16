@@ -1342,6 +1342,12 @@ The `process.getgroups()` method returns an array with the supplementary group
 IDs. POSIX leaves it unspecified if the effective group ID is included but
 Node.js ensures it always is.
 
+```js
+if (process.getgroups) {
+  console.log(process.getgroups()); // [ 16, 21, 297 ]
+}
+```
+
 This function is only available on POSIX platforms (i.e. not Windows or
 Android).
 
@@ -1457,7 +1463,7 @@ Use care when dropping privileges:
 
 ```js
 console.log(process.getgroups());         // [ 0 ]
-process.initgroups('bnoordhuis', 1000);   // switch user
+process.initgroups('nodeuser', 1000);     // switch user
 console.log(process.getgroups());         // [ 27, 30, 46, 1000, 0 ]
 process.setgid(1000);                     // drop root gid
 console.log(process.getgroups());         // [ 27, 30, 46, 1000 ]
@@ -1763,8 +1769,7 @@ tarball.
 
 `process.release` contains the following properties:
 
-* `name` {string} A value that will always be `'node'` for Node.js. For
-  legacy io.js releases, this will be `'io.js'`.
+* `name` {string} A value that will always be `'node'`.
 * `sourceUrl` {string} an absolute URL pointing to a _`.tar.gz`_ file containing
   the source code of the current release.
 * `headersUrl`{string} an absolute URL pointing to a _`.tar.gz`_ file containing
