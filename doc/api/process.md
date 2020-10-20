@@ -1913,9 +1913,12 @@ Additional documentation is available in the [report documentation][].
 ### `process.report.reportOnFatalError`
 <!-- YAML
 added: v11.12.0
+changes:
+  - version:
+     - REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/35654
+    description: This API is no longer experimental.
 -->
-
-> Stability: 1 - Experimental
 
 * {boolean}
 
