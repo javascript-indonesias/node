@@ -72,6 +72,8 @@
       'lib/net.js',
       'lib/os.js',
       'lib/path.js',
+      'lib/path/posix.js',
+      'lib/path/win32.js',
       'lib/perf_hooks.js',
       'lib/process.js',
       'lib/punycode.js',
@@ -97,6 +99,7 @@
       'lib/tty.js',
       'lib/url.js',
       'lib/util.js',
+      'lib/util/types.js',
       'lib/v8.js',
       'lib/vm.js',
       'lib/wasi.js',
@@ -1360,6 +1363,9 @@
           'defines': [
             'HAVE_OPENSSL=1',
           ],
+          'sources': [
+            'test/cctest/test_node_crypto.cc',
+          ]
         }],
         [ 'node_use_openssl=="true" and experimental_quic==1', {
           'defines': [
