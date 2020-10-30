@@ -1282,9 +1282,10 @@ This is not used in Node.js and is provided purely for completeness.
 added: v14.5.0
 -->
 
-* Type: {boolean} Always returns `false`.
+* Type: {boolean} True for Node.js internal events, false otherwise.
 
-This is not used in Node.js and is provided purely for completeness.
+Currently only `AbortSignal`s' `"abort"` event is fired with `isTrusted`
+set to `true`.
 
 #### `event.preventDefault()`
 <!-- YAML
@@ -1524,6 +1525,8 @@ added: v14.5.0
 -->
 
 * `type` {string}
+
+* Returns: {EventTarget} this
 
 Node.js-specific extension to the `EventTarget` class. If `type` is specified,
 removes all registered listeners for `type`, otherwise removes all registered
