@@ -59,7 +59,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__VERSION__ = '1.5.0'
+__VERSION__ = '1.5.1'
 
 try:
   xrange          # Python 2
@@ -77,6 +77,7 @@ Syntax: cpplint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit]
                    [--recursive]
                    [--exclude=path]
                    [--extensions=hpp,cpp,...]
+                   [--includeorder=default|standardcfirst]
                    [--quiet]
                    [--version]
         <file> [file] ...
@@ -208,6 +209,15 @@ Syntax: cpplint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit]
 
       Examples:
         --extensions=%s
+
+    includeorder=default|standardcfirst
+      For the build/include_order rule, the default is to blindly assume angle
+      bracket includes with file extension are c-system-headers (default),
+      even knowing this will have false classifications.
+      The default is established at google.
+      standardcfirst means to instead use an allow-list of known c headers and
+      treat all others as separate group of "other system headers". The C headers
+      included are those of the C-standard lib and closely related ones.
 
     headers=x,y,...
       The header extensions that cpplint will treat as .h in checks. Values are
@@ -550,7 +560,7 @@ _C_HEADERS = frozenset([
     'uchar.h',
     'wchar.h',
     'wctype.h',
-    # POSIX C headers
+    # additional POSIX C headers
     'aio.h',
     'arpa/inet.h',
     'cpio.h',
@@ -594,7 +604,7 @@ _C_HEADERS = frozenset([
     'utime.h',
     'utmpx.h',
     'wordexp.h',
-    # GNUlib headers
+    # additional GNUlib headers
     'a.out.h',
     'aliases.h',
     'alloca.h',
@@ -626,11 +636,77 @@ _C_HEADERS = frozenset([
     'shadow.h',
     'sysexits.h',
     'ttyent.h',
+    # Additional linux glibc headers
+    'dlfcn.h',
+    'elf.h',
+    'features.h',
+    'gconv.h',
+    'gnu-versions.h',
+    'lastlog.h',
+    'libio.h',
+    'link.h',
+    'malloc.h',
+    'memory.h',
+    'netash/ash.h',
+    'netatalk/at.h',
+    'netax25/ax25.h',
+    'neteconet/ec.h',
+    'netipx/ipx.h',
+    'netiucv/iucv.h',
+    'netpacket/packet.h',
+    'netrom/netrom.h',
+    'netrose/rose.h',
+    'nfs/nfs.h',
+    'nl_types.h',
+    'nss.h',
+    're_comp.h',
+    'regexp.h',
+    'sched.h',
+    'sgtty.h',
+    'stab.h',
+    'stdc-predef.h',
+    'stdio_ext.h',
+    'syscall.h',
+    'termio.h',
+    'thread_db.h',
+    'ucontext.h',
+    'ustat.h',
+    'utmp.h',
+    'values.h',
+    'wait.h',
+    'xlocale.h',
     # Hardware specific headers
     'arm_neon.h',
     'emmintrin.h',
     'xmmintin.h',
     ])
+
+# Folders of C libraries so commonly used in C++,
+# that they have parity with standard C libraries.
+C_STANDARD_HEADER_FOLDERS = frozenset([
+    # standard C library
+    "sys",
+    # glibc for linux
+    "arpa",
+    "asm-generic",
+    "bits",
+    "gnu",
+    "net",
+    "netinet",
+    "protocols",
+    "rpc",
+    "rpcsvc",
+    "scsi",
+    # linux kernel header
+    "drm",
+    "linux",
+    "misc",
+    "mtd",
+    "rdma",
+    "sound",
+    "video",
+    "xen",
+  ])
 
 # Type names
 _TYPES = re.compile(
@@ -775,6 +851,9 @@ _quiet = False
 # This is set by --linelength flag.
 _line_length = 80
 
+# This allows to use different include order rule than default
+_include_order = "default"
+
 try:
   unicode
 except NameError:
@@ -817,6 +896,15 @@ def ProcessHppHeadersOption(val):
     _hpp_headers = {ext.strip() for ext in val.split(',')}
   except ValueError:
     PrintUsage('Header extensions must be comma separated list.')
+
+def ProcessIncludeOrderOption(val):
+  if val is None or val == "default":
+    pass
+  elif val == "standardcfirst":
+    global _include_order
+    _include_order = val
+  else:
+    PrintUsage('Invalid includeorder value %s. Expected default|standardcfirst')
 
 def IsHeaderExtension(file_extension):
   return file_extension in GetHeaderExtensions()
@@ -4929,13 +5017,14 @@ def _DropCommonSuffixes(filename):
   return os.path.splitext(filename)[0]
 
 
-def _ClassifyInclude(fileinfo, include, is_system):
+def _ClassifyInclude(fileinfo, include, used_angle_brackets, include_order="default"):
   """Figures out what kind of header 'include' is.
 
   Args:
     fileinfo: The current file cpplint is running over. A FileInfo instance.
     include: The path to a #included file.
-    is_system: True if the #include used <> rather than "".
+    used_angle_brackets: True if the #include used <> rather than "".
+    include_order: "default" or other value allowed in program arguments
 
   Returns:
     One of the _XXX_HEADER constants.
@@ -4945,7 +5034,7 @@ def _ClassifyInclude(fileinfo, include, is_system):
     _C_SYS_HEADER
     >>> _ClassifyInclude(FileInfo('foo/foo.cc'), 'string', True)
     _CPP_SYS_HEADER
-    >>> _ClassifyInclude(FileInfo('foo/foo.cc'), 'foo/foo.h', True)
+    >>> _ClassifyInclude(FileInfo('foo/foo.cc'), 'foo/foo.h', True, "standardcfirst")
     _OTHER_SYS_HEADER
     >>> _ClassifyInclude(FileInfo('foo/foo.cc'), 'foo/foo.h', False)
     _LIKELY_MY_HEADER
@@ -4957,19 +5046,20 @@ def _ClassifyInclude(fileinfo, include, is_system):
   """
   # This is a list of all standard c++ header files, except
   # those already checked for above.
-  is_cpp_h = include in _CPP_HEADERS
+  is_cpp_header = include in _CPP_HEADERS
 
-  # Mark include as C header if in list or of type 'sys/*.h'.
-  is_c_h = include in _C_HEADERS or Search(r'sys\/.*\.h', include)
+  # Mark include as C header if in list or in a known folder for standard-ish C headers.
+  is_std_c_header = (include_order == "default") or (include in _C_HEADERS
+            # additional linux glibc header folders
+            or Search(r'(?:%s)\/.*\.h' % "|".join(C_STANDARD_HEADER_FOLDERS), include))
 
   # Headers with C++ extensions shouldn't be considered C system headers
-  if is_system and os.path.splitext(include)[1] in ['.hpp', '.hxx', '.h++']:
-    is_system = False
+  is_system = used_angle_brackets and not os.path.splitext(include)[1] in ['.hpp', '.hxx', '.h++']
 
   if is_system:
-    if is_cpp_h:
+    if is_cpp_header:
       return _CPP_SYS_HEADER
-    if is_c_h:
+    if is_std_c_header:
       return _C_SYS_HEADER
     else:
       return _OTHER_SYS_HEADER
@@ -5037,7 +5127,7 @@ def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
   match = _RE_PATTERN_INCLUDE.search(line)
   if match:
     include = match.group(2)
-    is_system = (match.group(1) == '<')
+    used_angle_brackets = (match.group(1) == '<')
     duplicate_line = include_state.FindHeader(include)
     if duplicate_line >= 0:
       error(filename, linenum, 'build/include', 4,
@@ -5078,7 +5168,7 @@ def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
       # track of the highest type seen, and complains if we see a
       # lower type after that.
       error_message = include_state.CheckNextIncludeOrder(
-          _ClassifyInclude(fileinfo, include, is_system))
+          _ClassifyInclude(fileinfo, include, used_angle_brackets, _include_order))
       if error_message:
         error(filename, linenum, 'build/include_order', 4,
               '%s. Should be: %s.h, c system, c++ system, other.' %
@@ -6527,6 +6617,8 @@ def ProcessConfigOverrides(filename):
             _root = os.path.join(os.path.dirname(cfg_file), val)
           elif name == 'headers':
             ProcessHppHeadersOption(val)
+          elif name == 'includeorder':
+            ProcessIncludeOrderOption(val)
           else:
             _cpplint_state.PrintError(
                 'Invalid configuration option (%s) in file %s\n' %
@@ -6693,6 +6785,7 @@ def ParseArguments(args):
                                                  'exclude=',
                                                  'recursive',
                                                  'headers=',
+                                                 'includeorder=',
                                                  'quiet'])
   except getopt.GetoptError:
     PrintUsage('Invalid arguments.')
@@ -6749,6 +6842,8 @@ def ParseArguments(args):
       ProcessHppHeadersOption(val)
     elif opt == '--recursive':
       recursive = True
+    elif opt == '--includeorder':
+      ProcessIncludeOrderOption(val)
 
   if not filenames:
     PrintUsage('No files were specified.')
