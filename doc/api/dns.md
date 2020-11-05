@@ -119,7 +119,7 @@ callbacks will be called with an error with code `ECANCELLED`.
 
 ### `resolver.setLocalAddress([ipv4][, ipv6])`
 <!-- YAML
-added: REPLACEME
+added: v15.1.0
 -->
 
 * `ipv4` {string} A string representation of an IPv4 address.
@@ -950,7 +950,7 @@ Here is an example of the result object:
     minttl: 60 } ]
 ```
 
-## `dnsPromises.resolveCaa(hostname)`
+### `dnsPromises.resolveCaa(hostname)`
 <!-- YAML
 added: v15.0.0
 -->
