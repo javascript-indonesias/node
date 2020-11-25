@@ -118,7 +118,9 @@ changes:
     - v12.19.0
     pr-url: https://github.com/nodejs/node/pull/33617
     description: Add `maxTotalSockets` option to agent constructor.
-  - version: v14.5.0
+  - version:
+      - v14.5.0
+      - v12.20.0
     pr-url: https://github.com/nodejs/node/pull/33278
     description: Add `scheduling` option to specify the free socket
                  scheduling strategy.
@@ -2336,7 +2338,7 @@ This can be overridden for servers and client requests by passing the
 <!-- YAML
 added: v0.3.6
 changes:
-  - version: REPLACEME
+  - version: v15.3.0
     pr-url: https://github.com/nodejs/node/pull/36048
     description: It is possible to abort a request with an AbortSignal.
   - version:
