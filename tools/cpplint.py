@@ -59,7 +59,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__VERSION__ = '1.5.2'
+__VERSION__ = '1.5.3'
 
 try:
   xrange          # Python 2
@@ -357,6 +357,13 @@ _ERROR_CATEGORIES = [
     'whitespace/tab',
     'whitespace/todo',
     ]
+
+# keywords to use with --outputs which generate stdout for machine processing
+_MACHINE_OUTPUTS = [
+  'junit',
+  'sed',
+  'gsed'
+]
 
 # These error categories are no longer enforced by cpplint, but for backwards-
 # compatibility they may still appear in NOLINT comments.
@@ -866,7 +873,7 @@ _repository = None
 # Files to exclude from linting. This is set by the --exclude flag.
 _excludes = None
 
-# Whether to suppress PrintInfo messages
+# Whether to supress all PrintInfo messages, UNRELATED to --quiet flag
 _quiet = False
 
 # The allowed line length of files.
@@ -1357,7 +1364,9 @@ class _CppLintState(object):
       self.PrintInfo('Total errors found: %d\n' % self.error_count)
 
   def PrintInfo(self, message):
-    if not _quiet and self.output_format != 'junit':
+    # _quiet does not represent --quiet flag.
+    # Hide infos from stdout to keep stdout pure for machine consumption
+    if not _quiet and self.output_format not in _MACHINE_OUTPUTS:
       sys.stdout.write(message)
 
   def PrintError(self, message):
@@ -6840,9 +6849,9 @@ def ParseArguments(args):
     if opt == '--version':
       PrintVersion()
     elif opt == '--output':
-      if val not in ('emacs', 'vs7', 'eclipse', 'junit'):
+      if val not in ('emacs', 'vs7', 'eclipse', 'junit', 'sed', 'gsed'):
         PrintUsage('The only allowed output formats are emacs, vs7, eclipse '
-                   'and junit.')
+                   'sed, gsed and junit.')
       output_format = val
     elif opt == '--quiet':
       quiet = True
