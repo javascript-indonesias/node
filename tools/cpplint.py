@@ -59,7 +59,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__VERSION__ = '1.5.3'
+__VERSION__ = '1.5.4'
 
 try:
   xrange          # Python 2
@@ -1873,7 +1873,7 @@ def FindNextMultiLineCommentEnd(lines, lineix):
 
 def RemoveMultiLineCommentsFromRange(lines, begin, end):
   """Clears a range of lines for multi-line comments."""
-  # Having // dummy comments makes the lines non-empty, so we will not get
+  # Having // <empty> comments makes the lines non-empty, so we will not get
   # unnecessary blank line warnings later in the code.
   for i in range(begin, end):
     lines[i] = '/**/'
@@ -2247,7 +2247,7 @@ def CheckForCopyright(filename, lines, error):
   """Logs an error if no Copyright message appears at the top of the file."""
 
   # We'll say it should occur by line 10. Don't forget there's a
-  # dummy line at the front.
+  # placeholder line at the front.
   for line in xrange(1, min(len(lines), 11)):
     if re.search(r'Copyright', lines[line], re.I): break
   else:                       # means no copyright line was found
@@ -3805,9 +3805,10 @@ def CheckSpacing(filename, clean_lines, linenum, nesting_state, error):
   # get rid of comments and strings
   line = clean_lines.elided[linenum]
 
-  # You shouldn't have spaces before your brackets, except maybe after
-  # 'delete []', 'return []() {};', or 'auto [abc, ...] = ...;'.
-  if Search(r'\w\s+\[', line) and not Search(r'(?:auto&?|delete|return)\s+\[', line):
+  # You shouldn't have spaces before your brackets, except for C++11 attributes
+  # or maybe after 'delete []', 'return []() {};', or 'auto [abc, ...] = ...;'.
+  if (Search(r'\w\s+\[(?!\[)', line) and
+      not Search(r'(?:auto&?|delete|return)\s+\[', line)):
     error(filename, linenum, 'whitespace/braces', 5,
           'Extra space before [')
 
