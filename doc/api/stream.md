@@ -1938,7 +1938,7 @@ method.
 #### `new stream.Writable([options])`
 <!-- YAML
 changes:
-  - version: REPLACEME
+  - version: v15.5.0
     pr-url: https://github.com/nodejs/node/pull/36431
     description: support passing in an AbortSignal.
   - version: v14.0.0
@@ -2301,7 +2301,7 @@ constructor and implement the [`readable._read()`][] method.
 #### `new stream.Readable([options])`
 <!-- YAML
 changes:
-  - version: REPLACEME
+  - version: v15.5.0
     pr-url: https://github.com/nodejs/node/pull/36431
     description: support passing in an AbortSignal.
   - version: v14.0.0
@@ -2380,7 +2380,7 @@ Calling `abort` on the `AbortController` corresponding to the passed
 on the readable created.
 
 ```js
-const fs = require('fs');
+const { Readable } = require('stream');
 const controller = new AbortController();
 const read = new Readable({
   read(size) {
