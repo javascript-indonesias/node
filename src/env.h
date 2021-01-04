@@ -343,6 +343,7 @@ constexpr size_t kFsStatsBufferLength =
   V(options_string, "options")                                                 \
   V(order_string, "order")                                                     \
   V(output_string, "output")                                                   \
+  V(overlapped_string, "overlapped")                                           \
   V(parse_error_string, "Parse Error")                                         \
   V(password_string, "password")                                               \
   V(path_string, "path")                                                       \
@@ -1232,6 +1233,14 @@ class Environment : public MemoryRetainer {
   inline void SetProtoMethodNoSideEffect(v8::Local<v8::FunctionTemplate> that,
                                          const char* name,
                                          v8::FunctionCallback callback);
+
+  inline void SetConstructorFunction(v8::Local<v8::Object> that,
+                          const char* name,
+                          v8::Local<v8::FunctionTemplate> tmpl);
+
+  inline void SetConstructorFunction(v8::Local<v8::Object> that,
+                          v8::Local<v8::String> name,
+                          v8::Local<v8::FunctionTemplate> tmpl);
 
   void AtExit(void (*cb)(void* arg), void* arg);
   void RunAtExitCallbacks();
