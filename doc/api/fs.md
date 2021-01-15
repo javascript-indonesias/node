@@ -2578,6 +2578,10 @@ not the file that it refers to.
 <!-- YAML
 added: v0.1.30
 changes:
+  - version: v15.3.0
+    pr-url: https://github.com/nodejs/node/pull/33716
+    description: Accepts a `throwIfNoEntry` option to specify whether
+                 an exception should be thrown if the entry does not exist.
   - version: v10.5.0
     pr-url: https://github.com/nodejs/node/pull/20220
     description: Accepts an additional `options` object to specify whether
@@ -2931,7 +2935,7 @@ changes:
 * `buffer` {Buffer|TypedArray|DataView}
 * `offset` {integer}
 * `length` {integer}
-* `position` {integer}
+* `position` {integer|bigint}
 * `callback` {Function}
   * `err` {Error}
   * `bytesRead` {integer}
@@ -2976,7 +2980,7 @@ changes:
   * `buffer` {Buffer|TypedArray|DataView} **Default:** `Buffer.alloc(16384)`
   * `offset` {integer} **Default:** `0`
   * `length` {integer} **Default:** `buffer.length`
-  * `position` {integer} **Default:** `null`
+  * `position` {integer|bigint} **Default:** `null`
 * `callback` {Function}
   * `err` {Error}
   * `bytesRead` {integer}
@@ -3273,7 +3277,7 @@ changes:
 * `buffer` {Buffer|TypedArray|DataView}
 * `offset` {integer}
 * `length` {integer}
-* `position` {integer}
+* `position` {integer|bigint}
 * Returns: {number}
 
 Returns the number of `bytesRead`.
@@ -3300,7 +3304,7 @@ changes:
 * `options` {Object}
   * `offset` {integer} **Default:** `0`
   * `length` {integer} **Default:** `buffer.length`
-  * `position` {integer} **Default:** `null`
+  * `position` {integer|bigint} **Default:** `null`
 * Returns: {number}
 
 Returns the number of `bytesRead`.
@@ -3823,6 +3827,10 @@ Stats {
 <!-- YAML
 added: v0.1.21
 changes:
+  - version: v15.3.0
+    pr-url: https://github.com/nodejs/node/pull/33716
+    description: Accepts a `throwIfNoEntry` option to specify whether
+                 an exception should be thrown if the entry does not exist.
   - version: v10.5.0
     pr-url: https://github.com/nodejs/node/pull/20220
     description: Accepts an additional `options` object to specify whether
