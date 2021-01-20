@@ -143,8 +143,14 @@ changes:
     the [initial delay](net.md#net_socket_setkeepalive_enable_initialdelay)
     for TCP Keep-Alive packets. Ignored when the
     `keepAlive` option is `false` or `undefined`. **Default:** `1000`.
-  * `maxSockets` {number} Maximum number of sockets to allow per
-    host. Each request will use a new socket until the maximum is reached.
+  * `maxSockets` {number} Maximum number of sockets to allow per host.
+     If the same host opens multiple concurrent connections, each request
+     will use new socket until the `maxSockets` value is reached.
+     If the host attempts to open more connections than `maxSockets`,
+     the additional requests will enter into a pending request queue, and
+     will enter active connection state when an existing connection terminates.
+     This makes sure there are at most `maxSockets` active connections at
+     any point in time, from a given host.
     **Default:** `Infinity`.
   * `maxTotalSockets` {number} Maximum number of sockets allowed for
     all hosts in total. Each request will use a new socket
@@ -1296,7 +1302,7 @@ the client.
 If the timeout expires, the server responds with status 408 without
 forwarding the request to the request listener and then closes the connection.
 
-It must be set to a non-zero value (e.g. 120 seconds) to proctect against
+It must be set to a non-zero value (e.g. 120 seconds) to protect against
 potential Denial-of-Service attacks in case the server is deployed without a
 reverse proxy in front.
 
@@ -1591,6 +1597,15 @@ Removes a header that's queued for implicit sending.
 ```js
 response.removeHeader('Content-Encoding');
 ```
+
+### `response.req`
+<!-- YAML
+added: REPLACEME
+-->
+
+* {http.IncomingMessage}
+
+A reference to the original HTTP `request` object.
 
 ### `response.sendDate`
 <!-- YAML

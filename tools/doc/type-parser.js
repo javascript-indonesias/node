@@ -40,6 +40,8 @@ const customTypesMap = {
   'WebAssembly.Instance':
     `${jsDocPrefix}Reference/Global_Objects/WebAssembly/Instance`,
 
+  'Blob': 'buffer.html#buffer_class_blob',
+
   'BroadcastChannel':
     'worker_threads.html#worker_threads_class_broadcastchannel_' +
     'extends_eventtarget',
@@ -112,6 +114,10 @@ const customTypesMap = {
   'NodeScryptImportParams':
     'webcrypto.html#webcrypto_class_nodescryptimportparams',
   'NodeScryptParams': 'webcrypto.html#webcrypto_class_nodescryptparams',
+  'NodeEdKeyImportParams':
+    'webcrypto.html#webcrypto_class_nodeedkeyimportparams',
+  'NodeEdKeyGenParams':
+    'webcrypto.html#webcrypto_class_nodeedkeygenparams',
 
   'dgram.Socket': 'dgram.html#dgram_class_dgram_socket',
 
