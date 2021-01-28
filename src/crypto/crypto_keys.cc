@@ -939,7 +939,7 @@ void KeyObjectHandle::Init(const FunctionCallbackInfo<Value>& args) {
     break;
   }
   case kKeyTypePublic: {
-    CHECK_EQ(args.Length(), 4);
+    CHECK_EQ(args.Length(), 5);
 
     offset = 1;
     pkey = ManagedEVPPKey::GetPublicOrPrivateKeyFromJs(args, &offset);
@@ -1058,7 +1058,7 @@ void KeyObjectHandle::InitEDRaw(const FunctionCallbackInfo<Value>& args) {
       ? EVP_PKEY_new_raw_private_key
       : EVP_PKEY_new_raw_public_key;
 
-  int id = GetCurveFromName(*name);
+  int id = GetOKPCurveFromName(*name);
 
   switch (id) {
     case EVP_PKEY_X25519:
