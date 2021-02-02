@@ -1348,35 +1348,41 @@ keys.
 ### `keyObject.export([options])`
 <!-- YAML
 added: v11.6.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/37081
+    description: Added support for `'jwk'` format.
 -->
 
 * `options`: {Object}
-* Returns: {string | Buffer}
+* Returns: {string | Buffer | Object}
 
-For symmetric keys, this function allocates a `Buffer` containing the key
-material and ignores any options.
+For symmetric keys, the following encoding options can be used:
 
-For asymmetric keys, the `options` parameter is used to determine the export
-format.
+* `format`: {string} Must be `'buffer'` (default) or `'jwk'`.
 
 For public keys, the following encoding options can be used:
 
 * `type`: {string} Must be one of `'pkcs1'` (RSA only) or `'spki'`.
-* `format`: {string} Must be `'pem'` or `'der'`.
+* `format`: {string} Must be `'pem'`, `'der'`, or `'jwk'`.
 
 For private keys, the following encoding options can be used:
 
 * `type`: {string} Must be one of `'pkcs1'` (RSA only), `'pkcs8'` or
   `'sec1'` (EC only).
-* `format`: {string} Must be `'pem'` or `'der'`.
+* `format`: {string} Must be `'pem'`, `'der'`, or `'jwk'`.
 * `cipher`: {string} If specified, the private key will be encrypted with
    the given `cipher` and `passphrase` using PKCS#5 v2.0 password based
    encryption.
 * `passphrase`: {string | Buffer} The passphrase to use for encryption, see
   `cipher`.
 
-When PEM encoding was selected, the result will be a string, otherwise it will
-be a buffer containing the data encoded as DER.
+The result type depends on the selected encoding format, when PEM the
+result is a string, when DER it will be a buffer containing the data
+encoded as DER, when [JWK][] it will be an object.
+
+When [JWK][] encoding format was selected, all other encoding options are
+ignored.
 
 PKCS#1, SEC1, and PKCS#8 type keys can be encrypted by using a combination of
 the `cipher` and `format` options. The PKCS#8 `type` can be used with any
@@ -1804,6 +1810,16 @@ added: v15.6.0
 
 The issuer identification included in this certificate.
 
+### `x509.issuerCertificate`
+<!-- YAML
+added: REPLACEME
+-->
+
+* Type: {X509Certificate}
+
+The issuer certificate or `undefined` if the issuer certificate is not
+available.
+
 ### `x509.keyUsage`
 <!-- YAML
 added: v15.6.0
@@ -1963,7 +1979,7 @@ This property is deprecated. Please use `crypto.setFips()` and
 
 ### `crypto.checkPrime(candidate[, options, [callback]])`
 <!-- YAML
-added: REPLACEME
+added: v15.8.0
 -->
 
 * `candidate` {ArrayBuffer|SharedArrayBuffer|TypedArray|Buffer|DataView|bigint}
@@ -1985,7 +2001,7 @@ Checks the primality of the `candidate`.
 
 ### `crypto.checkPrimeSync(candidate[, options])`
 <!-- YAML
-added: REPLACEME
+added: v15.8.0
 -->
 
 * `candidate` {ArrayBuffer|SharedArrayBuffer|TypedArray|Buffer|DataView|bigint}
@@ -2738,7 +2754,7 @@ it will be a buffer containing the data encoded as DER.
 
 ### `crypto.generatePrime(size[, options[, callback]])`
 <!-- YAML
-added: REPLACEME
+added: v15.8.0
 -->
 
 * `size` {number} The size (in bits) of the prime to generate.
@@ -2757,13 +2773,18 @@ Generates a pseudo-random prime of `size` bits.
 If `options.safe` is `true`, the prime will be a safe prime -- that is,
 `(prime - 1) / 2` will also be a prime.
 
-If `options.add` and `options.rem` are set, the prime will satisfy the
-condition that `prime % add = rem`. The `options.rem` is ignored if
-`options.add` is not given. If `options.safe` is `true`, `options.add`
-is given, and `options.rem` is `undefined`, then the prime generated
-will satisfy the condition `prime % add = 3`. Otherwise if `options.safe`
-is `false` and `options.rem` is `undefined`, `options.add` will be
-ignored.
+The `options.add` and `options.rem` parameters can be used to enforce additional
+requirements, e.g., for Diffie-Hellman:
+
+* If `options.add` and `options.rem` are both set, the prime will satisfy the
+  condition that `prime % add = rem`.
+* If only `options.add` is set and `options.safe` is not `true`, the prime will
+  satisfy the condition that `prime % add = 1`.
+* If only `options.add` is set and `options.safe` is set to `true`, the prime
+  will instead satisfy the condition that `prime % add = 3`. This is necessary
+  because `prime % add = 1` for `options.add > 2` would contradict the condition
+  enforced by `options.safe`.
+* `options.rem` is ignored if `options.add` is not given.
 
 Both `options.add` and `options.rem` must be encoded as big-endian sequences
 if given as an `ArrayBuffer`, `SharedArrayBuffer`, `TypedArray`, `Buffer`, or
@@ -2775,7 +2796,7 @@ is provided.
 
 ### `crypto.generatePrimeSync(size[, options])`
 <!-- YAML
-added: REPLACEME
+added: v15.8.0
 -->
 
 * `size` {number} The size (in bits) of the prime to generate.
@@ -2790,15 +2811,20 @@ added: REPLACEME
 Generates a pseudo-random prime of `size` bits.
 
 If `options.safe` is `true`, the prime will be a safe prime -- that is,
-`(prime - 1)` / 2 will also be a prime.
+`(prime - 1) / 2` will also be a prime.
 
-If `options.add` and `options.rem` are set, the prime will satisfy the
-condition that `prime % add = rem`. The `options.rem` is ignored if
-`options.add` is not given. If `options.safe` is `true`, `options.add`
-is given, and `options.rem` is `undefined`, then the prime generated
-will satisfy the condition `prime % add = 3`. Otherwise if `options.safe`
-is `false` and `options.rem` is `undefined`, `options.add` will be
-ignored.
+The `options.add` and `options.rem` parameters can be used to enforce additional
+requirements, e.g., for Diffie-Hellman:
+
+* If `options.add` and `options.rem` are both set, the prime will satisfy the
+  condition that `prime % add = rem`.
+* If only `options.add` is set and `options.safe` is not `true`, the prime will
+  satisfy the condition that `prime % add = 1`.
+* If only `options.add` is set and `options.safe` is set to `true`, the prime
+  will instead satisfy the condition that `prime % add = 3`. This is necessary
+  because `prime % add = 1` for `options.add > 2` would contradict the condition
+  enforced by `options.safe`.
+* `options.rem` is ignored if `options.add` is not given.
 
 Both `options.add` and `options.rem` must be encoded as big-endian sequences
 if given as an `ArrayBuffer`, `SharedArrayBuffer`, `TypedArray`, `Buffer`, or
@@ -4335,6 +4361,7 @@ See the [list of SSL OP Flags][] for details.
 [Crypto constants]: #crypto_crypto_constants_1
 [HTML 5.2]: https://www.w3.org/TR/html52/changes.html#features-removed
 [HTML5's `keygen` element]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/keygen
+[JWK]: https://tools.ietf.org/html/rfc7517
 [NIST SP 800-131A]: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-131Ar1.pdf
 [NIST SP 800-132]: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-132.pdf
 [NIST SP 800-38D]: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf

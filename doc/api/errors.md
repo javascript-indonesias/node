@@ -919,6 +919,18 @@ added: v15.0.0
 
 Initialization of an asynchronous crypto operation failed.
 
+<a id="ERR_CRYPTO_JWK_UNSUPPORTED_CURVE"></a>
+### `ERR_CRYPTO_JWK_UNSUPPORTED_CURVE`
+
+Key's Elliptic Curve is not registered for use in the
+[JSON Web Key Elliptic Curve Registry][].
+
+<a id="ERR_CRYPTO_JWK_UNSUPPORTED_KEY_TYPE"></a>
+### `ERR_CRYPTO_JWK_UNSUPPORTED_KEY_TYPE`
+
+Key's Asymmetric Key Type is not registered for use in the
+[JSON Web Key Types Registry][].
+
 <a id="ERR_CRYPTO_OPERATION_FAILED"></a>
 ### `ERR_CRYPTO_OPERATION_FAILED`
 <!-- YAML
@@ -967,6 +979,14 @@ An unknown cipher was specified.
 An unknown Diffie-Hellman group name was given. See
 [`crypto.getDiffieHellman()`][] for a list of valid group names.
 
+<a id="ERR_CRYPTO_UNSUPPORTED_OPERATION"></a>
+### `ERR_CRYPTO_UNSUPPORTED_OPERATION`
+<!-- YAML
+added: v15.0.0
+-->
+
+An attempt to invoke an unsupported crypto operation was made.
+
 <a id="ERR_DLOPEN_FAILED"></a>
 ### `ERR_DLOPEN_FAILED`
 <!-- YAML
@@ -979,14 +999,6 @@ A call to `process.dlopen()` failed.
 ### `ERR_DIR_CLOSED`
 
 The [`fs.Dir`][] was previously closed.
-
-<a id"ERR_CRYPTO_UNSUPPORTED_OPERATION"></a>
-### `ERR_CRYPTO_UNSUPPORTED_OPERATION`
-<!-- YAML
-added: v15.0.0
--->
-
-An attempt to invoke an unsupported crypto operation was made.
 
 <a id="ERR_DIR_CONCURRENT_OPERATION"></a>
 ### `ERR_DIR_CONCURRENT_OPERATION`
@@ -1568,8 +1580,8 @@ which is not supported.
 <a id="ERR_INVALID_REPL_INPUT"></a>
 ### `ERR_INVALID_REPL_INPUT`
 
-The input may not be used in the [`REPL`][]. All prohibited inputs are
-documented in the [`REPL`][]'s documentation.
+The input may not be used in the [`REPL`][]. The conditions under which this
+error is used are described in the [`REPL`][] documentation.
 
 <a id="ERR_INVALID_RETURN_PROPERTY"></a>
 ### `ERR_INVALID_RETURN_PROPERTY`
@@ -2716,6 +2728,8 @@ The native call from `process.cpuUsage` could not be processed.
 
 [ES Module]: esm.md
 [ICU]: intl.md#intl_internationalization_support
+[JSON Web Key Elliptic Curve Registry]: https://www.iana.org/assignments/jose/jose.xhtml#web-key-elliptic-curve
+[JSON Web Key Types Registry]: https://www.iana.org/assignments/jose/jose.xhtml#web-key-types
 [Node.js error codes]: #nodejs-error-codes
 [RFC 7230 Section 3]: https://tools.ietf.org/html/rfc7230#section-3
 [Subresource Integrity specification]: https://www.w3.org/TR/SRI/#the-integrity-attribute
