@@ -655,16 +655,16 @@ performance.mark('meow');
 
 ## `perf_hooks.createHistogram([options])`
 <!-- YAML
-added: REPLACEME
+added: v15.9.0
 -->
 
 * `options` {Object}
   * `min` {number|bigint} The minimum recordable value. Must be an integer
-    value greater than 0. **Defaults**: `1`.
+    value greater than 0. **Default:** `1`.
   * `max` {number|bigint} The maximum recordable value. Must be an integer
-    value greater than `min`. **Defaults**: `Number.MAX_SAFE_INTEGER`.
+    value greater than `min`. **Default:** `Number.MAX_SAFE_INTEGER`.
   * `figures` {number} The number of accuracy digits. Must be a number between
-    `1` and `5`. **Defaults**: `3`.
+    `1` and `5`. **Default:** `3`.
 * Returns {RecordableHistogram}
 
 Returns a {RecordableHistogram}.
@@ -814,19 +814,19 @@ implement the `enable()` and `disable()` methods.
 
 ## Class: `RecordableHistogram extends Histogram`
 <!-- YAML
-added: REPLACEME
+added: v15.9.0
 -->
 
 ### `histogram.record(val)`
 <!-- YAML
-added: REPLACEME
+added: v15.9.0
 -->
 
 * `val` {number|bigint} The amount to record in the histogram.
 
 ### `histogram.recordDelta()`
 <!-- YAML
-added: REPLACEME
+added: v15.9.0
 -->
 
 Calculates the amount of time (in nanoseconds) that has passed since the
