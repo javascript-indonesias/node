@@ -773,7 +773,7 @@ The algorithms currently supported include:
 * `'NODE-ED25519'`<sup>1</sup>
 * `'NODE-ED448'`<sup>1</sup>
 
-<sup>1</sup> Non-standadrd Node.js extension
+<sup>1</sup> Non-standard Node.js extension
 
 ### `subtle.unwrapKey(format, wrappedKey, unwrappingKey, unwrapAlgo, unwrappedKeyAlgo, extractable, keyUsages)`
 <!-- YAML
@@ -1697,8 +1697,8 @@ added: v15.8.0
 
 * Type: {boolean}
 
-The `public` parameter is used to specify that the key is to be interpreted
-as a public key.
+The `public` parameter is used to specify that the `'raw'` format key is to be
+interpreted as a public key. **Default:** `false`.
 
 ### `NODE-SCRYPT` Algorithm
 <!-- YAML
