@@ -299,6 +299,7 @@ class WPTRunner {
 
     this.results = {};
     this.inProgress = new Set();
+    this.workers = new Map();
     this.unexpectedFailures = [];
   }
 
@@ -365,7 +366,7 @@ class WPTRunner {
       const worker = new Worker(workerPath, {
         execArgv: this.flags,
         workerData: {
-          filename: testFileName,
+          testRelativePath: relativePath,
           wptRunner: __filename,
           wptPath: this.path,
           initScript: this.initScript,
@@ -376,6 +377,7 @@ class WPTRunner {
           scriptsToRun,
         },
       });
+      this.workers.set(testFileName, worker);
 
       worker.on('message', (message) => {
         switch (message.type) {
@@ -389,6 +391,11 @@ class WPTRunner {
       });
 
       worker.on('error', (err) => {
+        if (!this.inProgress.has(testFileName)) {
+          // The test is already finished. Ignore errors that occur after it.
+          // This can happen normally, for example in timers tests.
+          return;
+        }
         this.fail(
           testFileName,
           {
@@ -496,6 +503,9 @@ class WPTRunner {
       this.resultCallback(filename, { status: 2, name: 'Unknown' });
     }
     this.inProgress.delete(filename);
+    // Always force termination of the worker. Some tests allocate resources
+    // that would otherwise keep it alive.
+    this.workers.get(filename).terminate();
   }
 
   addTestResult(filename, item) {
