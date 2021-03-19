@@ -1048,6 +1048,10 @@ Renames `oldPath` to `newPath`.
 <!-- YAML
 added: v10.0.0
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/37302
+    description: The `recursive` option is deprecated, using it triggers a
+                 deprecation warning.
   - version:
      - v13.3.0
      - v12.16.0
@@ -1072,7 +1076,7 @@ changes:
     option is not `true`. **Default:** `0`.
   * `recursive` {boolean} If `true`, perform a recursive directory removal. In
     recursive mode, errors are not reported if `path` does not exist, and
-    operations are retried on failure. **Default:** `false`.
+    operations are retried on failure. **Default:** `false`. **Deprecated**.
   * `retryDelay` {integer} The amount of time in milliseconds to wait between
     retries. This option is ignored if the `recursive` option is not `true`.
     **Default:** `100`.
@@ -1086,9 +1090,8 @@ error on POSIX.
 
 Setting `recursive` to `true` results in behavior similar to the Unix command
 `rm -rf`: an error will not be raised for paths that do not exist, and paths
-that represent files will be deleted. The permissive behavior of the
-`recursive` option is deprecated, `ENOTDIR` and `ENOENT` will be thrown in
-the future.
+that represent files will be deleted. The `recursive` option is deprecated,
+`ENOTDIR` and `ENOENT` will be thrown in the future.
 
 ### `fsPromises.rm(path[, options])`
 <!-- YAML
@@ -2333,6 +2336,10 @@ error `UV_ENOSYS`.
 <!-- YAML
 deprecated: v0.4.7
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/37460
+    description: The error returned may be an `AggregateError` if more than one
+                 error is returned.
   - version: v10.0.0
     pr-url: https://github.com/nodejs/node/pull/12562
     description: The `callback` parameter is no longer optional. Not passing
@@ -2346,7 +2353,7 @@ changes:
 * `path` {string|Buffer|URL}
 * `mode` {integer}
 * `callback` {Function}
-  * `err` {Error}
+  * `err` {Error|AggregateError}
 
 Changes the permissions on a symbolic link. No arguments other than a possible
 exception are given to the completion callback.
@@ -2809,6 +2816,10 @@ If `options.withFileTypes` is set to `true`, the `files` array will contain
 <!-- YAML
 added: v0.1.29
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/37460
+    description: The error returned may be an `AggregateError` if more than one
+                 error is returned.
   - version: v15.2.0
     pr-url: https://github.com/nodejs/node/pull/35911
     description: The options argument may include an AbortSignal to abort an
@@ -2840,7 +2851,7 @@ changes:
   * `flag` {string} See [support of file system `flags`][]. **Default:** `'r'`.
   * `signal` {AbortSignal} allows aborting an in-progress readFile
 * `callback` {Function}
-  * `err` {Error}
+  * `err` {Error|AggregateError}
   * `data` {string|Buffer}
 
 Asynchronously reads the entire contents of a file.
@@ -3135,6 +3146,10 @@ rename('oldFile.txt', 'newFile.txt', (err) => {
 <!-- YAML
 added: v0.0.2
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/37302
+    description: The `recursive` option is deprecated, using it triggers a
+                 deprecation warning.
   - version:
      - v13.3.0
      - v12.16.0
@@ -3171,7 +3186,7 @@ changes:
     option is not `true`. **Default:** `0`.
   * `recursive` {boolean} If `true`, perform a recursive directory removal. In
     recursive mode, errors are not reported if `path` does not exist, and
-    operations are retried on failure. **Default:** `false`.
+    operations are retried on failure. **Default:** `false`. **Deprecated**.
   * `retryDelay` {integer} The amount of time in milliseconds to wait between
     retries. This option is ignored if the `recursive` option is not `true`.
     **Default:** `100`.
@@ -3186,9 +3201,8 @@ Windows and an `ENOTDIR` error on POSIX.
 
 Setting `recursive` to `true` results in behavior similar to the Unix command
 `rm -rf`: an error will not be raised for paths that do not exist, and paths
-that represent files will be deleted. The permissive behavior of the
-`recursive` option is deprecated, `ENOTDIR` and `ENOENT` will be thrown in
-the future.
+that represent files will be deleted. The `recursive` option is deprecated,
+`ENOTDIR` and `ENOENT` will be thrown in the future.
 
 ### `fs.rm(path[, options], callback)`
 <!-- YAML
@@ -3384,6 +3398,10 @@ example/
 <!-- YAML
 added: v0.8.6
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/37460
+    description: The error returned may be an `AggregateError` if more than one
+                 error is returned.
   - version: v10.0.0
     pr-url: https://github.com/nodejs/node/pull/12562
     description: The `callback` parameter is no longer optional. Not passing
@@ -3397,7 +3415,7 @@ changes:
 * `path` {string|Buffer|URL}
 * `len` {integer} **Default:** `0`
 * `callback` {Function}
-  * `err` {Error}
+  * `err` {Error|AggregateError}
 
 Truncates the file. No arguments other than a possible exception are
 given to the completion callback. A file descriptor can also be passed as the
@@ -3837,6 +3855,10 @@ details.
 <!-- YAML
 added: v0.1.29
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/37460
+    description: The error returned may be an `AggregateError` if more than one
+                 error is returned.
   - version: v15.2.0
     pr-url: https://github.com/nodejs/node/pull/35993
     description: The options argument may include an AbortSignal to abort an
@@ -3877,7 +3899,7 @@ changes:
   * `flag` {string} See [support of file system `flags`][]. **Default:** `'w'`.
   * `signal` {AbortSignal} allows aborting an in-progress writeFile
 * `callback` {Function}
-  * `err` {Error}
+  * `err` {Error|AggregateError}
 
 When `file` is a filename, asynchronously writes data to the file, replacing the
 file if it already exists. `data` can be a string or a buffer.
@@ -4755,6 +4777,10 @@ See the POSIX rename(2) documentation for more details.
 <!-- YAML
 added: v0.1.21
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/37302
+    description: The `recursive` option is deprecated, using it triggers a
+                 deprecation warning.
   - version:
      - v13.3.0
      - v12.16.0
@@ -4783,7 +4809,7 @@ changes:
     option is not `true`. **Default:** `0`.
   * `recursive` {boolean} If `true`, perform a recursive directory removal. In
     recursive mode, errors are not reported if `path` does not exist, and
-    operations are retried on failure. **Default:** `false`.
+    operations are retried on failure. **Default:** `false`. **Deprecated**.
   * `retryDelay` {integer} The amount of time in milliseconds to wait between
     retries. This option is ignored if the `recursive` option is not `true`.
     **Default:** `100`.
@@ -4795,9 +4821,8 @@ on Windows and an `ENOTDIR` error on POSIX.
 
 Setting `recursive` to `true` results in behavior similar to the Unix command
 `rm -rf`: an error will not be raised for paths that do not exist, and paths
-that represent files will be deleted. The permissive behavior of the
-`recursive` option is deprecated, `ENOTDIR` and `ENOENT` will be thrown in
-the future.
+that represent files will be deleted. The `recursive` option is deprecated,
+`ENOTDIR` and `ENOENT` will be thrown in the future.
 
 ### `fs.rmSync(path[, options])`
 <!-- YAML

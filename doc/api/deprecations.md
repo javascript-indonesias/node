@@ -2671,9 +2671,12 @@ The [`crypto.Certificate()` constructor][] is deprecated. Use
 ### DEP0147: `fs.rmdir(path, { recursive: true })`
 <!-- YAML
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/37302
+    description: Runtime deprecation.
   - version: v15.0.0
     pr-url: https://github.com/nodejs/node/pull/35562
-    description: Runtime deprecation.
+    description: Runtime deprecation for permissive behavior.
   - version: v14.14.0
     pr-url: https://github.com/nodejs/node/pull/35579
     description: Documentation-only deprecation.
@@ -2681,9 +2684,12 @@ changes:
 
 Type: Runtime
 
-In future versions of Node.js, `fs.rmdir(path, { recursive: true })` will throw
-if `path` does not exist or is a file.
-Use `fs.rm(path, { recursive: true, force: true })` instead.
+In future versions of Node.js, `recursive` option will be ignored for
+`fs.rmdir`, `fs.rmdirSync`, and `fs.promises.rmdir`.
+
+Use `fs.rm(path, { recursive: true, force: true })`,
+`fs.rmSync(path, { recursive: true, force: true })` or
+`fs.promises.rm(path, { recursive: true, force: true })` instead.
 
 ### DEP0148: Folder mappings in `"exports"` (trailing `"/"`)
 <!-- YAML
@@ -2737,13 +2743,16 @@ change the value has been deprecated and will be disabled in the future.
 ### DEP0151: Main index lookup and extension searching
 <!-- YAML
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/37206
+    description: Runtime deprecation.
   - version: v15.8.0
     pr-url: https://github.com/nodejs/node/pull/36918
     description: Documentation-only deprecation
                  with `--pending-deprecation` support.
 -->
 
-Type: Documentation-only (supports [`--pending-deprecation`][])
+Type: Runtime
 
 Previously, `index.js` and extension searching lookups would apply to
 `import 'pkg'` main entry point resolution, even when resolving ES modules.
