@@ -374,7 +374,7 @@ controller.abort();
 <!-- YAML
 added: v0.5.0
 changes:
-  - version: REPLACEME
+  - version: v15.13.0
     pr-url: https://github.com/nodejs/node/pull/37256
     description: timeout was added.
   - version: v15.11.0
@@ -483,7 +483,7 @@ if (process.argv[2] === 'child') {
 <!-- YAML
 added: v0.1.90
 changes:
-  - version: REPLACEME
+  - version: v15.13.0
     pr-url: https://github.com/nodejs/node/pull/37256
     description: timeout was added.
   - version: v15.11.0
@@ -1277,6 +1277,11 @@ may not actually terminate the process.
 
 See kill(2) for reference.
 
+On Windows, where POSIX signals do not exist, the `signal` argument will be
+ignored, and the process will be killed forcefully and abruptly (similar to
+`'SIGKILL'`).
+See [Signal Events][] for more details.
+
 On Linux, child processes of child processes will not be terminated
 when attempting to kill their parent. This is likely to happen when running a
 new process in a shell or with the use of the `shell` option of `ChildProcess`:
@@ -1741,6 +1746,7 @@ or [`child_process.fork()`][].
 [Default Windows shell]: #child_process_default_windows_shell
 [HTML structured clone algorithm]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [Shell requirements]: #child_process_shell_requirements
+[Signal Events]: process.md#process_signal_events
 [`'disconnect'`]: process.md#process_event_disconnect
 [`'error'`]: #child_process_event_error
 [`'exit'`]: #child_process_event_exit
