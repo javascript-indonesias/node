@@ -287,6 +287,10 @@ if (global.gc) {
   knownGlobals.push(global.gc);
 }
 
+if (global.performance) {
+  knownGlobals.push(global.performance);
+}
+
 function allowGlobals(...allowlist) {
   knownGlobals = knownGlobals.concat(allowlist);
 }
@@ -608,7 +612,7 @@ function getArrayBufferViews(buf) {
     Uint32Array,
     Float32Array,
     Float64Array,
-    DataView
+    DataView,
   ];
 
   for (const type of arrayBufferViews) {
