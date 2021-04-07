@@ -1252,7 +1252,7 @@ All the [caveats][] for `fs.watch()` also apply to `fsPromises.watch()`.
 <!-- YAML
 added: v10.0.0
 changes:
-  - version: REPLACEME
+  - version: v15.14.0
     pr-url: https://github.com/nodejs/node/pull/37490
     description: The `data` argument supports `AsyncIterable`, `Iterable` & `Stream`.
   - version: v15.2.0
@@ -2768,9 +2768,9 @@ changes:
   * `bytesRead` {integer}
   * `buffer` {Buffer}
 
-Similar to the `fs.read90` function, this version takes an optional `options`
-object. If no `options` object is specified, it will default with the above
-values.
+Similar to the [`fs.read()`][] function, this version takes an optional
+`options` object. If no `options` object is specified, it will default with the
+above values.
 
 ### `fs.readdir(path[, options], callback)`
 <!-- YAML
