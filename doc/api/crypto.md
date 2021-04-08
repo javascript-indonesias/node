@@ -3697,7 +3697,7 @@ Returns information about a given cipher.
 Some ciphers accept variable length keys and initialization vectors. By default,
 the `crypto.getCipherInfo()` method will return the default values for these
 ciphers. To test if a given key length or iv length is acceptable for given
-cipher, use the `keyLenth` and `ivLenth` options. If the given values are
+cipher, use the `keyLength` and `ivLength` options. If the given values are
 unacceptable, `undefined` will be returned.
 
 ### `crypto.getCiphers()`
@@ -4557,7 +4557,7 @@ randomFill(buf, 5, 5, (err, buf) => {
 });
 ```
 
-Any `ArrayBuffer` `TypedArray` or `DataView` instance may be passed as
+Any `ArrayBuffer`, `TypedArray`, or `DataView` instance may be passed as
 `buffer`.
 
 ```mjs
@@ -5218,7 +5218,7 @@ mode must adhere to certain restrictions when using the cipher API:
   `plaintextLength + authTagLength`. Node.js does not include the authentication
   tag, so the ciphertext length is always `plaintextLength`.
   This is not necessary if no AAD is used.
-* As CCM processes the whole message at once, `update()` can only be called
+* As CCM processes the whole message at once, `update()` must be called exactly
   once.
 * Even though calling `update()` is sufficient to encrypt/decrypt the message,
   applications *must* call `final()` to compute or verify the
