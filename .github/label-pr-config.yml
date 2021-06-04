@@ -54,7 +54,7 @@ subSystemLabels:
   /^vcbuild\.bat$/: build, windows, needs-ci
   /^(android-)?configure|node\.gyp|common\.gypi$/: build, needs-ci
   # more specific tools
-  /^tools\/gyp/: tools, build, needs-ci
+  /^tools\/gyp/: tools, build, needs-ci, dont-land-on-v14.x, dont-land-on-v12.x
   /^tools\/doc\//: tools, doc
   /^tools\/icu\//: tools, intl, needs-ci
   /^tools\/(?:osx-pkg\.pmdoc|pkgsrc)\//: tools, macos, install
@@ -78,6 +78,7 @@ subSystemLabels:
   /^deps\/v8\/tools\/gen-postmortem-metadata\.py/: V8 Engine, post-mortem
   /^deps\/v8\//: V8 Engine
   /^deps\/uvwasi\//: wasi
+  /^deps\/npm\//: npm, dont-land-on-v14.x, dont-land-on-v12.x
   /^deps\/nghttp2\/nghttp2\.gyp/: build, http2
   /^deps\/nghttp2\//: http2
   /^deps\/ngtcp2\//: quic, dont-land-on-v14.x, dont-land-on-v12.x
