@@ -62,7 +62,7 @@ void GetCipherInfo(const FunctionCallbackInfo<Value>& args) {
     cipher = EVP_get_cipherbyname(*name);
   } else {
     int nid = args[1].As<Int32>()->Value();
-    cipher = EVP_get_cipherbyname(OBJ_nid2sn(nid));
+    cipher = EVP_get_cipherbynid(nid);
   }
 
   if (cipher == nullptr)
@@ -906,7 +906,7 @@ bool PublicKeyCipher::Cipher(
     void* label = OPENSSL_memdup(oaep_label.data(), oaep_label.size());
     CHECK_NOT_NULL(label);
     if (0 >= EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(),
-                reinterpret_cast<unsigned char*>(label),
+                     static_cast<unsigned char*>(label),
                                       oaep_label.size())) {
       OPENSSL_free(label);
       return false;
