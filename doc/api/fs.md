@@ -802,6 +802,10 @@ rejection only when `recursive` is false.
 ### `fsPromises.mkdtemp(prefix[, options])`
 <!-- YAML
 added: v10.0.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/39028
+    description: The `prefix` parameter now accepts an empty string.
 -->
 
 * `prefix` {string}
@@ -1313,6 +1317,7 @@ to be written.
 
 ```mjs
 import { writeFile } from 'fs/promises';
+import { Buffer } from 'buffer';
 
 try {
   const controller = new AbortController();
@@ -2573,6 +2578,9 @@ See the POSIX mkdir(2) documentation for more details.
 <!-- YAML
 added: v5.10.0
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/39028
+    description: The `prefix` parameter now accepts an empty string.
   - version: v10.0.0
     pr-url: https://github.com/nodejs/node/pull/12562
     description: The `callback` parameter is no longer optional. Not passing
@@ -3951,6 +3959,7 @@ If `data` is a normal object, it must have an own `toString` function property.
 
 ```mjs
 import { writeFile } from 'fs';
+import { Buffer } from 'buffer';
 
 const data = new Uint8Array(Buffer.from('Hello Node.js'));
 writeFile('message.txt', data, (err) => {
@@ -3981,6 +3990,7 @@ to be written.
 
 ```mjs
 import { writeFile } from 'fs';
+import { Buffer } from 'buffer';
 
 const controller = new AbortController();
 const { signal } = controller;
@@ -4002,6 +4012,7 @@ calling `fs.write()` like:
 
 ```mjs
 import { write } from 'fs';
+import { Buffer } from 'buffer';
 
 write(fd, Buffer.from(data, options.encoding), callback);
 ```
@@ -4505,6 +4516,10 @@ See the POSIX mkdir(2) documentation for more details.
 ### `fs.mkdtempSync(prefix[, options])`
 <!-- YAML
 added: v5.10.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/39028
+    description: The `prefix` parameter now accepts an empty string.
 -->
 
 * `prefix` {string}
@@ -6522,6 +6537,7 @@ Example using an absolute path on POSIX:
 
 ```mjs
 import { open } from 'fs/promises';
+import { Buffer } from 'buffer';
 
 let fd;
 try {
