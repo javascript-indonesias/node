@@ -507,6 +507,15 @@ added: v15.7.0
 Creates and returns a new `Blob` containing a subset of this `Blob` objects
 data. The original `Blob` is not altered.
 
+### `blob.stream()`
+<!-- YAML
+added: REPLACEME
+-->
+
+* Returns: {ReadableStream}
+
+Returns a new `ReadableStream` that allows the content of the `Blob` to be read.
+
 ### `blob.text()`
 <!-- YAML
 added: v15.7.0
@@ -514,8 +523,8 @@ added: v15.7.0
 
 * Returns: {Promise}
 
-Returns a promise that resolves the contents of the `Blob` decoded as a UTF-8
-string.
+Returns a promise that fulfills with the contents of the `Blob` decoded as a
+UTF-8 string.
 
 ### `blob.type`
 <!-- YAML
@@ -4942,6 +4951,20 @@ added: v3.0.0
 * {integer} The largest length allowed for a single `string` instance.
 
 An alias for [`buffer.constants.MAX_STRING_LENGTH`][].
+
+### `buffer.resolveObjectURL(id)`
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1 - Experimental
+
+* `id` {string} A `'blob:nodedata:...` URL string returned by a prior call to
+  `URL.createObjectURL()`.
+* Returns: {Blob}
+
+Resolves a `'blob:nodedata:...'` an associated {Blob} object registered using
+a prior call to `URL.createObjectURL()`.
 
 ### `buffer.transcode(source, fromEnc, toEnc)`
 <!-- YAML
