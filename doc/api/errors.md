@@ -2510,12 +2510,6 @@ nor a relative path starting with `./` or `../`.
 
 All attempts at serializing an uncaught exception from a worker thread failed.
 
-<a id="ERR_WORKER_UNSUPPORTED_EXTENSION"></a>
-### `ERR_WORKER_UNSUPPORTED_EXTENSION`
-
-The pathname used for the main script of a worker has an
-unknown file extension.
-
 <a id="ERR_WORKER_UNSUPPORTED_OPERATION"></a>
 ### `ERR_WORKER_UNSUPPORTED_OPERATION`
 
@@ -2841,6 +2835,16 @@ Used when a given value is out of the accepted range.
 ### `ERR_VM_MODULE_NOT_LINKED`
 
 The module must be successfully linked before instantiation.
+
+<a id="ERR_WORKER_UNSUPPORTED_EXTENSION"></a>
+### `ERR_WORKER_UNSUPPORTED_EXTENSION`
+<!-- YAML
+added: v11.0.0
+removed: REPLACEME
+-->
+
+The pathname used for the main script of a worker has an
+unknown file extension.
 
 <a id="ERR_ZLIB_BINDING_CLOSED"></a>
 ### `ERR_ZLIB_BINDING_CLOSED`
