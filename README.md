@@ -622,6 +622,8 @@ maintaining the Node.js project.
 **Qingyu Deng** &lt;i@ayase-lab.com&gt;
 * [himadriganguly](https://github.com/himadriganguly) -
 **Himadri Ganguly** &lt;himadri.tech@gmail.com&gt; (he/him)
+* [iam-frankqiu](https://github.com/iam-frankqiu) -
+**Frank Qiu** &lt;iam.frankqiu@gmail.com&gt; (he/him)
 * [marsonya](https://github.com/marsonya) -
 **Akhil Marsonya** &lt;akhil.marsonya27@gmail.com&gt; (he/him)
 * [Mesteery](https://github.com/Mesteery) -
@@ -630,6 +632,8 @@ maintaining the Node.js project.
 **Pooja Durgad** &lt;Pooja.D.P@ibm.com&gt;
 * [RaisinTen](https://github.com/RaisinTen) -
 **Darshan Sen** &lt;raisinten@gmail.com&gt;
+* [VoltrexMaster](https://github.com/VoltrexMaster) -
+**Voltrex** &lt;mohammadkeyvanzade94@gmail.com&gt; (he/him)
 
 ### Release keys
 
