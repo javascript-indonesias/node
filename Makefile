@@ -1221,12 +1221,11 @@ bench-addons-clean:
 .PHONY: lint-md-rollup
 lint-md-rollup:
 	$(RM) tools/.*mdlintstamp
-	cd tools/node-lint-md-cli-rollup && npm install
-	cd tools/node-lint-md-cli-rollup && npm run build-node
+	cd tools/lint-md && npm ci && npm run build
 
 .PHONY: lint-md-clean
 lint-md-clean:
-	$(RM) -r tools/node-lint-md-cli-rollup/node_modules
+	$(RM) -r tools/lint-md/node_modules
 	$(RM) tools/.*mdlintstamp
 
 .PHONY: lint-md-build
@@ -1243,7 +1242,7 @@ LINT_MD_TARGETS = doc src lib benchmark test tools/doc tools/icu $(wildcard *.md
 LINT_MD_FILES = $(shell $(FIND) $(LINT_MD_TARGETS) -type f \
 	! -path '*node_modules*' ! -path 'test/fixtures/*' -name '*.md' \
 	$(LINT_MD_NEWER))
-run-lint-md = tools/lint-md.mjs -q -f --no-stdout $(LINT_MD_FILES)
+run-lint-md = tools/lint-md/lint-md.mjs $(LINT_MD_FILES)
 # Lint all changed markdown files maintained by us
 tools/.mdlintstamp: $(LINT_MD_FILES)
 	$(info Running Markdown linter...)
@@ -1253,6 +1252,13 @@ tools/.mdlintstamp: $(LINT_MD_FILES)
 .PHONY: lint-md
 # Lints the markdown documents maintained by us in the codebase.
 lint-md: lint-js-doc | tools/.mdlintstamp
+
+run-format-md = tools/lint-md/lint-md.mjs --format $(LINT_MD_FILES)
+.PHONY: format-md
+# Formats the markdown documents maintained by us in the codebase.
+format-md:
+	@$(call available-node,$(run-format-md))
+
 
 
 LINT_JS_TARGETS = .eslintrc.js benchmark doc lib test tools
