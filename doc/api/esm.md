@@ -703,13 +703,13 @@ a URL should be interpreted, retrieved, and parsed.
 
 The final value of `format` must be one of the following:
 
-| `format`     | Description                    | Acceptable types For `source` returned by `resolve` or `load` |
-| ------------ | ------------------------------ | -------------------------------------------------------------------------- |
-| `'builtin'`  | Load a Node.js builtin module  | Not applicable                                                             |
-| `'commonjs'` | Load a Node.js CommonJS module | Not applicable                                                             |
-| `'json'`     | Load a JSON file               | { [`string`][], [`ArrayBuffer`][], [`TypedArray`][] }                      |
-| `'module'`   | Load an ES module              | { [`string`][], [`ArrayBuffer`][], [`TypedArray`][] }                      |
-| `'wasm'`     | Load a WebAssembly module      | { [`ArrayBuffer`][], [`TypedArray`][] }                                    |
+| `format`     | Description                    | Acceptable types for `source` returned by `load`      |
+| ------------ | ------------------------------ | ----------------------------------------------------- |
+| `'builtin'`  | Load a Node.js builtin module  | Not applicable                                        |
+| `'commonjs'` | Load a Node.js CommonJS module | Not applicable                                        |
+| `'json'`     | Load a JSON file               | { [`string`][], [`ArrayBuffer`][], [`TypedArray`][] } |
+| `'module'`   | Load an ES module              | { [`string`][], [`ArrayBuffer`][], [`TypedArray`][] } |
+| `'wasm'`     | Load a WebAssembly module      | { [`ArrayBuffer`][], [`TypedArray`][] }               |
 
 The value of `source` is ignored for type `'builtin'` because currently it is
 not possible to replace the value of a Node.js builtin (core) module. The value
@@ -979,7 +979,7 @@ async function getPackageType(url) {
   // Compose a file path to a package.json in the same directory,
   // which may or may not exist
   const packagePath = resolvePath(dir, 'package.json');
-  // Try to read the possibly non-existant package.json
+  // Try to read the possibly nonexistent package.json
   const type = await readFile(packagePath, { encoding: 'utf8' })
     .then((filestring) => JSON.parse(filestring).type)
     .catch((err) => {
@@ -1145,7 +1145,7 @@ The resolver can throw the following errors:
 >    1. Return **undefined**.
 > 1. If _pjson.name_ is equal to _packageName_, then
 >    1. Return the result of **PACKAGE_EXPORTS_RESOLVE**(_packageURL_,
->       _subpath_, _pjson.exports_, _defaultConditions_).
+>       _packageSubpath_, _pjson.exports_, _defaultConditions_).
 > 1. Otherwise, return **undefined**.
 
 **PACKAGE_EXPORTS_RESOLVE**(_packageURL_, _subpath_, _exports_, _conditions_)

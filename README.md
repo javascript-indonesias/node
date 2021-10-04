@@ -34,6 +34,7 @@ The Node.js project uses an [open governance model](./GOVERNANCE.md). The
 * [Current project team members](#current-project-team-members)
   * [TSC (Technical Steering Committee)](#tsc-technical-steering-committee)
   * [Collaborators](#collaborators)
+  * [Triagers](#triagers)
   * [Release keys](#release-keys)
 * [License](#license)
 
@@ -561,7 +562,7 @@ For information about the governance of the Node.js project, see
 * [orangemocha](https://github.com/orangemocha) -
   **Alexis Campailla** \<orangemocha@nodejs.org>
 * [othiym23](https://github.com/othiym23) -
-  **Forrest L Norvell** \<ogd@aoaioxxysz.net> (he/him)
+  **Forrest L Norvell** \<ogd@aoaioxxysz.net> (they/them/themself)
 * [petkaantonov](https://github.com/petkaantonov) -
   **Petka Antonov** \<petka_antonov@hotmail.com>
 * [phillipj](https://github.com/phillipj) -
