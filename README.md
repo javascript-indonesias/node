@@ -10,14 +10,14 @@
   </a>
 </p>
 
-Node.js is an open-source, cross-platform, JavaScript runtime environment. It
-executes JavaScript code outside of a browser. For more information on using
-Node.js, see the [Node.js Website][].
+Node.js is an open-source, cross-platform, JavaScript runtime environment.
+
+For information on using Node.js, see the [Node.js Website][].
 
 The Node.js project uses an [open governance model](./GOVERNANCE.md). The
 [OpenJS Foundation][] provides support for the project.
 
-**This project is bound by a [Code of Conduct][].**
+**This project has a [Code of Conduct][].**
 
 # Table of contents
 
@@ -156,8 +156,9 @@ For information on reporting security vulnerabilities in Node.js, see
 For information about the governance of the Node.js project, see
 [GOVERNANCE.md](./GOVERNANCE.md).
 
-<!-- node-core-utils depends on the format of the TSC list. If the
-     format changes, those utilities need to be tested and updated. -->
+<!-- node-core-utils and find-inactive-tsc.mjs depend on the format of the TSC
+     list. If the format changes, those utilities need to be tested and
+     updated. -->
 
 ### TSC (Technical Steering Committee)
 
