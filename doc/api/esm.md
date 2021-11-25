@@ -229,6 +229,8 @@ import fs from 'node:fs/promises';
 added: v17.1.0
 -->
 
+> Stability: 1 - Experimental
+
 The [Import Assertions proposal][] adds an inline syntax for module import
 statements to pass on more information alongside the module specifier.
 
@@ -239,11 +241,12 @@ const { default: barData } =
   await import('./bar.json', { assert: { type: 'json' } });
 ```
 
-Node.js supports the following `type` values:
+Node.js supports the following `type` values, for which the assertion is
+mandatory:
 
-| `type`   | Resolves to      |
-| -------- | ---------------- |
-| `'json'` | [JSON modules][] |
+| Assertion `type` | Needed for       |
+| ---------------- | ---------------- |
+| `'json'`         | [JSON modules][] |
 
 ## Builtin modules
 
@@ -554,18 +557,20 @@ node index.mjs # fails
 node --experimental-json-modules index.mjs # works
 ```
 
+The `assert { type: 'json' }` syntax is mandatory; see [Import Assertions][].
+
 <i id="esm_experimental_wasm_modules"></i>
 
 ## Wasm modules
 
 > Stability: 1 - Experimental
 
-Importing Web Assembly modules is supported under the
+Importing WebAssembly modules is supported under the
 `--experimental-wasm-modules` flag, allowing any `.wasm` files to be
 imported as normal modules while also supporting their module imports.
 
 This integration is in line with the
-[ES Module Integration Proposal for Web Assembly][].
+[ES Module Integration Proposal for WebAssembly][].
 
 For example, an `index.mjs` containing:
 
@@ -1390,7 +1395,8 @@ success!
 [Core modules]: modules.md#core-modules
 [Dynamic `import()`]: https://wiki.developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#Dynamic_Imports
 [ECMAScript Top-Level `await` proposal]: https://github.com/tc39/proposal-top-level-await/
-[ES Module Integration Proposal for Web Assembly]: https://github.com/webassembly/esm-integration
+[ES Module Integration Proposal for WebAssembly]: https://github.com/webassembly/esm-integration
+[Import Assertions]: #import-assertions
 [Import Assertions proposal]: https://github.com/tc39/proposal-import-assertions
 [JSON modules]: #json-modules
 [Node.js Module Resolution Algorithm]: #resolver-algorithm-specification
