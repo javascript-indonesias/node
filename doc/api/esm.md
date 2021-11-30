@@ -684,8 +684,8 @@ Node.js module specifier resolution behavior_ when calling `defaultResolve`, the
 /**
  * @param {string} specifier
  * @param {{
- *   conditions: !Array<string>,
- *   parentURL: !(string | undefined),
+ *   conditions: string[],
+ *   parentURL: string | undefined,
  * }} context
  * @param {Function} defaultResolve
  * @returns {Promise<{ url: string }>}
@@ -778,8 +778,8 @@ format to a supported one, for example `yaml` to `module`.
   }} context If resolve settled with a `format`, that value is included here.
  * @param {Function} defaultLoad
  * @returns {Promise<{
-    format: !string,
-    source: !(string | ArrayBuffer | SharedArrayBuffer | Uint8Array),
+    format: string,
+    source: string | ArrayBuffer | SharedArrayBuffer | Uint8Array,
   }>}
  */
 export async function load(url, context, defaultLoad) {
@@ -828,6 +828,9 @@ its own `require` using  `module.createRequire()`.
 
 ```js
 /**
+ * @param {{
+     port: MessagePort,
+   }} utilities Things that preload code might find useful
  * @returns {string} Code to run before application startup
  */
 export function globalPreload() {
@@ -841,6 +844,35 @@ const { cwd } = getBuiltin('process');
 const require = createRequire(cwd() + '/<preload>');
 // [...]
 `;
+}
+```
+
+In order to allow communication between the application and the loader, another
+argument is provided to the preload code: `port`. This is available as a
+parameter to the loader hook and inside of the source text returned by the hook.
+Some care must be taken in order to properly call [`port.ref()`][] and
+[`port.unref()`][] to prevent a process from being in a state where it won't
+close normally.
+
+```js
+/**
+ * This example has the application context send a message to the loader
+ * and sends the message back to the application context
+ * @param {{
+     port: MessagePort,
+   }} utilities Things that preload code might find useful
+ * @returns {string} Code to run before application startup
+ */
+export function globalPreload({ port }) {
+  port.onmessage = (evt) => {
+    port.postMessage(evt.data);
+  };
+  return `\
+    port.postMessage('console.log("I went to the Loader and back");');
+    port.onmessage = (evt) => {
+      eval(evt.data);
+    };
+  `;
 }
 ```
 
@@ -1418,6 +1450,8 @@ success!
 [`module.createRequire()`]: module.md#modulecreaterequirefilename
 [`module.syncBuiltinESMExports()`]: module.md#modulesyncbuiltinesmexports
 [`package.json`]: packages.md#nodejs-packagejson-field-definitions
+[`port.ref()`]: https://nodejs.org/dist/latest-v17.x/docs/api/worker_threads.html#portref
+[`port.unref()`]: https://nodejs.org/dist/latest-v17.x/docs/api/worker_threads.html#portunref
 [`process.dlopen`]: process.md#processdlopenmodule-filename-flags
 [`string`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String
 [`util.TextDecoder`]: util.md#class-utiltextdecoder
