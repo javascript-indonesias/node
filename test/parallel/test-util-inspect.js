@@ -661,6 +661,16 @@ assert.strictEqual(util.inspect(-5e-324), '-5e-324');
 }
 
 {
+  const falsyCause1 = new Error('', { cause: false });
+  delete falsyCause1.stack;
+  const falsyCause2 = new Error(undefined, { cause: null });
+  falsyCause2.stack = '';
+
+  assert.strictEqual(util.inspect(falsyCause1), '[Error] { [cause]: false }');
+  assert.strictEqual(util.inspect(falsyCause2), '[Error] { [cause]: null }');
+}
+
+{
   const tmp = Error.stackTraceLimit;
   Error.stackTraceLimit = 0;
   const err = new Error('foo');
@@ -974,7 +984,7 @@ util.inspect({ hasOwnProperty: null });
 
   assert.strictEqual(util.inspect(subject), "{ foo: 'bar' }");
 
-  subject[util.inspect.custom] = common.mustCall((depth, opts) => {
+  subject[util.inspect.custom] = common.mustCall((depth, opts, inspect) => {
     const clone = { ...opts };
     // This might change at some point but for now we keep the stylize function.
     // The function should either be documented or an alternative should be
@@ -984,12 +994,13 @@ util.inspect({ hasOwnProperty: null });
     assert.strictEqual(opts.budget, undefined);
     assert.strictEqual(opts.indentationLvl, undefined);
     assert.strictEqual(opts.showHidden, false);
+    assert.strictEqual(inspect, util.inspect);
     assert.deepStrictEqual(
-      new Set(Object.keys(util.inspect.defaultOptions).concat(['stylize'])),
+      new Set(Object.keys(inspect.defaultOptions).concat(['stylize'])),
       new Set(Object.keys(opts))
     );
     opts.showHidden = true;
-    return { [util.inspect.custom]: common.mustCall((depth, opts2) => {
+    return { [inspect.custom]: common.mustCall((depth, opts2) => {
       assert.deepStrictEqual(clone, opts2);
     }) };
   });
