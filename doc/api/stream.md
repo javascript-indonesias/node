@@ -1900,12 +1900,10 @@ added: REPLACEME
 * `options` {Object}
   * `signal` {AbortSignal} allows cancelling the toArray operation if the
     signal is aborted.
-* Returns: {Promise} a promise containing an array (if the stream is in
-  object mode) or Buffer with the contents of the stream.
+* Returns: {Promise} a promise containing an array with the contents of the
+  stream.
 
-This method allows easily obtaining the contents of a stream. If the
-stream is in [object mode][object-mode] an array of its contents is returned.
-If the stream is not in object mode a Buffer containing its data is returned.
+This method allows easily obtaining the contents of a stream.
 
 As this method reads the entire stream into memory, it negates the benefits of
 streams. It's intended for interoperability and convenience, not as the primary
@@ -2025,6 +2023,99 @@ const allBigFiles = await Readable.from([
 // `true` if all files in the list are bigger than 1MiB
 console.log(allBigFiles);
 console.log('done'); // Stream has finished
+```
+
+### `readable.flatMap(fn[, options])`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1 - Experimental
+
+* `fn` {Function|AsyncGeneratorFunction|AsyncFunction} a function to map over
+  every item in the stream.
+  * `data` {any} a chunk of data from the stream.
+  * `options` {Object}
+    * `signal` {AbortSignal} aborted if the stream is destroyed allowing to
+      abort the `fn` call early.
+* `options` {Object}
+  * `concurrency` {number} the maximum concurrent invocation of `fn` to call
+    on the stream at once. **Default:** `1`.
+  * `signal` {AbortSignal} allows destroying the stream if the signal is
+    aborted.
+* Returns: {Readable} a stream flat-mapped with the function `fn`.
+
+This method returns a new stream by applying the given callback to each
+chunk of the stream and then flattening the result.
+
+It is possible to return a stream or another iterable or async iterable from
+`fn` and the result streams will be merged (flattened) into the returned
+stream.
+
+```mjs
+import { Readable } from 'stream';
+import { createReadStream } from 'fs';
+
+// With a synchronous mapper.
+for await (const item of Readable.from([1, 2, 3, 4]).flatMap((x) => [x, x])) {
+  console.log(item); // 1, 1, 2, 2, 3, 3, 4, 4
+}
+// With an asynchronous mapper, combine the contents of 4 files
+const concatResult = Readable.from([
+  './1.mjs',
+  './2.mjs',
+  './3.mjs',
+  './4.mjs',
+]).flatMap((fileName) => createReadStream(fileName));
+for await (const result of concatResult) {
+  // This will contain the contents (all chunks) of all 4 files
+  console.log(result);
+}
+```
+
+### `readable.drop(limit[, options])`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1 - Experimental
+
+* `limit` {number} the number of chunks to drop from the readable.
+* `options` {Object}
+  * `signal` {AbortSignal} allows destroying the stream if the signal is
+    aborted.
+* Returns: {Readable} a stream with `limit` chunks dropped.
+
+This method returns a new stream with the first `limit` chunks dropped.
+
+```mjs
+import { Readable } from 'stream';
+
+await Readable.from([1, 2, 3, 4]).drop(2).toArray(); // [3, 4]
+```
+
+### `readable.take(limit[, options])`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1 - Experimental
+
+* `limit` {number} the number of chunks to take from the readable.
+* `options` {Object}
+  * `signal` {AbortSignal} allows destroying the stream if the signal is
+    aborted.
+* Returns: {Readable} a stream with `limit` chunks taken.
+
+This method returns a new stream with the first `limit` chunks.
+
+```mjs
+import { Readable } from 'stream';
+
+await Readable.from([1, 2, 3, 4]).take(2).toArray(); // [1, 2]
 ```
 
 ### Duplex and transform streams
