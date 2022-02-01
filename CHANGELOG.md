@@ -66,7 +66,8 @@ release.
 <a href="doc/changelogs/CHANGELOG_V16.md#16.0.0">16.0.0</a><br/>
     </td>
     <td valign="top">
-<b><a href="doc/changelogs/CHANGELOG_V14.md#14.18.3">14.18.3</a></b><br/>
+<b><a href="doc/changelogs/CHANGELOG_V14.md#14.19.0">14.19.0</a></b><br/>
+<a href="doc/changelogs/CHANGELOG_V14.md#14.18.3">14.18.3</a><br/>
 <a href="doc/changelogs/CHANGELOG_V14.md#14.18.2">14.18.2</a><br/>
 <a href="doc/changelogs/CHANGELOG_V14.md#14.18.1">14.18.1</a><br/>
 <a href="doc/changelogs/CHANGELOG_V14.md#14.18.0">14.18.0</a><br/>
@@ -104,7 +105,8 @@ release.
 <a href="doc/changelogs/CHANGELOG_V14.md#14.0.0">14.0.0</a><br/>
     </td>
     <td valign="top">
-<b><a href="doc/changelogs/CHANGELOG_V12.md#12.22.9">12.22.9</a></b><br/>
+<b><a href="doc/changelogs/CHANGELOG_V12.md#12.22.10">12.22.10</a></b><br/>
+<a href="doc/changelogs/CHANGELOG_V12.md#12.22.9">12.22.9</a><br/>
 <a href="doc/changelogs/CHANGELOG_V12.md#12.22.8">12.22.8</a><br/>
 <a href="doc/changelogs/CHANGELOG_V12.md#12.22.7">12.22.7</a><br/>
 <a href="doc/changelogs/CHANGELOG_V12.md#12.22.6">12.22.6</a><br/>
