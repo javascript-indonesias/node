@@ -294,6 +294,8 @@ For information about the governance of the Node.js project, see
   **Bradley Farias** <<bradley.meck@gmail.com>>
 * [bnb](https://github.com/bnb) -
   **Tierney Cyren** <<hello@bnb.im>> (they/he)
+* [bnoordhuis](https://github.com/bnoordhuis) -
+  **Ben Noordhuis** <<info@bnoordhuis.nl>>
 * [boneskull](https://github.com/boneskull) -
   **Christopher Hiller** <<boneskull@boneskull.com>> (he/him)
 * [BridgeAR](https://github.com/BridgeAR) -
@@ -356,8 +358,6 @@ For information about the governance of the Node.js project, see
   **James M Snell** <<jasnell@gmail.com>> (he/him)
 * [jkrems](https://github.com/jkrems) -
   **Jan Krems** <<jan.krems@gmail.com>> (he/him)
-* [joaocgreis](https://github.com/joaocgreis) -
-  **João Reis** <<reis@janeasystems.com>>
 * [joesepi](https://github.com/joesepi) -
   **Joe Sepi** <<sepi@joesepi.com>> (he/him)
 * [joyeecheung](https://github.com/joyeecheung) -
@@ -476,8 +476,6 @@ For information about the governance of the Node.js project, see
   **Alexey Orlenko** <<eaglexrlnk@gmail.com>> (he/him)
 * [bmeurer](https://github.com/bmeurer) -
   **Benedikt Meurer** <<benedikt.meurer@gmail.com>>
-* [bnoordhuis](https://github.com/bnoordhuis) -
-  **Ben Noordhuis** <<info@bnoordhuis.nl>>
 * [brendanashworth](https://github.com/brendanashworth) -
   **Brendan Ashworth** <<brendan.ashworth@me.com>>
 * [calvinmetcalf](https://github.com/calvinmetcalf) -
@@ -528,6 +526,8 @@ For information about the governance of the Node.js project, see
   **John-David Dalton** <<john.david.dalton@gmail.com>>
 * [jhamhader](https://github.com/jhamhader) -
   **Yuval Brik** <<yuval@brik.org.il>>
+* [joaocgreis](https://github.com/joaocgreis) -
+  **João Reis** <<reis@janeasystems.com>>
 * [joshgav](https://github.com/joshgav) -
   **Josh Gavant** <<josh.gavant@outlook.com>>
 * [julianduque](https://github.com/julianduque) -
@@ -650,6 +650,8 @@ maintaining the Node.js project.
   **Frank Qiu** <<iam.frankqiu@gmail.com>> (he/him)
 * [marsonya](https://github.com/marsonya) -
   **Akhil Marsonya** <<akhil.marsonya27@gmail.com>> (he/him)
+* [meixg](https://github.com/meixg) -
+  **Xuguang Mei** <<meixg@foxmail.com>> (he/him)
 * [Mesteery](https://github.com/Mesteery) -
   **Mestery** <<mestery@protonmail.com>> (he/him)
 * [PoojaDurgad](https://github.com/PoojaDurgad) -
