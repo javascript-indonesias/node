@@ -53,7 +53,7 @@ static constexpr int kX509NameFlagsRFC2253WithinUtf8JSON =
     ~ASN1_STRFLGS_ESC_MSB &
     ~ASN1_STRFLGS_ESC_CTRL;
 
-int SSL_CTX_get_issuer(SSL_CTX* ctx, X509* cert, X509** issuer) {
+bool SSL_CTX_get_issuer(SSL_CTX* ctx, X509* cert, X509** issuer) {
   X509_STORE* store = SSL_CTX_get_cert_store(ctx);
   DeleteFnPtr<X509_STORE_CTX, X509_STORE_CTX_free> store_ctx(
       X509_STORE_CTX_new());
@@ -118,23 +118,8 @@ MaybeLocal<Value> GetSSLOCSPResponse(
 
 bool SetTLSSession(
     const SSLPointer& ssl,
-    const unsigned char* buf,
-    size_t length) {
-  SSLSessionPointer s(d2i_SSL_SESSION(nullptr, &buf, length));
-  return s == nullptr ? false : SetTLSSession(ssl, s);
-}
-
-bool SetTLSSession(
-    const SSLPointer& ssl,
     const SSLSessionPointer& session) {
   return session != nullptr && SSL_set_session(ssl.get(), session.get()) == 1;
-}
-
-SSLSessionPointer GetTLSSession(Local<Value> val) {
-  if (!val->IsArrayBufferView())
-    return SSLSessionPointer();
-  ArrayBufferViewContents<unsigned char> sbuf(val.As<ArrayBufferView>());
-  return GetTLSSession(sbuf.data(), sbuf.length());
 }
 
 SSLSessionPointer GetTLSSession(const unsigned char* buf, size_t length) {
@@ -163,7 +148,8 @@ long VerifyPeerCertificate(  // NOLINT(runtime/int)
   return err;
 }
 
-int UseSNIContext(const SSLPointer& ssl, BaseObjectPtr<SecureContext> context) {
+bool UseSNIContext(
+    const SSLPointer& ssl, BaseObjectPtr<SecureContext> context) {
   SSL_CTX* ctx = context->ctx_.get();
   X509* x509 = SSL_CTX_get0_certificate(ctx);
   EVP_PKEY* pkey = SSL_CTX_get0_privatekey(ctx);
@@ -173,7 +159,7 @@ int UseSNIContext(const SSLPointer& ssl, BaseObjectPtr<SecureContext> context) {
   if (err == 1) err = SSL_use_certificate(ssl.get(), x509);
   if (err == 1) err = SSL_use_PrivateKey(ssl.get(), pkey);
   if (err == 1 && chain != nullptr) err = SSL_set1_chain(ssl.get(), chain);
-  return err;
+  return err == 1;
 }
 
 const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -302,7 +288,7 @@ Local<Value> ToV8Value(Environment* env, const BIOPointer& bio) {
           mem->data,
           NewStringType::kNormal,
           mem->length);
-  USE(BIO_reset(bio.get()));
+  CHECK_EQ(BIO_reset(bio.get()), 1);
   return ret.FromMaybe(Local<Value>());
 }
 
@@ -435,34 +421,28 @@ MaybeLocal<Object> GetLastIssuedCert(
 void AddFingerprintDigest(
     const unsigned char* md,
     unsigned int md_size,
-    char (*fingerprint)[3 * EVP_MAX_MD_SIZE + 1]) {
+    char fingerprint[3 * EVP_MAX_MD_SIZE + 1]) {
   unsigned int i;
   const char hex[] = "0123456789ABCDEF";
 
   for (i = 0; i < md_size; i++) {
-    (*fingerprint)[3*i] = hex[(md[i] & 0xf0) >> 4];
-    (*fingerprint)[(3*i)+1] = hex[(md[i] & 0x0f)];
-    (*fingerprint)[(3*i)+2] = ':';
+    fingerprint[3*i] = hex[(md[i] & 0xf0) >> 4];
+    fingerprint[(3*i)+1] = hex[(md[i] & 0x0f)];
+    fingerprint[(3*i)+2] = ':';
   }
 
   if (md_size > 0) {
-    (*fingerprint)[(3*(md_size-1))+2] = '\0';
+    fingerprint[(3*(md_size-1))+2] = '\0';
   } else {
-    (*fingerprint)[0] = '\0';
+    fingerprint[0] = '\0';
   }
 }
 
-MaybeLocal<Value> GetCurveASN1Name(Environment* env, const int nid) {
-  const char* nist = OBJ_nid2sn(nid);
-  return nist != nullptr ?
-      MaybeLocal<Value>(OneByteString(env->isolate(), nist)) :
-      MaybeLocal<Value>(Undefined(env->isolate()));
-}
-
-MaybeLocal<Value> GetCurveNistName(Environment* env, const int nid) {
-  const char* nist = EC_curve_nid2nist(nid);
-  return nist != nullptr ?
-      MaybeLocal<Value>(OneByteString(env->isolate(), nist)) :
+template <const char* (*nid2string)(int nid)>
+MaybeLocal<Value> GetCurveName(Environment* env, const int nid) {
+  const char* name = nid2string(nid);
+  return name != nullptr ?
+      MaybeLocal<Value>(OneByteString(env->isolate(), name)) :
       MaybeLocal<Value>(Undefined(env->isolate()));
 }
 
@@ -518,13 +498,7 @@ MaybeLocal<Value> GetExponentString(
     const BIOPointer& bio,
     const BIGNUM* e) {
   uint64_t exponent_word = static_cast<uint64_t>(BN_get_word(e));
-  uint32_t lo = static_cast<uint32_t>(exponent_word);
-  uint32_t hi = static_cast<uint32_t>(exponent_word >> 32);
-  if (hi == 0)
-    BIO_printf(bio.get(), "0x%x", lo);
-  else
-    BIO_printf(bio.get(), "0x%x%08x", hi, lo);
-
+  BIO_printf(bio.get(), "0x%" PRIx64, exponent_word);
   return ToV8Value(env, bio);
 }
 
@@ -603,7 +577,7 @@ MaybeLocal<Value> GetFingerprintDigest(
   char fingerprint[EVP_MAX_MD_SIZE * 3 + 1];
 
   if (X509_digest(cert, method, md, &md_size)) {
-    AddFingerprintDigest(md, md_size, &fingerprint);
+    AddFingerprintDigest(md, md_size, fingerprint);
     return OneByteString(env->isolate(), fingerprint);
   }
   return Undefined(env->isolate());
@@ -925,7 +899,7 @@ v8::MaybeLocal<v8::Value> GetSubjectAltNameString(
   CHECK_NOT_NULL(ext);
 
   if (!SafeX509SubjectAltNamePrint(bio, ext)) {
-    USE(BIO_reset(bio.get()));
+    CHECK_EQ(BIO_reset(bio.get()), 1);
     return v8::Null(env->isolate());
   }
 
@@ -944,7 +918,7 @@ v8::MaybeLocal<v8::Value> GetInfoAccessString(
   CHECK_NOT_NULL(ext);
 
   if (!SafeX509InfoAccessPrint(bio, ext)) {
-    USE(BIO_reset(bio.get()));
+    CHECK_EQ(BIO_reset(bio.get()), 1);
     return v8::Null(env->isolate());
   }
 
@@ -961,7 +935,7 @@ MaybeLocal<Value> GetIssuerString(
           issuer_name,
           0,
           kX509NameFlagsMultiline) <= 0) {
-    USE(BIO_reset(bio.get()));
+    CHECK_EQ(BIO_reset(bio.get()), 1);
     return Undefined(env->isolate());
   }
 
@@ -977,7 +951,7 @@ MaybeLocal<Value> GetSubject(
           X509_get_subject_name(cert),
           0,
           kX509NameFlagsMultiline) <= 0) {
-    USE(BIO_reset(bio.get()));
+    CHECK_EQ(BIO_reset(bio.get()), 1);
     return Undefined(env->isolate());
   }
 
@@ -1413,11 +1387,11 @@ MaybeLocal<Object> X509ToObject(
       if (!Set<Value>(context,
                       info,
                       env->asn1curve_string(),
-                      GetCurveASN1Name(env, nid)) ||
+                      GetCurveName<OBJ_nid2sn>(env, nid)) ||
           !Set<Value>(context,
                       info,
                       env->nistcurve_string(),
-                      GetCurveNistName(env, nid))) {
+                      GetCurveName<EC_curve_nid2nist>(env, nid))) {
         return MaybeLocal<Object>();
       }
     } else {
