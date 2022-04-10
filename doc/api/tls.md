@@ -40,7 +40,7 @@ a preload module).
 
 When using ESM, if there is a chance that the code may be run on a build
 of Node.js where crypto support is not enabled, consider using the
-`import()` function instead of the lexical `import` keyword:
+[`import()`][] function instead of the lexical `import` keyword:
 
 ```mjs
 let tls;
@@ -243,7 +243,7 @@ handlers.
 
 The servers encrypt the entire session state and send it
 to the client as a "ticket". When reconnecting, the state is sent to the server
-in the initial connection. This mechanism avoids the need for server-side
+in the initial connection. This mechanism avoids the need for a server-side
 session cache. If the server doesn't use the ticket, for any reason (failure
 to decrypt it, it's too old, etc.), it will create a new session and send a new
 ticket. See [RFC 5077][] for more information.
@@ -978,10 +978,10 @@ property is set only when `tlsSocket.authorized === false`.
 added: v0.11.4
 -->
 
-* Returns: {boolean}
+* {boolean}
 
-Returns `true` if the peer certificate was signed by one of the CAs specified
-when creating the `tls.TLSSocket` instance, otherwise `false`.
+This property is `true` if the peer certificate was signed by one of the CAs
+specified when creating the `tls.TLSSocket` instance, otherwise `false`.
 
 ### `tlsSocket.disableRenegotiation()`
 
@@ -2235,6 +2235,7 @@ added: v11.4.0
 [`SSL_export_keying_material`]: https://www.openssl.org/docs/man1.1.1/man3/SSL_export_keying_material.html
 [`SSL_get_version`]: https://www.openssl.org/docs/man1.1.1/man3/SSL_get_version.html
 [`crypto.getCurves()`]: crypto.md#cryptogetcurves
+[`import()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#dynamic_imports
 [`net.Server.address()`]: net.md#serveraddress
 [`net.Server`]: net.md#class-netserver
 [`net.Socket`]: net.md#class-netsocket
