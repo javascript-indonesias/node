@@ -1501,7 +1501,7 @@ Limits maximum incoming headers count. If set to 0, no limit will be applied.
 <!-- YAML
 added: v14.11.0
 changes:
-  - version: REPLACEME
+  - version: v18.0.0
     pr-url: https://github.com/nodejs/node/pull/41263
     description: The default request timeout changed
                  from no timeout to 300s (5 minutes).
@@ -2941,11 +2941,11 @@ Found'`.
 <!-- YAML
 added: v0.1.13
 changes:
-  - version: REPLACEME
+  - version: v18.0.0
     pr-url: https://github.com/nodejs/node/pull/41263
     description: The `requestTimeout`, `headersTimeout`, `keepAliveTimeout` and
                  `connectionsCheckingInterval` are supported now.
-  - version: REPLACEME
+  - version: v18.0.0
     pr-url: https://github.com/nodejs/node/pull/42163
     description: The `noDelay` option now defaults to `true`.
   - version: v17.7.0
@@ -2998,7 +2998,7 @@ changes:
   * `maxHeaderSize` {number} Optionally overrides the value of
     [`--max-http-header-size`][] for requests received by this server, i.e.
     the maximum length of request headers in bytes.
-    **Default:** 16384 (16 KB).
+    **Default:** 16384 (16 KiB).
   * `noDelay` {boolean} If set to `true`, it disables the use of Nagle's
     algorithm immediately after a new incoming connection is received.
     **Default:** `true`.
@@ -3154,7 +3154,7 @@ added:
 * {number}
 
 Read-only property specifying the maximum allowed size of HTTP headers in bytes.
-Defaults to 16 KB. Configurable using the [`--max-http-header-size`][] CLI
+Defaults to 16 KiB. Configurable using the [`--max-http-header-size`][] CLI
 option.
 
 This can be overridden for servers and client requests by passing the
@@ -3231,7 +3231,7 @@ changes:
   * `maxHeaderSize` {number} Optionally overrides the value of
     [`--max-http-header-size`][] (the maximum length of response headers in
     bytes) for responses received from the server.
-    **Default:** 16384 (16 KB).
+    **Default:** 16384 (16 KiB).
   * `method` {string} A string specifying the HTTP request method. **Default:**
     `'GET'`.
   * `path` {string} Request path. Should include query string if any.
