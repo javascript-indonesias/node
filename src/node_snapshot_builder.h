@@ -13,7 +13,7 @@ namespace node {
 class ExternalReferenceRegistry;
 struct SnapshotData;
 
-class SnapshotBuilder {
+class NODE_EXTERN_PRIVATE SnapshotBuilder {
  public:
   static std::string Generate(const std::vector<std::string> args,
                               const std::vector<std::string> exec_args);
@@ -28,6 +28,9 @@ class SnapshotBuilder {
   static const SnapshotData* GetEmbeddedSnapshotData();
   static void InitializeIsolateParams(const SnapshotData* data,
                                       v8::Isolate::CreateParams* params);
+
+  static const size_t kNodeBaseContextIndex = 0;
+  static const size_t kNodeMainContextIndex = kNodeBaseContextIndex + 1;
 
  private:
   // Used to synchronize access to the snapshot data
