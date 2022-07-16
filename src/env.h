@@ -657,34 +657,6 @@ struct ContextInfo {
 
 class EnabledDebugList;
 
-class KVStore {
- public:
-  KVStore() = default;
-  virtual ~KVStore() = default;
-  KVStore(const KVStore&) = delete;
-  KVStore& operator=(const KVStore&) = delete;
-  KVStore(KVStore&&) = delete;
-  KVStore& operator=(KVStore&&) = delete;
-
-  virtual v8::MaybeLocal<v8::String> Get(v8::Isolate* isolate,
-                                         v8::Local<v8::String> key) const = 0;
-  virtual v8::Maybe<std::string> Get(const char* key) const = 0;
-  virtual void Set(v8::Isolate* isolate,
-                   v8::Local<v8::String> key,
-                   v8::Local<v8::String> value) = 0;
-  virtual int32_t Query(v8::Isolate* isolate,
-                        v8::Local<v8::String> key) const = 0;
-  virtual int32_t Query(const char* key) const = 0;
-  virtual void Delete(v8::Isolate* isolate, v8::Local<v8::String> key) = 0;
-  virtual v8::Local<v8::Array> Enumerate(v8::Isolate* isolate) const = 0;
-
-  virtual std::shared_ptr<KVStore> Clone(v8::Isolate* isolate) const;
-  virtual v8::Maybe<bool> AssignFromObject(v8::Local<v8::Context> context,
-                                           v8::Local<v8::Object> entries);
-
-  static std::shared_ptr<KVStore> CreateMapKVStore();
-};
-
 namespace per_process {
 extern std::shared_ptr<KVStore> system_environment;
 }
@@ -991,12 +963,16 @@ struct EnvSerializeInfo {
 };
 
 struct SnapshotData {
-  // The result of v8::SnapshotCreator::CreateBlob() during the snapshot
-  // building process.
-  v8::StartupData v8_snapshot_blob_data;
+  enum class DataOwnership { kOwned, kNotOwned };
 
   static const size_t kNodeBaseContextIndex = 0;
   static const size_t kNodeMainContextIndex = kNodeBaseContextIndex + 1;
+
+  DataOwnership data_ownership = DataOwnership::kOwned;
+
+  // The result of v8::SnapshotCreator::CreateBlob() during the snapshot
+  // building process.
+  v8::StartupData v8_snapshot_blob_data{nullptr, 0};
 
   std::vector<size_t> isolate_data_indices;
   // TODO(joyeecheung): there should be a vector of env_info once we snapshot
@@ -1007,6 +983,15 @@ struct SnapshotData {
   // read only space. We use native_module::CodeCacheInfo because
   // v8::ScriptCompiler::CachedData is not copyable.
   std::vector<native_module::CodeCacheInfo> code_cache;
+
+  ~SnapshotData();
+
+  SnapshotData(const SnapshotData&) = delete;
+  SnapshotData& operator=(const SnapshotData&) = delete;
+  SnapshotData(SnapshotData&&) = delete;
+  SnapshotData& operator=(SnapshotData&&) = delete;
+
+  SnapshotData() = default;
 };
 
 class Environment : public MemoryRetainer {
@@ -1378,6 +1363,13 @@ class Environment : public MemoryRetainer {
   inline HandleWrapQueue* handle_wrap_queue() { return &handle_wrap_queue_; }
   inline ReqWrapQueue* req_wrap_queue() { return &req_wrap_queue_; }
 
+  inline uint64_t time_origin() {
+    return time_origin_;
+  }
+  inline double time_origin_timestamp() {
+    return time_origin_timestamp_;
+  }
+
   inline bool EmitProcessEnvWarning() {
     bool current_value = emit_env_nonstring_warning_;
     emit_env_nonstring_warning_ = false;
@@ -1565,7 +1557,10 @@ class Environment : public MemoryRetainer {
 
   AliasedInt32Array stream_base_state_;
 
-  uint64_t environment_start_time_;
+  // https://w3c.github.io/hr-time/#dfn-time-origin
+  uint64_t time_origin_;
+  // https://w3c.github.io/hr-time/#dfn-get-time-origin-timestamp
+  double time_origin_timestamp_;
   std::unique_ptr<performance::PerformanceState> performance_state_;
 
   bool has_run_bootstrapping_code_ = false;

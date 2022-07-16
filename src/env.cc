@@ -743,7 +743,8 @@ Environment::Environment(IsolateData* isolate_data,
       stream_base_state_(isolate_,
                          StreamBase::kNumStreamBaseStateFields,
                          MAYBE_FIELD_PTR(env_info, stream_base_state)),
-      environment_start_time_(PERFORMANCE_NOW()),
+      time_origin_(PERFORMANCE_NOW()),
+      time_origin_timestamp_(GetCurrentTimeInMicroseconds()),
       flags_(flags),
       thread_id_(thread_id.id == static_cast<uint64_t>(-1)
                      ? AllocateEnvironmentThreadId().id
@@ -760,10 +761,7 @@ Environment::Environment(IsolateData* isolate_data,
   }
 
   set_env_vars(per_process::system_environment);
-  // TODO(joyeecheung): pass Isolate* and env_vars to it instead of the entire
-  // env, when the recursive dependency inclusion in "debug-utils.h" is
-  // resolved.
-  enabled_debug_list_.Parse(this);
+  enabled_debug_list_.Parse(env_vars(), isolate);
 
   // We create new copies of the per-Environment option sets, so that it is
   // easier to modify them after Environment creation. The defaults are
@@ -846,7 +844,7 @@ void Environment::InitializeMainContext(Local<Context> context,
   should_abort_on_uncaught_toggle_[0] = 1;
 
   performance_state_->Mark(performance::NODE_PERFORMANCE_MILESTONE_ENVIRONMENT,
-                           environment_start_time_);
+                           time_origin_);
   performance_state_->Mark(performance::NODE_PERFORMANCE_MILESTONE_NODE_START,
                            per_process::node_start_time);
 
