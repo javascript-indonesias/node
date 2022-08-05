@@ -986,7 +986,8 @@ int SnapshotBuilder::Generate(SnapshotData* out,
 
 #ifdef NODE_USE_NODE_CODE_CACHE
       // Regenerate all the code cache.
-      if (!native_module::NativeModuleLoader::CompileAllModules(main_context)) {
+      if (!native_module::NativeModuleLoader::CompileAllBuiltins(
+              main_context)) {
         return UNCAUGHT_EXCEPTION_ERROR;
       }
       native_module::NativeModuleLoader::CopyCodeCache(&(out->code_cache));
@@ -1013,7 +1014,7 @@ int SnapshotBuilder::Generate(SnapshotData* out,
 
   // Must be out of HandleScope
   out->v8_snapshot_blob_data =
-      creator.CreateBlob(SnapshotCreator::FunctionCodeHandling::kClear);
+      creator.CreateBlob(SnapshotCreator::FunctionCodeHandling::kKeep);
 
   // We must be able to rehash the blob when we restore it or otherwise
   // the hash seed would be fixed by V8, introducing a vulnerability.
@@ -1220,7 +1221,6 @@ void Initialize(Local<Object> target,
                 Local<Context> context,
                 void* priv) {
   SetMethod(context, target, "compileSerializeMain", CompileSerializeMain);
-  SetMethod(context, target, "markBootstrapComplete", MarkBootstrapComplete);
   SetMethod(context, target, "setSerializeCallback", SetSerializeCallback);
   SetMethod(context, target, "setDeserializeCallback", SetDeserializeCallback);
   SetMethod(context,
@@ -1231,7 +1231,6 @@ void Initialize(Local<Object> target,
 
 void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(CompileSerializeMain);
-  registry->Register(MarkBootstrapComplete);
   registry->Register(SetSerializeCallback);
   registry->Register(SetDeserializeCallback);
   registry->Register(SetDeserializeMainFunction);
