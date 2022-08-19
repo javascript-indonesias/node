@@ -1,6 +1,7 @@
 'use strict';
 
-// This tests snapshot JS API
+// This tests that a local TCP server can be snapshotted and the
+// diagnostics channels work across serialization.
 
 require('../common');
 const assert = require('assert');
@@ -10,15 +11,9 @@ const fixtures = require('../common/fixtures');
 const path = require('path');
 const fs = require('fs');
 
-const v8 = require('v8');
-
-// By default it should be false. We'll test that it's true in snapshot
-// building mode in the fixture.
-assert(!v8.startupSnapshot.isBuildingSnapshot());
-
 tmpdir.refresh();
 const blobPath = path.join(tmpdir.path, 'snapshot.blob');
-const entry = fixtures.path('snapshot', 'v8-startup-snapshot-api.js');
+const entry = fixtures.path('snapshot', 'server.js');
 {
   const child = spawnSync(process.execPath, [
     '--snapshot-blob',
@@ -49,7 +44,22 @@ const entry = fixtures.path('snapshot', 'v8-startup-snapshot-api.js');
   });
 
   const stdout = child.stdout.toString().trim();
-  const file = fs.readFileSync(fixtures.path('x1024.txt'), 'utf8');
-  assert.strictEqual(stdout, file);
+  console.log(`[stdout]:\n${stdout}\n`);
+  const stderr = child.stderr.toString().trim();
+  console.log(`[stderr]:\n${stderr}\n`);
   assert.strictEqual(child.status, 0);
+
+  const lines = stdout.split('\n');
+  assert.strictEqual(lines.length, 4);
+
+  // The log should look like this:
+  // server port ${port}
+  // From client diagnostics channel
+  // From server diagnostics channel: ${port}
+  // recv.length: 256
+  assert.match(lines[0], /server port (\d+)/);
+  const port = lines[0].match(/server port (\d+)/)[1];
+  assert.match(lines[1], /From client diagnostics channel/);
+  assert.match(lines[2], new RegExp(`From server diagnostics channel: ${port}`));
+  assert.match(lines[3], /recv\.length: 256/);
 }
