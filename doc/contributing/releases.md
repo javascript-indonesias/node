@@ -683,6 +683,7 @@ repository.
 
 ```console
 $ git checkout main
+$ git pull upstream main
 $ git cherry-pick v1.x^
 ```
 
@@ -737,7 +738,7 @@ haven't pushed your tag first, then build promotion won't work properly.
 Push the tag using the following command:
 
 ```console
-$ git push <remote> <vx.y.z>
+$ git push upstream v1.2.3
 ```
 
 _Note_: Please do not push the tag unless you are ready to complete the
