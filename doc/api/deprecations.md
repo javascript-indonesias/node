@@ -2889,12 +2889,15 @@ Prefer [`message.socket`][] over [`message.connection`][].
 
 <!-- YAML
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/43627
+    description: End-of-Life.
   - version: v16.0.0
     pr-url: https://github.com/nodejs/node/pull/36902
     description: Runtime deprecation.
 -->
 
-Type: Runtime
+Type: End-of-Life
 
 The `process.config` property provides access to Node.js compile-time settings.
 However, the property is mutable and therefore subject to tampering. The ability
@@ -3193,6 +3196,23 @@ changes:
 Type: Documentation-only
 
 The [`--trace-atomics-wait`][] flag is deprecated.
+
+### DEP0166: Double slashes in imports and exports targets
+
+<!-- YAML
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/44477
+    description: Documentation-only deprecation
+                 with `--pending-deprecation` support.
+-->
+
+Type: Documentation-only (supports [`--pending-deprecation`][])
+
+Package imports and exports targets mapping into paths including a double slash
+(of _"/"_ or _"\\"_) are deprecated and will fail with a resolution validation
+error in a future release. This same deprecation also applies to pattern matches
+starting or ending in a slash.
 
 [Legacy URL API]: url.md#legacy-url-api
 [NIST SP 800-38D]: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
