@@ -1185,14 +1185,19 @@ const dh = createDiffieHellmanGroup('modp16');
 
 The following groups are supported:
 
-* `'modp1'` (768 bits, [RFC 2409][] Section 6.1)
-* `'modp2'` (1024 bits, [RFC 2409][] Section 6.2)
-* `'modp5'` (1536 bits, [RFC 3526][] Section 2)
 * `'modp14'` (2048 bits, [RFC 3526][] Section 3)
 * `'modp15'` (3072 bits, [RFC 3526][] Section 4)
 * `'modp16'` (4096 bits, [RFC 3526][] Section 5)
 * `'modp17'` (6144 bits, [RFC 3526][] Section 6)
 * `'modp18'` (8192 bits, [RFC 3526][] Section 7)
+
+The following groups are still supported but deprecated (see [Caveats][]):
+
+* `'modp1'` (768 bits, [RFC 2409][] Section 6.1) <span class="deprecated-inline"></span>
+* `'modp2'` (1024 bits, [RFC 2409][] Section 6.2) <span class="deprecated-inline"></span>
+* `'modp5'` (1536 bits, [RFC 3526][] Section 2) <span class="deprecated-inline"></span>
+
+These deprecated groups might be removed in future versions of Node.js.
 
 ## Class: `ECDH`
 
@@ -5368,12 +5373,6 @@ is a bit field taking one of or a mix of the following flags (defined in
 * `crypto.constants.ENGINE_METHOD_PKEY_ASN1_METHS`
 * `crypto.constants.ENGINE_METHOD_ALL`
 * `crypto.constants.ENGINE_METHOD_NONE`
-
-The flags below are deprecated in OpenSSL-1.1.0.
-
-* `crypto.constants.ENGINE_METHOD_ECDH`
-* `crypto.constants.ENGINE_METHOD_ECDSA`
-* `crypto.constants.ENGINE_METHOD_STORE`
 
 ### `crypto.setFips(bool)`
 
