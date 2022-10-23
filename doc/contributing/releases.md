@@ -721,6 +721,24 @@ Revert all changes that were made to `src/node_version.h`:
 $ git checkout --ours HEAD -- src/node_version.h
 ```
 
+<details>
+<summary>Major version release</summary>
+
+On the main branch, instead of reverting changes made to `src/node_version.h`
+edit it instead and:
+
+* Increment `NODE_MAJOR_VERSION` by one
+* Reset `NODE_PATCH_VERSION` to `0`
+* Change `NODE_VERSION_IS_RELEASE` back to `0`
+
+Amend the current commit to apply the changes:
+
+```console
+$ git commit --amend
+```
+
+</details>
+
 Even if there are no conflicts, ensure that you revert all the changes that were
 made to `src/node_version.h`.
 
@@ -903,6 +921,8 @@ This script will use the promoted builds and changelog to generate the post. Run
 * Select the tag version you pushed earlier.
 * For release title, copy the title from the changelog.
 * For the description, copy the rest of the changelog entry.
+* If you are not releasing the latest "Current", uncheck
+  "Set as the latest release".
 * Click on the "Publish release" button.
 
 ### 19. Cleanup
