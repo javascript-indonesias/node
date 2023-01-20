@@ -1911,9 +1911,8 @@ and cannot be used in place of an `EventEmitter` in most cases.
    ignored.
 2. The `NodeEventTarget` does not emulate the full `EventEmitter` API.
    Specifically the `prependListener()`, `prependOnceListener()`,
-   `rawListeners()`, `setMaxListeners()`, `getMaxListeners()`, and
-   `errorMonitor` APIs are not emulated. The `'newListener'` and
-   `'removeListener'` events will also not be emitted.
+   `rawListeners()`, and `errorMonitor` APIs are not emulated.
+   The `'newListener'` and `'removeListener'` events will also not be emitted.
 3. The `NodeEventTarget` does not implement any special default behavior
    for events with type `'error'`.
 4. The `NodeEventTarget` supports `EventListener` objects as well as
@@ -2084,6 +2083,22 @@ added: v14.5.0
 * Type: {number} Returns `0` while an event is not being dispatched, `2` while
   it is being dispatched.
 
+This is not used in Node.js and is provided purely for completeness.
+
+#### `event.initEvent(type[, bubbles[, cancelable]])`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 3 - Legacy: The WHATWG spec considers it deprecated and users
+> shouldn't use it at all.
+
+* `type` {string}
+* `bubbles` {boolean}
+* `cancelable` {boolean}
+
+Redundant with event constructors and incapable of setting `composed`.
 This is not used in Node.js and is provided purely for completeness.
 
 #### `event.isTrusted`
@@ -2302,7 +2317,7 @@ added: v14.5.0
 The `NodeEventTarget` is a Node.js-specific extension to `EventTarget`
 that emulates a subset of the `EventEmitter` API.
 
-#### `nodeEventTarget.addListener(type, listener[, options])`
+#### `nodeEventTarget.addListener(type, listener)`
 
 <!-- YAML
 added: v14.5.0
@@ -2311,9 +2326,6 @@ added: v14.5.0
 * `type` {string}
 
 * `listener` {Function|EventListener}
-
-* `options` {Object}
-  * `once` {boolean}
 
 * Returns: {EventTarget} this
 
@@ -2346,7 +2358,29 @@ added: v14.5.0
 Node.js-specific extension to the `EventTarget` class that returns the number
 of event listeners registered for the `type`.
 
-#### `nodeEventTarget.off(type, listener)`
+#### `nodeEventTarget.setMaxListeners(n)`
+
+<!-- YAML
+added: v14.5.0
+-->
+
+* `n` {number}
+
+Node.js-specific extension to the `EventTarget` class that sets the number
+of max event listeners as `n`.
+
+#### `nodeEventTarget.getMaxListeners()`
+
+<!-- YAML
+added: v14.5.0
+-->
+
+* Returns: {number}
+
+Node.js-specific extension to the `EventTarget` class that returns the number
+of max event listeners.
+
+#### `nodeEventTarget.off(type, listener[, options])`
 
 <!-- YAML
 added: v14.5.0
@@ -2355,12 +2389,15 @@ added: v14.5.0
 * `type` {string}
 
 * `listener` {Function|EventListener}
+
+* `options` {Object}
+  * `capture` {boolean}
 
 * Returns: {EventTarget} this
 
 Node.js-specific alias for `eventTarget.removeListener()`.
 
-#### `nodeEventTarget.on(type, listener[, options])`
+#### `nodeEventTarget.on(type, listener)`
 
 <!-- YAML
 added: v14.5.0
@@ -2369,15 +2406,12 @@ added: v14.5.0
 * `type` {string}
 
 * `listener` {Function|EventListener}
-
-* `options` {Object}
-  * `once` {boolean}
 
 * Returns: {EventTarget} this
 
 Node.js-specific alias for `eventTarget.addListener()`.
 
-#### `nodeEventTarget.once(type, listener[, options])`
+#### `nodeEventTarget.once(type, listener)`
 
 <!-- YAML
 added: v14.5.0
@@ -2386,8 +2420,6 @@ added: v14.5.0
 * `type` {string}
 
 * `listener` {Function|EventListener}
-
-* `options` {Object}
 
 * Returns: {EventTarget} this
 
@@ -2409,7 +2441,7 @@ Node.js-specific extension to the `EventTarget` class. If `type` is specified,
 removes all registered listeners for `type`, otherwise removes all registered
 listeners.
 
-#### `nodeEventTarget.removeListener(type, listener)`
+#### `nodeEventTarget.removeListener(type, listener[, options])`
 
 <!-- YAML
 added: v14.5.0
@@ -2418,6 +2450,9 @@ added: v14.5.0
 * `type` {string}
 
 * `listener` {Function|EventListener}
+
+* `options` {Object}
+  * `capture` {boolean}
 
 * Returns: {EventTarget} this
 
