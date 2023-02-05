@@ -13,8 +13,6 @@
 
 namespace node {
 
-using errors::TryCatchScope;
-
 using url::table_data::hex;
 using url::table_data::C0_CONTROL_ENCODE_SET;
 using url::table_data::FRAGMENT_ENCODE_SET;
@@ -32,7 +30,6 @@ using v8::Int32;
 using v8::Integer;
 using v8::Isolate;
 using v8::Local;
-using v8::MaybeLocal;
 using v8::NewStringType;
 using v8::Null;
 using v8::Object;
@@ -1824,13 +1821,6 @@ void DomainToUnicode(const FunctionCallbackInfo<Value>& args) {
       String::NewFromUtf8(env->isolate(), out.c_str()).ToLocalChecked());
 }
 
-void SetURLConstructor(const FunctionCallbackInfo<Value>& args) {
-  Environment* env = Environment::GetCurrent(args);
-  CHECK_EQ(args.Length(), 1);
-  CHECK(args[0]->IsFunction());
-  env->set_url_constructor_function(args[0].As<Function>());
-}
-
 void Initialize(Local<Object> target,
                 Local<Value> unused,
                 Local<Context> context,
@@ -1839,7 +1829,6 @@ void Initialize(Local<Object> target,
   SetMethodNoSideEffect(context, target, "encodeAuth", EncodeAuthSet);
   SetMethodNoSideEffect(context, target, "domainToASCII", DomainToASCII);
   SetMethodNoSideEffect(context, target, "domainToUnicode", DomainToUnicode);
-  SetMethod(context, target, "setURLConstructor", SetURLConstructor);
 
 #define XX(name, _) NODE_DEFINE_CONSTANT(target, name);
   FLAGS(XX)
@@ -1856,69 +1845,6 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(EncodeAuthSet);
   registry->Register(DomainToASCII);
   registry->Register(DomainToUnicode);
-  registry->Register(SetURLConstructor);
-}
-
-std::string URL::ToFilePath() const {
-  if (context_.scheme != "file:") {
-    return "";
-  }
-
-#ifdef _WIN32
-  const char* slash = "\\";
-  auto is_slash = [] (char ch) {
-    return ch == '/' || ch == '\\';
-  };
-#else
-  const char* slash = "/";
-  auto is_slash = [] (char ch) {
-    return ch == '/';
-  };
-  if ((context_.flags & URL_FLAGS_HAS_HOST) &&
-      context_.host.length() > 0) {
-    return "";
-  }
-#endif
-  std::string decoded_path;
-  for (const std::string& part : context_.path) {
-    std::string decoded = PercentDecode(part.c_str(), part.length());
-    for (char& ch : decoded) {
-      if (is_slash(ch)) {
-        return "";
-      }
-    }
-    decoded_path += slash + decoded;
-  }
-
-#ifdef _WIN32
-  // TODO(TimothyGu): Use "\\?\" long paths on Windows.
-
-  // If hostname is set, then we have a UNC path. Pass the hostname through
-  // ToUnicode just in case it is an IDN using punycode encoding. We do not
-  // need to worry about percent encoding because the URL parser will have
-  // already taken care of that for us. Note that this only causes IDNs with an
-  // appropriate `xn--` prefix to be decoded.
-  if ((context_.flags & URL_FLAGS_HAS_HOST) &&
-      context_.host.length() > 0) {
-    std::string unicode_host;
-    if (!ToUnicode(context_.host, &unicode_host)) {
-      return "";
-    }
-    return "\\\\" + unicode_host + decoded_path;
-  }
-  // Otherwise, it's a local path that requires a drive letter.
-  if (decoded_path.length() < 3) {
-    return "";
-  }
-  if (decoded_path[2] != ':' ||
-      !IsASCIIAlpha(decoded_path[1])) {
-    return "";
-  }
-  // Strip out the leading '\'.
-  return decoded_path.substr(1);
-#else
-  return decoded_path;
-#endif
 }
 
 URL URL::FromFilePath(const std::string& file_path) {
@@ -1932,48 +1858,6 @@ URL URL::FromFilePath(const std::string& file_path) {
   URL::Parse(escaped_file_path.c_str(), escaped_file_path.length(), kPathStart,
              &url.context_, true, nullptr, false);
   return url;
-}
-
-// This function works by calling out to a JS function that creates and
-// returns the JS URL object. Be mindful of the JS<->Native boundary
-// crossing that is required.
-MaybeLocal<Value> URL::ToObject(Environment* env) const {
-  Isolate* isolate = env->isolate();
-  Local<Context> context = env->context();
-  Context::Scope context_scope(context);
-
-  const Local<Value> undef = Undefined(isolate);
-  const Local<Value> null = Null(isolate);
-
-  if (context_.flags & URL_FLAGS_FAILED)
-    return Local<Value>();
-
-  Local<Value> argv[] = {
-    undef,
-    undef,
-    undef,
-    undef,
-    null,  // host defaults to null
-    null,  // port defaults to null
-    undef,
-    null,  // query defaults to null
-    null,  // fragment defaults to null
-  };
-  SetArgs(env, argv, context_);
-
-  MaybeLocal<Value> ret;
-  {
-    TryCatchScope try_catch(env, TryCatchScope::CatchMode::kFatal);
-
-    // The SetURLConstructor method must have been called already to
-    // set the constructor function used below. SetURLConstructor is
-    // called automatically when the internal/url.js module is loaded
-    // during the internal/bootstrap/node.js processing.
-    ret = env->url_constructor_function()
-        ->Call(env->context(), undef, arraysize(argv), argv);
-  }
-
-  return ret;
 }
 
 }  // namespace url
