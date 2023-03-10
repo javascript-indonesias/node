@@ -6,9 +6,13 @@
 added:
   - v18.0.0
   - v16.17.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/46983
+    description: The test runner is now stable.
 -->
 
-> Stability: 1 - Experimental
+> Stability: 2 - Stable
 
 <!-- source_link=lib/test.js -->
 
@@ -377,6 +381,8 @@ internally.
 
 ## Collecting code coverage
 
+> Stability: 1 - Experimental
+
 When Node.js is started with the [`--experimental-test-coverage`][]
 command-line flag, code coverage is collected and statistics are reported once
 all tests have completed. If the [`NODE_V8_COVERAGE`][] environment variable is
@@ -522,8 +528,7 @@ flags for the test runner to use a specific reporter.
 The following built-reporters are supported:
 
 * `tap`
-  The `tap` reporter is the default reporter used by the test runner. It outputs
-  the test results in the [TAP][] format.
+  The `tap` reporter outputs the test results in the [TAP][] format.
 
 * `spec`
   The `spec` reporter outputs the test results in a human-readable format.
@@ -532,6 +537,14 @@ The following built-reporters are supported:
   The `dot` reporter outputs the test results in a compact format,
   where each passing test is represented by a `.`,
   and each failing test is represented by a `X`.
+
+When `stdout` is a [TTY][], the `spec` reporter is used by default.
+Otherwise, the `tap` reporter is used by default.
+
+The exact output of these reporters is subject to change between versions of
+Node.js, and should not be relied on programmatically. If programmatic access
+to the test runner's output is required, use the events emitted by the
+{TestsStream}.
 
 ### Custom reporters
 
@@ -1770,6 +1783,7 @@ added:
   aborted.
 
 [TAP]: https://testanything.org/
+[TTY]: tty.md
 [`--experimental-test-coverage`]: cli.md#--experimental-test-coverage
 [`--import`]: cli.md#--importmodule
 [`--test-name-pattern`]: cli.md#--test-name-pattern
