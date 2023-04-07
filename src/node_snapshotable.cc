@@ -18,6 +18,7 @@
 #include "node_metadata.h"
 #include "node_process.h"
 #include "node_snapshot_builder.h"
+#include "node_url.h"
 #include "node_util.h"
 #include "node_v8.h"
 #include "node_v8_platform-inl.h"
@@ -1366,18 +1367,7 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
   // (most importantly, BaseObject::kSlot).
   // For Node.js this design is enough for all the native binding that are
   // serializable.
-  if (index != BaseObject::kEmbedderType) {
-    return StartupData{nullptr, 0};
-  }
-
-  void* type_ptr = holder->GetAlignedPointerFromInternalField(index);
-  if (type_ptr == nullptr) {
-    return StartupData{nullptr, 0};
-  }
-
-  uint16_t type = *(static_cast<uint16_t*>(type_ptr));
-  per_process::Debug(DebugCategory::MKSNAPSHOT, "type = 0x%x\n", type);
-  if (type != kNodeEmbedderId) {
+  if (index != BaseObject::kEmbedderType || !BaseObject::IsBaseObject(holder)) {
     return StartupData{nullptr, 0};
   }
 
