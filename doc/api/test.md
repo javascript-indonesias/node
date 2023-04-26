@@ -379,6 +379,11 @@ Otherwise, the test is considered to be a failure. Test files must be
 executable by Node.js, but are not required to use the `node:test` module
 internally.
 
+Each test file is executed as if it was a regular script. That is, if the test
+file itself uses `node:test` to define tests, all of those tests will be
+executed within a single application thread, regardless of the value of the
+`concurrency` option of [`test()`][].
+
 ## Collecting code coverage
 
 > Stability: 1 - Experimental
@@ -726,12 +731,17 @@ unless a destination is explicitly provided.
 added:
   - v18.9.0
   - v16.19.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/47628
+    description: Add a testNamePatterns option.
 -->
 
 * `options` {Object} Configuration options for running tests. The following
   properties are supported:
   * `concurrency` {number|boolean} If a number is provided,
-    then that many files would run in parallel.
+    then that many test processes would run in parallel, where each process
+    corresponds to one test file.
     If `true`, it would run `os.availableParallelism() - 1` test files in
     parallel.
     If `false`, it would only run one test file at a time.
@@ -750,6 +760,12 @@ added:
     This can be a number, or a function that takes no arguments and returns a
     number. If a nullish value is provided, each process gets its own port,
     incremented from the primary's `process.debugPort`.
+    **Default:** `undefined`.
+  * `testNamePatterns` {string|RegExp|Array} A String, RegExp or a RegExp Array,
+    that can be used to only run tests whose name matches the provided pattern.
+    Test name patterns are interpreted as JavaScript regular expressions.
+    For each test that is executed, any corresponding test hooks, such as
+    `beforeEach()`, are also run.
     **Default:** `undefined`.
 * Returns: {TestsStream}
 
@@ -795,7 +811,7 @@ changes:
 * `options` {Object} Configuration options for the test. The following
   properties are supported:
   * `concurrency` {number|boolean} If a number is provided,
-    then that many tests would run in parallel.
+    then that many tests would run in parallel within the application thread.
     If `true`, it would run `os.availableParallelism() - 1` tests in parallel.
     For subtests, it will be `Infinity` tests in parallel.
     If `false`, it would only run one test at a time.
@@ -1766,7 +1782,7 @@ changes:
 * `options` {Object} Configuration options for the subtest. The following
   properties are supported:
   * `concurrency` {number|boolean|null} If a number is provided,
-    then that many tests would run in parallel.
+    then that many tests would run in parallel within the application thread.
     If `true`, it would run all subtests in parallel.
     If `false`, it would only run one test at a time.
     If unspecified, subtests inherit this value from their parent.

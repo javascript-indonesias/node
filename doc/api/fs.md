@@ -3383,10 +3383,9 @@ added: v19.8.0
 Returns a {Blob} whose data is backed by the given file.
 
 The file must not be modified after the {Blob} is created. Any modifications
-will cause reading the {Blob} data to fail with a `DOMException`.
-error. Synchronous stat operations on the file when the `Blob` is created, and
-before each read in order to detect whether the file data has been modified
-on disk.
+will cause reading the {Blob} data to fail with a `DOMException` error.
+Synchronous stat operations on the file when the `Blob` is created, and before
+each read in order to detect whether the file data has been modified on disk.
 
 ```mjs
 import { openAsBlob } from 'node:fs';
@@ -4125,6 +4124,9 @@ Asynchronous stat(2). The callback gets two arguments `(err, stats)` where
 `stats` is an {fs.Stats} object.
 
 In case of an error, the `err.code` will be one of [Common System Errors][].
+
+[`fs.stat()`][] follows symbolic links. Use [`fs.lstat()`][] to look at the
+links themselves.
 
 Using `fs.stat()` to check for the existence of a file before calling
 `fs.open()`, `fs.readFile()`, or `fs.writeFile()` is not recommended.
