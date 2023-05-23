@@ -4,7 +4,7 @@
 
 > Stability: 1 - Experimental: This feature is being designed and will change.
 
-<!-- source_link=lib/internal/main/single_executable_application.js -->
+<!-- source_link=src/node_sea.cc -->
 
 This feature allows the distribution of a Node.js application conveniently to a
 system that does not have Node.js installed.
@@ -26,42 +26,42 @@ Here are the steps for creating a single executable application using one such
 tool, [postject][]:
 
 1. Create a JavaScript file:
-   ```console
-   $ echo 'console.log(`Hello, ${process.argv[2]}!`);' > hello.js
+   ```bash
+   echo 'console.log(`Hello, ${process.argv[2]}!`);' > hello.js
    ```
 
 2. Create a configuration file building a blob that can be injected into the
    single executable application (see
    [Generating single executable preparation blobs][] for details):
-   ```console
-   $ echo '{ "main": "hello.js", "output": "sea-prep.blob" }' > sea-config.json
+   ```bash
+   echo '{ "main": "hello.js", "output": "sea-prep.blob" }' > sea-config.json
    ```
 
 3. Generate the blob to be injected:
-   ```console
-   $ node --experimental-sea-config sea-config.json
+   ```bash
+   node --experimental-sea-config sea-config.json
    ```
 
 4. Create a copy of the `node` executable and name it according to your needs:
 
    * On systems other than Windows:
 
-   ```console
-   $ cp $(command -v node) hello
+   ```bash
+   cp $(command -v node) hello
    ```
 
    * On Windows:
 
    Using PowerShell:
 
-   ```console
-   $ cp (Get-Command node).Source hello.exe
+   ```powershell
+   cp (Get-Command node).Source hello.exe
    ```
 
    Using Command Prompt:
 
-   ```console
-   $ for /F "tokens=*" %n IN ('where.exe node') DO @(copy "%n" hello.exe)
+   ```text
+   for /F "tokens=*" %n IN ('where.exe node') DO @(copy "%n" hello.exe)
    ```
 
    The `.exe` extension is necessary.
@@ -70,8 +70,8 @@ tool, [postject][]:
 
    * On macOS:
 
-   ```console
-   $ codesign --remove-signature hello
+   ```bash
+   codesign --remove-signature hello
    ```
 
    * On Windows (optional):
@@ -79,8 +79,8 @@ tool, [postject][]:
    [signtool][] can be used from the installed [Windows SDK][]. If this step is
    skipped, ignore any signature-related warning from postject.
 
-   ```console
-   $ signtool remove /s hello.exe
+   ```powershell
+   signtool remove /s hello.exe
    ```
 
 6. Inject the blob into the copied binary by running `postject` with
@@ -100,20 +100,26 @@ tool, [postject][]:
    To summarize, here is the required command for each platform:
 
    * On Linux:
-     ```console
-     $ npx postject hello NODE_SEA_BLOB sea-prep.blob \
+     ```bash
+     npx postject hello NODE_SEA_BLOB sea-prep.blob \
          --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
      ```
 
-   * On Windows:
-     ```console
-     $ npx postject hello.exe NODE_SEA_BLOB sea-prep.blob \
+   * On Windows - PowerShell:
+     ```powershell
+     npx postject hello.exe NODE_SEA_BLOB sea-prep.blob `
+         --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+     ```
+
+   * On Windows - Command Prompt:
+     ```text
+     npx postject hello.exe NODE_SEA_BLOB sea-prep.blob ^
          --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
      ```
 
    * On macOS:
-     ```console
-     $ npx postject hello NODE_SEA_BLOB sea-prep.blob \
+     ```bash
+     npx postject hello NODE_SEA_BLOB sea-prep.blob \
          --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 \
          --macho-segment-name NODE_SEA
      ```
@@ -122,8 +128,8 @@ tool, [postject][]:
 
    * On macOS:
 
-   ```console
-   $ codesign --sign - hello
+   ```bash
+   codesign --sign - hello
    ```
 
    * On Windows (optional):
@@ -131,8 +137,8 @@ tool, [postject][]:
    A certificate needs to be present for this to work. However, the unsigned
    binary would still be runnable.
 
-   ```console
-   $ signtool sign /fd SHA256 hello.exe
+   ```powershell
+   signtool sign /fd SHA256 hello.exe
    ```
 
 8. Run the binary:
