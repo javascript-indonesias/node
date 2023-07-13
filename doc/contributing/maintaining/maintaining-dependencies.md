@@ -8,7 +8,7 @@ directories to create the Node.js binaries.
 All dependencies are located within the `deps` directory.
 This a list of all the dependencies:
 
-* [acorn 8.9.0][]
+* [acorn 8.10.0][]
 * [ada 2.5.0][]
 * [base64 0.5.0][]
 * [brotli 1.0.9][]
@@ -20,7 +20,7 @@ This a list of all the dependencies:
 * [icu-small 73.2][]
 * [libuv 1.46.0][]
 * [llhttp 8.1.0][]
-* [minimatch 9.0.2][]
+* [minimatch 9.0.3][]
 * [nghttp2 1.53.0][]
 * [nghttp3 0.7.0][]
 * [ngtcp2 0.8.1][]
@@ -144,7 +144,7 @@ takes care of npm update, it is maintained by the npm team.
 
 ## Dependency list
 
-### acorn 8.9.0
+### acorn 8.10.0
 
 The [acorn](https://github.com/acornjs/acorn) dependency is a JavaScript parser.
 [acorn-walk](https://github.com/acornjs/acorn/tree/master/acorn-walk) is
@@ -218,7 +218,7 @@ The [llhttp](https://github.com/nodejs/llhttp) dependency is
 the http parser used by Node.js.
 See [maintaining-http][] for more informations.
 
-### minimatch 9.0.2
+### minimatch 9.0.3
 
 The [minimatch](https://github.com/isaacs/minimatch) dependency is a
 minimal matching utility.
@@ -318,7 +318,7 @@ dependency lossless data-compression library,
 it comes from the Chromium team's zlib fork which incorporated
 performance improvements not currently available in standard zlib.
 
-[acorn 8.9.0]: #acorn-890
+[acorn 8.10.0]: #acorn-8100
 [ada 2.5.0]: #ada-250
 [base64 0.5.0]: #base64-050
 [brotli 1.0.9]: #brotli-109
@@ -337,7 +337,7 @@ performance improvements not currently available in standard zlib.
 [maintaining-icu]: ./maintaining-icu.md
 [maintaining-openssl]: ./maintaining-openssl.md
 [maintaining-web-assembly]: ./maintaining-web-assembly.md
-[minimatch 9.0.2]: #minimatch-902
+[minimatch 9.0.3]: #minimatch-903
 [nghttp2 1.53.0]: #nghttp2-1530
 [nghttp3 0.7.0]: #nghttp3-070
 [ngtcp2 0.8.1]: #ngtcp2-081
