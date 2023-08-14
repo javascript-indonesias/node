@@ -679,6 +679,12 @@ The absolute path to the `test/fixtures/` directory.
 
 Returns the result of `path.join(fixtures.fixturesDir, ...args)`.
 
+### `fixtures.fileURL(...args)`
+
+* `...args` [\<string>][<string>]
+
+Returns the result of `url.pathToFileURL(fixtures.path(...args))`.
+
 ### `fixtures.readSync(args[, enc])`
 
 * `args` [\<string>][<string>] | [\<Array>][<Array>]
@@ -1055,6 +1061,13 @@ It is usually only necessary to call `refresh()` once in a test file.
 Avoid calling it more than once in an asynchronous context as one call
 might refresh the temporary directory of a different context, causing
 the test to fail somewhat mysteriously.
+
+### `resolve([...paths])`
+
+* `...paths` [\<string>][<string>]
+* return [\<string>][<string>]
+
+Resolves a sequence of paths into absolute path in the temporary directory.
 
 ### `hasEnoughSpace(size)`
 
