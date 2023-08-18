@@ -145,6 +145,10 @@ Error: Access to this API has been restricted
 
 <!-- YAML
 added: v20.0.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/49047
+    description: Paths delimited by comma (`,`) are no longer allowed.
 -->
 
 > Stability: 1 - Experimental
@@ -155,8 +159,11 @@ the [Permission Model][].
 The valid arguments for the `--allow-fs-read` flag are:
 
 * `*` - To allow all `FileSystemRead` operations.
-* Paths delimited by comma (`,`) to allow only matching `FileSystemRead`
-  operations.
+* Multiple paths can be allowed using multiple `--allow-fs-read` flags.
+  Example `--allow-fs-read=/folder1/ --allow-fs-read=/folder1/`
+
+Paths delimited by comma (`,`) are no longer allowed.
+When passing a single flag with a comma a warning will be diplayed
 
 Examples can be found in the [File System Permissions][] documentation.
 
@@ -192,6 +199,10 @@ node --experimental-permission --allow-fs-read=/path/to/index.js index.js
 
 <!-- YAML
 added: v20.0.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/49047
+    description: Paths delimited by comma (`,`) are no longer allowed.
 -->
 
 > Stability: 1 - Experimental
@@ -202,8 +213,11 @@ the [Permission Model][].
 The valid arguments for the `--allow-fs-write` flag are:
 
 * `*` - To allow all `FileSystemWrite` operations.
-* Paths delimited by comma (`,`) to allow only matching `FileSystemWrite`
-  operations.
+* Multiple paths can be allowed using multiple `--allow-fs-read` flags.
+  Example `--allow-fs-read=/folder1/ --allow-fs-read=/folder1/`
+
+Paths delimited by comma (`,`) are no longer allowed.
+When passing a single flag with a comma a warning will be diplayed
 
 Examples can be found in the [File System Permissions][] documentation.
 
@@ -983,6 +997,41 @@ surface on other platforms, but the performance impact may be severe.
 
 This flag is inherited from V8 and is subject to change upstream. It may
 disappear in a non-semver-major release.
+
+### `--env-file=config`
+
+> Stability: 1.1 - Active development
+
+<!-- YAML
+added: REPLACEME
+-->
+
+Loads environment variables from a file relative to the current directory,
+making them available to applications on `process.env`. The [environment
+variables which configure Node.js][environment_variables], such as `NODE_OPTIONS`,
+are parsed and applied. If the same variable is defined in the environment and
+in the file, the value from the environment takes precedence.
+
+The format of the file should be one line per key-value pair of environment
+variable name and value separated by `=`:
+
+```text
+PORT=3000
+```
+
+Any text after a `#` is treated as a comment:
+
+```text
+# This is a comment
+PORT=3000 # This is also a comment
+```
+
+Values can start and end with the following quotes: `\`, `"` or `'`.
+They are omitted from the values.
+
+```text
+USERNAME="nodejs" # will result in `nodejs` as the value.
+```
 
 ### `--max-http-header-size=size`
 
@@ -2647,6 +2696,7 @@ done
 [debugger]: debugger.md
 [debugging security implications]: https://nodejs.org/en/docs/guides/debugging-getting-started/#security-implications
 [emit_warning]: process.md#processemitwarningwarning-options
+[environment_variables]: #environment-variables
 [filtering tests by name]: test.md#filtering-tests-by-name
 [jitless]: https://v8.dev/blog/jitless
 [libuv threadpool documentation]: https://docs.libuv.org/en/latest/threadpool.html
