@@ -19,9 +19,9 @@ This a list of all the dependencies:
 * [histogram 0.11.8][]
 * [icu-small 73.2][]
 * [libuv 1.46.0][]
-* [llhttp 8.1.0][]
+* [llhttp 9.1.2][]
 * [minimatch 9.0.3][]
-* [nghttp2 1.55.1][]
+* [nghttp2 1.56.0][]
 * [nghttp3 0.7.0][]
 * [ngtcp2 0.8.1][]
 * [npm 9.6.7][]
@@ -212,7 +212,7 @@ The [libuv](https://github.com/libuv/libuv) dependency is a
 multi-platform support library with a focus on asynchronous I/O.
 It was primarily developed for use by Node.js.
 
-### llhttp 8.1.0
+### llhttp 9.1.2
 
 The [llhttp](https://github.com/nodejs/llhttp) dependency is
 the http parser used by Node.js.
@@ -223,7 +223,7 @@ See [maintaining-http][] for more informations.
 The [minimatch](https://github.com/isaacs/minimatch) dependency is a
 minimal matching utility.
 
-### nghttp2 1.55.1
+### nghttp2 1.56.0
 
 The [nghttp2](https://github.com/nghttp2/nghttp2) dependency is a C library
 implementing HTTP/2 protocol.
@@ -330,7 +330,7 @@ performance improvements not currently available in standard zlib.
 [histogram 0.11.8]: #histogram-0118
 [icu-small 73.2]: #icu-small-732
 [libuv 1.46.0]: #libuv-1460
-[llhttp 8.1.0]: #llhttp-810
+[llhttp 9.1.2]: #llhttp-912
 [maintaining-V8]: ./maintaining-V8.md
 [maintaining-cjs-module-lexer]: ./maintaining-cjs-module-lexer.md
 [maintaining-http]: ./maintaining-http.md
@@ -338,7 +338,7 @@ performance improvements not currently available in standard zlib.
 [maintaining-openssl]: ./maintaining-openssl.md
 [maintaining-web-assembly]: ./maintaining-web-assembly.md
 [minimatch 9.0.3]: #minimatch-903
-[nghttp2 1.55.1]: #nghttp2-1551
+[nghttp2 1.56.0]: #nghttp2-1560
 [nghttp3 0.7.0]: #nghttp3-070
 [ngtcp2 0.8.1]: #ngtcp2-081
 [npm 9.6.7]: #npm-967
