@@ -318,6 +318,10 @@ fd.createReadStream({ start: 90, end: 99 });
 
 <!-- YAML
 added: v16.11.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/50093
+    description: The `flush` option is now supported.
 -->
 
 * `options` {Object}
@@ -326,6 +330,8 @@ added: v16.11.0
   * `emitClose` {boolean} **Default:** `true`
   * `start` {integer}
   * `highWaterMark` {number} **Default:** `16384`
+  * `flush` {boolean} If `true`, the underlying file descriptor is flushed
+    prior to closing it. **Default:** `false`.
 * Returns: {fs.WriteStream}
 
 `options` may also include a `start` option to allow writing data at some
@@ -1322,7 +1328,9 @@ changes:
 * `options` {string|Object}
   * `encoding` {string} **Default:** `'utf8'`
   * `withFileTypes` {boolean} **Default:** `false`
-  * `recursive` {boolean} **Default:** `false`
+  * `recursive` {boolean} If `true`, reads the contents of a directory
+    recursively. In recursive mode, it will list all files, sub files, and
+    directories. **Default:** `false`.
 * Returns: {Promise}  Fulfills with an array of the names of the files in
   the directory excluding `'.'` and `'..'`.
 
@@ -2538,6 +2546,9 @@ If `options` is a string, then it specifies the encoding.
 <!-- YAML
 added: v0.1.31
 changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/50093
+    description: The `flush` option is now supported.
   - version: v16.10.0
     pr-url: https://github.com/nodejs/node/pull/40013
     description: The `fs` option does not need `open` method if an `fd` was provided.
@@ -2591,6 +2602,8 @@ changes:
   * `fs` {Object|null} **Default:** `null`
   * `signal` {AbortSignal|null} **Default:** `null`
   * `highWaterMark` {number} **Default:** `16384`
+  * `flush` {boolean} If `true`, the underlying file descriptor is flushed
+    prior to closing it. **Default:** `false`.
 * Returns: {fs.WriteStream}
 
 `options` may also include a `start` option to allow writing data at some
@@ -3644,7 +3657,9 @@ changes:
 * `options` {string|Object}
   * `encoding` {string} **Default:** `'utf8'`
   * `withFileTypes` {boolean} **Default:** `false`
-  * `recursive` {boolean} **Default:** `false`
+  * `recursive` {boolean} If `true`, reads the contents of a directory
+    recursively. In recursive mode, it will list all files, sub files and
+    directories. **Default:** `false`.
 * `callback` {Function}
   * `err` {Error}
   * `files` {string\[]|Buffer\[]|fs.Dirent\[]}
@@ -5717,7 +5732,9 @@ changes:
 * `options` {string|Object}
   * `encoding` {string} **Default:** `'utf8'`
   * `withFileTypes` {boolean} **Default:** `false`
-  * `recursive` {boolean} **Default:** `false`
+  * `recursive` {boolean} If `true`, reads the contents of a directory
+    recursively. In recursive mode, it will list all files, sub files, and
+    directories. **Default:** `false`.
 * Returns: {string\[]|Buffer\[]|fs.Dirent\[]}
 
 Reads the contents of the directory.

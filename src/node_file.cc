@@ -1474,7 +1474,7 @@ static void FTruncate(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
 
   const int argc = args.Length();
-  CHECK_GE(argc, 3);
+  CHECK_GE(argc, 2);
 
   CHECK(args[0]->IsInt32());
   const int fd = args[0].As<Int32>()->Value();
@@ -1482,17 +1482,15 @@ static void FTruncate(const FunctionCallbackInfo<Value>& args) {
   CHECK(IsSafeJsInt(args[1]));
   const int64_t len = args[1].As<Integer>()->Value();
 
-  FSReqBase* req_wrap_async = GetReqWrap(args, 2);
-  if (req_wrap_async != nullptr) {
+  if (argc > 2) {
+    FSReqBase* req_wrap_async = GetReqWrap(args, 2);
     FS_ASYNC_TRACE_BEGIN0(UV_FS_FTRUNCATE, req_wrap_async)
     AsyncCall(env, req_wrap_async, args, "ftruncate", UTF8, AfterNoArgs,
               uv_fs_ftruncate, fd, len);
   } else {
-    CHECK_EQ(argc, 4);
-    FSReqWrapSync req_wrap_sync;
+    FSReqWrapSync req_wrap_sync("ftruncate");
     FS_SYNC_TRACE_BEGIN(ftruncate);
-    SyncCall(env, args[3], &req_wrap_sync, "ftruncate", uv_fs_ftruncate, fd,
-             len);
+    SyncCallAndThrowOnError(env, &req_wrap_sync, uv_fs_ftruncate, fd, len);
     FS_SYNC_TRACE_END(ftruncate);
   }
 }
@@ -2205,18 +2203,29 @@ static void WriteBuffers(const FunctionCallbackInfo<Value>& args) {
     iovs[i] = uv_buf_init(Buffer::Data(chunk), Buffer::Length(chunk));
   }
 
-  FSReqBase* req_wrap_async = GetReqWrap(args, 3);
-  if (req_wrap_async != nullptr) {  // writeBuffers(fd, chunks, pos, req)
+  if (argc > 3) {  // writeBuffers(fd, chunks, pos, req)
+    FSReqBase* req_wrap_async = GetReqWrap(args, 3);
     FS_ASYNC_TRACE_BEGIN0(UV_FS_WRITE, req_wrap_async)
-    AsyncCall(env, req_wrap_async, args, "write", UTF8, AfterInteger,
-              uv_fs_write, fd, *iovs, iovs.length(), pos);
-  } else {  // writeBuffers(fd, chunks, pos, undefined, ctx)
-    CHECK_EQ(argc, 5);
-    FSReqWrapSync req_wrap_sync;
+    AsyncCall(env,
+              req_wrap_async,
+              args,
+              "write",
+              UTF8,
+              AfterInteger,
+              uv_fs_write,
+              fd,
+              *iovs,
+              iovs.length(),
+              pos);
+  } else {  // writeBuffers(fd, chunks, pos)
+    FSReqWrapSync req_wrap_sync("write");
     FS_SYNC_TRACE_BEGIN(write);
-    int bytesWritten = SyncCall(env, args[4], &req_wrap_sync, "write",
-                                uv_fs_write, fd, *iovs, iovs.length(), pos);
+    int bytesWritten = SyncCallAndThrowOnError(
+        env, &req_wrap_sync, uv_fs_write, fd, *iovs, iovs.length(), pos);
     FS_SYNC_TRACE_END(write, "bytesWritten", bytesWritten);
+    if (is_uv_error(bytesWritten)) {
+      return;
+    }
     args.GetReturnValue().Set(bytesWritten);
   }
 }
