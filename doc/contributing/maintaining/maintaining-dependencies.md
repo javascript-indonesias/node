@@ -9,7 +9,7 @@ All dependencies are located within the `deps` directory.
 This a list of all the dependencies:
 
 * [acorn 8.11.2][]
-* [ada 2.7.2][]
+* [ada 2.7.4][]
 * [base64 0.5.1][]
 * [brotli 1.0.9][]
 * [c-ares 1.20.1][]
@@ -17,7 +17,7 @@ This a list of all the dependencies:
 * [corepack][]
 * [googletest 116b7e5][]
 * [histogram 0.11.8][]
-* [icu-small 73.2][]
+* [icu-small 74.1][]
 * [libuv 1.46.0][]
 * [llhttp 9.1.3][]
 * [minimatch 9.0.3][]
@@ -29,7 +29,7 @@ This a list of all the dependencies:
 * [postject 1.0.0-alpha.6][]
 * [simdjson 3.6.0][]
 * [simdutf 4.0.4][]
-* [undici 5.27.0][]
+* [undici 5.27.2][]
 * [uvwasi 0.0.19][]
 * [V8 11.8.172.12][]
 * [zlib 1.2.13.1-motley-dfc48fc][]
@@ -151,7 +151,7 @@ The [acorn](https://github.com/acornjs/acorn) dependency is a JavaScript parser.
 [acorn-walk](https://github.com/acornjs/acorn/tree/master/acorn-walk) is
 an abstract syntax tree walker for the ESTree format.
 
-### ada 2.7.2
+### ada 2.7.4
 
 The [ada](https://github.com/ada-url/ada) dependency is a
 fast and spec-compliant URL parser written in C++.
@@ -200,7 +200,7 @@ C++ testing and mocking framework.
 The [histogram](https://github.com/HdrHistogram/HdrHistogram_c) dependency is
 a C port of High Dynamic Range (HDR) Histogram.
 
-### icu-small 73.2
+### icu-small 74.1
 
 The [icu](http://site.icu-project.org) is widely used set of C/C++
 and Java libraries providing Unicode and Globalization
@@ -297,7 +297,7 @@ a C++ library for fast JSON parsing.
 The [simdutf](https://github.com/simdutf/simdutf) dependency is
 a C++ library for fast UTF-8 decoding and encoding.
 
-### undici 5.27.0
+### undici 5.27.2
 
 The [undici](https://github.com/nodejs/undici) dependency is an HTTP/1.1 client,
 written from scratch for Node.js..
@@ -325,7 +325,7 @@ it comes from the Chromium team's zlib fork which incorporated
 performance improvements not currently available in standard zlib.
 
 [acorn 8.11.2]: #acorn-8112
-[ada 2.7.2]: #ada-272
+[ada 2.7.4]: #ada-274
 [base64 0.5.1]: #base64-051
 [brotli 1.0.9]: #brotli-109
 [c-ares 1.20.1]: #c-ares-1201
@@ -334,7 +334,7 @@ performance improvements not currently available in standard zlib.
 [dependency-update-action]: ../../../.github/workflows/tools.yml
 [googletest 116b7e5]: #googletest-116b7e5
 [histogram 0.11.8]: #histogram-0118
-[icu-small 73.2]: #icu-small-732
+[icu-small 74.1]: #icu-small-741
 [libuv 1.46.0]: #libuv-1460
 [llhttp 9.1.3]: #llhttp-913
 [maintaining-V8]: ./maintaining-V8.md
@@ -352,7 +352,7 @@ performance improvements not currently available in standard zlib.
 [postject 1.0.0-alpha.6]: #postject-100-alpha6
 [simdjson 3.6.0]: #simdutf-360
 [simdutf 4.0.4]: #simdutf-404
-[undici 5.27.0]: #undici-5270
+[undici 5.27.2]: #undici-5272
 [update-openssl-action]: ../../../.github/workflows/update-openssl.yml
 [uvwasi 0.0.19]: #uvwasi-0019
 [v8 11.8.172.12]: #v8-11817212
