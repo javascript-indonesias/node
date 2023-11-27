@@ -165,15 +165,13 @@ For information about the governance of the Node.js project, see
 * [aduh95](https://github.com/aduh95) -
   **Antoine du Hamel** <<duhamelantoine1995@gmail.com>> (he/him)
 * [anonrig](https://github.com/anonrig) -
-  **Yagiz Nizipli** <<yagiz@nizipli.com>> (he/him)
+  **Yagiz Nizipli** <<yagiz.nizipli@sentry.io>> (he/him)
 * [apapirovski](https://github.com/apapirovski) -
   **Anatoli Papirovski** <<apapirovski@mac.com>> (he/him)
 * [benjamingr](https://github.com/benjamingr) -
   **Benjamin Gruenbaum** <<benjamingr@gmail.com>>
 * [BridgeAR](https://github.com/BridgeAR) -
   **Ruben Bridgewater** <<ruben@bridgewater.de>> (he/him)
-* [cjihrig](https://github.com/cjihrig) -
-  **Colin Ihrig** <<cjihrig@gmail.com>> (he/him)
 * [GeoffreyBooth](https://github.com/geoffreybooth) -
   **Geoffrey Booth** <<webadmin@geoffreybooth.com>> (he/him)
 * [gireeshpunathil](https://github.com/gireeshpunathil) -
@@ -213,6 +211,8 @@ For information about the governance of the Node.js project, see
   **Ben Noordhuis** <<info@bnoordhuis.nl>>
 * [ChALkeR](https://github.com/ChALkeR) -
   **Сковорода Никита Андреевич** <<chalkerx@gmail.com>> (he/him)
+* [cjihrig](https://github.com/cjihrig) -
+  **Colin Ihrig** <<cjihrig@gmail.com>> (he/him)
 * [codebytere](https://github.com/codebytere) -
   **Shelley Vohr** <<shelley.vohr@gmail.com>> (she/her)
 * [danbev](https://github.com/danbev) -
@@ -288,7 +288,7 @@ For information about the governance of the Node.js project, see
 * [aduh95](https://github.com/aduh95) -
   **Antoine du Hamel** <<duhamelantoine1995@gmail.com>> (he/him)
 * [anonrig](https://github.com/anonrig) -
-  **Yagiz Nizipli** <<yagiz@nizipli.com>> (he/him)
+  **Yagiz Nizipli** <<yagiz.nizipli@sentry.io>> (he/him)
 * [antsmartian](https://github.com/antsmartian) -
   **Anto Aravinth** <<anto.aravinth.cse@gmail.com>> (he/him)
 * [apapirovski](https://github.com/apapirovski) -

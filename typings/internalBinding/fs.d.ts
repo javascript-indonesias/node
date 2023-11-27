@@ -191,7 +191,7 @@ declare namespace InternalFSBinding {
   function rename(oldPath: string, newPath: string): void;
 
   function rmdir(path: string, req: FSReqCallback): void;
-  function rmdir(path: string, req: undefined, ctx: FSSyncContext): void;
+  function rmdir(path: string): void;
   function rmdir(path: string, usePromises: typeof kUsePromises): Promise<void>;
 
   function stat(path: StringOrBuffer, useBigint: boolean, req: FSReqCallback<Float64Array | BigUint64Array>): void;
@@ -230,6 +230,9 @@ declare namespace InternalFSBinding {
   function writeString(fd: number, value: string, pos: unknown, encoding: unknown, usePromises: typeof kUsePromises): Promise<number>;
 
   function getFormatOfExtensionlessFile(url: string): ConstantsBinding['fs'];
+
+  function writeFileUtf8(path: string, data: string, flag: number, mode: number): void;
+  function writeFileUtf8(fd: number, data: string, flag: number, mode: number): void;
 }
 
 export interface FsBinding {
