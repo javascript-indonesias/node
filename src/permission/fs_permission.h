@@ -15,7 +15,8 @@ namespace permission {
 
 class FSPermission final : public PermissionBase {
  public:
-  void Apply(const std::vector<std::string>& allow,
+  void Apply(Environment* env,
+             const std::vector<std::string>& allow,
              PermissionScope scope) override;
   bool is_granted(PermissionScope perm,
                   const std::string_view& param) const override;
@@ -76,6 +77,14 @@ class FSPermission final : public PermissionBase {
       Node* NextNode(const std::string& path, size_t idx) const {
         if (idx >= path.length()) {
           return nullptr;
+        }
+
+        // wildcard node takes precedence
+        if (children.size() > 1) {
+          auto it = children.find('*');
+          if (it != children.end()) {
+            return it->second;
+          }
         }
 
         auto it = children.find(path[idx]);
