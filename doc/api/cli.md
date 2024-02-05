@@ -666,6 +666,10 @@ of `--enable-source-maps`.
 
 <!-- YAML
 added: v20.6.0
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/51289
+    description: Add support to multi-line values.
 -->
 
 Loads environment variables from a file relative to the current directory,
@@ -700,6 +704,20 @@ They are omitted from the values.
 
 ```text
 USERNAME="nodejs" # will result in `nodejs` as the value.
+```
+
+Multi-line values are supported:
+
+```text
+MULTI_LINE="THIS IS
+A MULTILINE"
+# will result in `THIS IS\nA MULTILINE` as the value.
+```
+
+Export keyword before a key is ignored:
+
+```text
+export USERNAME="nodejs" # will result in `nodejs` as the value.
 ```
 
 ### `-e`, `--eval "script"`
@@ -930,16 +948,6 @@ added: v12.3.0
 -->
 
 Enable experimental WebAssembly module support.
-
-### `--experimental-websocket`
-
-<!-- YAML
-added:
-  - v21.0.0
-  - v20.10.0
--->
-
-Enable experimental [`WebSocket`][] support.
 
 ### `--force-context-aware`
 
@@ -1358,6 +1366,14 @@ added: v16.6.0
 -->
 
 Use this flag to disable top-level await in REPL.
+
+### `--no-experimental-websocket`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+Use this flag to disable experimental [`WebSocket`][] support.
 
 ### `--no-extra-info-on-fatal-exception`
 
@@ -2493,7 +2509,6 @@ Node.js options that are allowed are:
 * `--experimental-vm-modules`
 * `--experimental-wasi-unstable-preview1`
 * `--experimental-wasm-modules`
-* `--experimental-websocket`
 * `--force-context-aware`
 * `--force-fips`
 * `--force-node-api-uncaught-exceptions-policy`
@@ -2518,6 +2533,7 @@ Node.js options that are allowed are:
 * `--no-experimental-global-navigator`
 * `--no-experimental-global-webcrypto`
 * `--no-experimental-repl-await`
+* `--no-experimental-websocket`
 * `--no-extra-info-on-fatal-exception`
 * `--no-force-async-hooks-checks`
 * `--no-global-search-paths`
