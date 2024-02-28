@@ -196,6 +196,8 @@ For information about the governance of the Node.js project, see
   **Robert Nagy** <<ronagy@icloud.com>>
 * [ruyadorno](https://github.com/ruyadorno) -
   **Ruy Adorno** <<ruyadorno@google.com>> (he/him)
+* [ShogunPanda](https://github.com/ShogunPanda) -
+  **Paolo Insogna** <<paolo@cowtech.it>> (he/him)
 * [targos](https://github.com/targos) -
   **Michaël Zasso** <<targos@protonmail.com>> (he/him)
 * [tniessen](https://github.com/tniessen) -
@@ -481,6 +483,8 @@ For information about the governance of the Node.js project, see
   **Yash Ladha** <<yash@yashladha.in>> (he/him)
 * [ZYSzys](https://github.com/ZYSzys) -
   **Yongsheng Zhang** <<zyszys98@gmail.com>> (he/him)
+* [zcbenz](https://github.com/zcbenz) -
+  **Cheng Zhao** <zcbenz@gmail.com> (he/him)
 
 <details>
 

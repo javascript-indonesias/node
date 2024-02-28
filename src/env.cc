@@ -827,6 +827,15 @@ Environment::Environment(IsolateData* isolate_data,
     }
   }
 
+  // We are supposed to call builtin_loader_.SetEagerCompile() in
+  // snapshot mode here because it's beneficial to compile built-ins
+  // loaded in the snapshot eagerly and include the code of inner functions
+  // that are likely to be used by user since they are part of the core
+  // startup. But this requires us to start the coverage collections
+  // before Environment/Context creation which is not currently possible.
+  // TODO(joyeecheung): refactor V8ProfilerConnection classes to parse
+  // JSON without v8 and lift this restriction.
+
   // We'll be creating new objects so make sure we've entered the context.
   HandleScope handle_scope(isolate);
 
@@ -839,7 +848,7 @@ Environment::Environment(IsolateData* isolate_data,
   }
 
   set_env_vars(per_process::system_environment);
-  enabled_debug_list_.Parse(env_vars(), isolate);
+  enabled_debug_list_.Parse(env_vars());
 
   // We create new copies of the per-Environment option sets, so that it is
   // easier to modify them after Environment creation. The defaults are

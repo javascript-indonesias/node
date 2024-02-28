@@ -3510,6 +3510,67 @@ Computes the Diffie-Hellman secret based on a `privateKey` and a `publicKey`.
 Both keys must have the same `asymmetricKeyType`, which must be one of `'dh'`
 (for Diffie-Hellman), `'ec'` (for ECDH), `'x448'`, or `'x25519'` (for ECDH-ES).
 
+### `crypto.hash(algorith, data[, outputEncoding])`
+
+<!-- YAML
+added:
+ - REPLACEME
+-->
+
+* `algorithm` {string|undefined}
+* `data` {string|ArrayBuffer|Buffer|TypedArray|DataView} When `data` is a
+  string, it will be encoded as UTF-8 before being hashed. If a different
+  input encoding is desired for a string input, user could encode the string
+  into a `TypedArray` using either `TextEncoder` or `Buffer.from()` and passing
+  the encoded `TypedArray` into this API instead.
+* `outputEncoding` {string|undefined}  [Encoding][encoding] used to encode the
+  returned digest. **Default:** `'hex'`.
+* Returns: {string|Buffer}
+
+A utility for creating one-shot hash digests of data. It can be faster than
+the object-based `crypto.createHash()` when hashing a smaller amount of data
+(<= 5MB) that's readily available. If the data can be big or if it is streamed,
+it's still recommended to use `crypto.createHash()` instead.
+
+The `algorithm` is dependent on the available algorithms supported by the
+version of OpenSSL on the platform. Examples are `'sha256'`, `'sha512'`, etc.
+On recent releases of OpenSSL, `openssl list -digest-algorithms` will
+display the available digest algorithms.
+
+Example:
+
+```cjs
+const crypto = require('node:crypto');
+const { Buffer } = require('node:buffer');
+
+// Hashing a string and return the result as a hex-encoded string.
+const string = 'Node.js';
+// 10b3493287f831e81a438811a1ffba01f8cec4b7
+console.log(crypto.hash('sha1', string));
+
+// Encode a base64-encoded string into a Buffer, hash it and return
+// the result as a buffer.
+const base64 = 'Tm9kZS5qcw==';
+// <Buffer 10 b3 49 32 87 f8 31 e8 1a 43 88 11 a1 ff ba 01 f8 ce c4 b7>
+console.log(crypto.hash('sha1', Buffer.from(base64, 'base64'), 'buffer'));
+```
+
+```mjs
+import crypto from 'node:crypto';
+import { Buffer } from 'node:buffer';
+
+// Hashing a string and return the result as a hex-encoded string.
+const string = 'Node.js';
+// 10b3493287f831e81a438811a1ffba01f8cec4b7
+console.log(crypto.hash('sha1', string));
+
+// Encode a base64-encoded string into a Buffer, hash it and return
+// the result as a buffer.
+const base64 = 'Tm9kZS5qcw==';
+// <Buffer 10 b3 49 32 87 f8 31 e8 1a 43 88 11 a1 ff ba 01 f8 ce c4 b7>
+console.log(crypto.hash('sha1', Buffer.from(base64, 'base64'), 'buffer'));
+```
+
 ### `crypto.generateKey(type, options, callback)`
 
 <!-- YAML
@@ -4392,8 +4453,9 @@ changes:
       - v21.6.2
       - v20.11.1
       - v18.19.1
-    pr-url: https://github.com/nodejs-private/node-private/pull/525
-    description: The `RSA_PKCS1_PADDING` padding was disabled.
+    pr-url: https://github.com/nodejs-private/node-private/pull/515
+    description: The `RSA_PKCS1_PADDING` padding was disabled unless the
+                 OpenSSL build supports implicit rejection.
   - version: v15.0.0
     pr-url: https://github.com/nodejs/node/pull/35093
     description: Added string, ArrayBuffer, and CryptoKey as allowable key
@@ -4435,8 +4497,10 @@ If `privateKey` is not a [`KeyObject`][], this function behaves as if
 object, the `padding` property can be passed. Otherwise, this function uses
 `RSA_PKCS1_OAEP_PADDING`.
 
-The `crypto.constants.RSA_PKCS1_PADDING` padding is disabled in
-[`crypto.privateDecrypt()`][] since the February 2024 security releases. <span class="deprecated-inline"></span>
+Using `crypto.constants.RSA_PKCS1_PADDING` in [`crypto.privateDecrypt()`][]
+requires OpenSSL to support implicit rejection (`rsa_pkcs1_implicit_rejection`).
+If the version of OpenSSL used by Node.js does not support this feature,
+attempting to use `RSA_PKCS1_PADDING` will fail.
 
 ### `crypto.privateEncrypt(privateKey, buffer)`
 
