@@ -1127,6 +1127,22 @@ is unknown, `undefined` is returned.
 See [`uv_get_constrained_memory`][uv_get_constrained_memory] for more
 information.
 
+## `process.availableMemory()`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1 - Experimental
+
+* {number}
+
+Gets the amount of free memory that is still available to the process
+(in bytes).
+
+See [`uv_get_available_memory`][uv_get_available_memory] for more
+information.
+
 ## `process.cpuUsage([previousValue])`
 
 <!-- YAML
@@ -3953,8 +3969,8 @@ cases:
   and generally can only happen during development of Node.js itself.
 * `12` **Invalid Debug Argument**: The `--inspect` and/or `--inspect-brk`
   options were set, but the port number chosen was invalid or unavailable.
-* `13` **Unfinished Top-Level Await**: `await` was used outside of a function
-  in the top-level code, but the passed `Promise` never resolved.
+* `13` **Unsettled Top-Level Await**: `await` was used outside of a function
+  in the top-level code, but the passed `Promise` never settled.
 * `14` **Snapshot Failure**: Node.js was started to build a V8 startup
   snapshot and it failed because certain requirements of the state of
   the application were not met.
@@ -4026,6 +4042,7 @@ cases:
 [process_warning]: #event-warning
 [report documentation]: report.md
 [terminal raw mode]: tty.md#readstreamsetrawmodemode
+[uv_get_available_memory]: https://docs.libuv.org/en/v1.x/misc.html#c.uv_get_available_memory
 [uv_get_constrained_memory]: https://docs.libuv.org/en/v1.x/misc.html#c.uv_get_constrained_memory
 [uv_rusage_t]: https://docs.libuv.org/en/v1.x/misc.html#c.uv_rusage_t
 [wikipedia_major_fault]: https://en.wikipedia.org/wiki/Page_fault#Major

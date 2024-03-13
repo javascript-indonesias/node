@@ -24,6 +24,8 @@
   V(transfer_mode_private_symbol, "node:transfer_mode")                        \
   V(host_defined_option_symbol, "node:host_defined_option_symbol")             \
   V(js_transferable_wrapper_private_symbol, "node:js_transferable_wrapper")    \
+  V(entry_point_module_private_symbol, "node:entry_point_module")              \
+  V(entry_point_promise_private_symbol, "node:entry_point_promise")            \
   V(napi_type_tag, "node:napi:type_tag")                                       \
   V(napi_wrapper, "node:napi:wrapper")                                         \
   V(untransferable_object_private_symbol, "node:untransferableObject")         \
@@ -56,6 +58,8 @@
 // Strings are per-isolate primitives but Environment proxies them
 // for the sake of convenience.  Strings should be ASCII-only.
 #define PER_ISOLATE_STRING_PROPERTIES(V)                                       \
+  V(__filename_string, "__filename")                                           \
+  V(__dirname_string, "__dirname")                                             \
   V(ack_string, "ack")                                                         \
   V(address_string, "address")                                                 \
   V(aliases_string, "aliases")                                                 \
