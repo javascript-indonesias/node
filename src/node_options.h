@@ -136,6 +136,7 @@ class EnvironmentOptions : public Options {
   int64_t heap_snapshot_near_heap_limit = 0;
   std::string heap_snapshot_signal;
   bool network_family_autoselection = true;
+  uint64_t network_family_autoselection_attempt_timeout = 250;
   uint64_t max_http_header_size = 16 * 1024;
   bool deprecation = true;
   bool force_async_hooks_checks = true;
@@ -161,6 +162,7 @@ class EnvironmentOptions : public Options {
   bool heap_prof = false;
 #endif  // HAVE_INSPECTOR
   std::string redirect_warnings;
+  std::string run;
   std::string diagnostic_dir;
   std::string env_file;
   bool has_env_file_string = false;

@@ -26,6 +26,11 @@
   V(js_transferable_wrapper_private_symbol, "node:js_transferable_wrapper")    \
   V(entry_point_module_private_symbol, "node:entry_point_module")              \
   V(entry_point_promise_private_symbol, "node:entry_point_promise")            \
+  V(module_source_private_symbol, "node:module_source")                        \
+  V(module_export_names_private_symbol, "node:module_export_names")            \
+  V(module_circular_visited_private_symbol, "node:module_circular_visited")    \
+  V(module_export_private_symbol, "node:module_export")                        \
+  V(module_parent_private_symbol, "node:module_parent")                        \
   V(napi_type_tag, "node:napi:type_tag")                                       \
   V(napi_wrapper, "node:napi:wrapper")                                         \
   V(untransferable_object_private_symbol, "node:untransferableObject")         \
@@ -41,6 +46,7 @@
   V(handle_onclose_symbol, "handle_onclose")                                   \
   V(no_message_symbol, "no_message_symbol")                                    \
   V(messaging_deserialize_symbol, "messaging_deserialize_symbol")              \
+  V(imported_cjs_symbol, "imported_cjs_symbol")                                \
   V(messaging_transfer_symbol, "messaging_transfer_symbol")                    \
   V(messaging_clone_symbol, "messaging_clone_symbol")                          \
   V(messaging_transfer_list_symbol, "messaging_transfer_list_symbol")          \

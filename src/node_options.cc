@@ -383,6 +383,11 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
             &EnvironmentOptions::network_family_autoselection,
             kAllowedInEnvvar,
             true);
+  AddOption("--network-family-autoselection-attempt-timeout",
+            "Sets the default value for the network family autoselection "
+            "attempt timeout.",
+            &EnvironmentOptions::network_family_autoselection_attempt_timeout,
+            kAllowedInEnvvar);
   AddAlias("--enable-network-family-autoselection",
            "--network-family-autoselection");
   AddOption("--enable-source-maps",
@@ -573,6 +578,9 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
             &EnvironmentOptions::prof_process);
   // Options after --prof-process are passed through to the prof processor.
   AddAlias("--prof-process", { "--prof-process", "--" });
+  AddOption("--run",
+            "Run a script specified in package.json",
+            &EnvironmentOptions::run);
 #if HAVE_INSPECTOR
   AddOption("--cpu-prof",
             "Start the V8 CPU profiler on start up, and write the CPU profile "

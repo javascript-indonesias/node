@@ -1711,20 +1711,18 @@ the script name. These options are useful in order to spawn child processes with
 the same execution environment as the parent.
 
 ```bash
-node --harmony script.js --version
+node --icu-data-dir=./foo --require ./bar.js script.js --version
 ```
 
 Results in `process.execArgv`:
 
-<!-- eslint-disable semi -->
-
-```js
-['--harmony']
+```json
+["--icu-data-dir=./foo", "--require", "./bar.js"]
 ```
 
 And `process.argv`:
 
-<!-- eslint-disable semi -->
+<!-- eslint-disable @stylistic/js/semi -->
 
 ```js
 ['/usr/local/bin/node', 'script.js', '--version']
@@ -1744,7 +1742,7 @@ added: v0.1.100
 The `process.execPath` property returns the absolute pathname of the executable
 that started the Node.js process. Symbolic links, if any, are resolved.
 
-<!-- eslint-disable semi -->
+<!-- eslint-disable @stylistic/js/semi -->
 
 ```js
 '/usr/local/bin/node'
