@@ -374,6 +374,7 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
   AddOption("--dns-result-order",
             "set default value of verbatim in dns.lookup. Options are "
             "'ipv4first' (IPv4 addresses are placed before IPv6 addresses) "
+            "'ipv6first' (IPv6 addresses are placed before IPv4 addresses) "
             "'verbatim' (addresses are in the order the DNS resolver "
             "returned)",
             &EnvironmentOptions::dns_result_order,
@@ -415,11 +416,7 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
             &EnvironmentOptions::experimental_global_navigator,
             kAllowedInEnvvar,
             true);
-  AddOption("--experimental-global-webcrypto",
-            "expose experimental Web Crypto API on the global scope",
-            &EnvironmentOptions::experimental_global_web_crypto,
-            kAllowedInEnvvar,
-            true);
+  AddOption("--experimental-global-webcrypto", "", NoOp{}, kAllowedInEnvvar);
   AddOption("--experimental-json-modules", "", NoOp{}, kAllowedInEnvvar);
   AddOption("--experimental-loader",
             "use the specified module as a custom loader",
@@ -666,6 +663,9 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
             "run test at specific shard",
             &EnvironmentOptions::test_shard,
             kAllowedInEnvvar);
+  AddOption("--test-skip-pattern",
+            "run tests whose name do not match this regular expression",
+            &EnvironmentOptions::test_skip_pattern);
   AddOption("--test-udp-no-try-send", "",  // For testing only.
             &EnvironmentOptions::test_udp_no_try_send);
   AddOption("--throw-deprecation",
