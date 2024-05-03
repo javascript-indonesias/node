@@ -594,7 +594,7 @@ added:
   - v16.4.0
   - v14.18.0
 changes:
-  - version: REPLACEME
+  - version: v22.1.0
     pr-url: https://github.com/nodejs/node/pull/52492
     description: The `ipv6first` is supported now.
   - version: v17.0.0
@@ -885,12 +885,14 @@ following permissions are restricted:
 added: v11.8.0
 -->
 
+> Stability: 0 - Deprecated: Will be removed shortly.
+
 Use the specified file as a security policy.
 
 ### `--experimental-require-module`
 
 <!-- YAML
-added: REPLACEME
+added: v22.0.0
 -->
 
 > Stability: 1.1 - Active Developement
@@ -1336,7 +1338,7 @@ This option is a no-op. It is kept for compatibility.
 ### `--network-family-autoselection-attempt-timeout`
 
 <!-- YAML
-added: REPLACEME
+added: v22.1.0
 -->
 
 Sets the default value for the network family autoselection attempt timeout.
@@ -1362,22 +1364,6 @@ added: v0.8.0
 
 Silence deprecation warnings.
 
-### `--no-experimental-fetch`
-
-<!-- YAML
-added: v18.0.0
--->
-
-Disable exposition of [Fetch API][] on the global scope.
-
-### `--no-experimental-global-customevent`
-
-<!-- YAML
-added: v19.0.0
--->
-
-Disable exposition of [CustomEvent Web API][] on the global scope.
-
 ### `--no-experimental-global-navigator`
 
 <!-- YAML
@@ -1399,7 +1385,7 @@ Use this flag to disable top-level await in REPL.
 ### `--no-experimental-websocket`
 
 <!-- YAML
-added: REPLACEME
+added: v22.0.0
 -->
 
 Use this flag to disable experimental [`WebSocket`][] support.
@@ -1524,7 +1510,7 @@ developers may leverage to detect deprecated API usage.
 added: v12.7.0
 -->
 
-> Stability: 1 - Experimental
+> Stability: 0 - Deprecated: Will be removed shortly.
 
 Instructs Node.js to error prior to running any code if the policy does not have
 the specified integrity. It expects a [Subresource Integrity][] string as a
@@ -1610,7 +1596,7 @@ Identical to `-e` but prints the result.
 ### `--experimental-print-required-tla`
 
 <!-- YAML
-added: REPLACEME
+added: v22.0.0
 -->
 
 This flag is only useful when `--experimental-require-module` is enabled.
@@ -1791,7 +1777,7 @@ native stack and other runtime environment data.
 ### `--report-exclude-network`
 
 <!-- YAML
-added: REPLACEME
+added: v22.0.0
 -->
 
 Exclude `header.networkInterfaces` from the diagnostic report. By default
@@ -1815,7 +1801,7 @@ Modules preloaded with `--require` will run before modules preloaded with `--imp
 ### `--run`
 
 <!-- YAML
-added: REPLACEME
+added: v22.0.0
 -->
 
 > Stability: 1.1 - Active development
@@ -1954,7 +1940,7 @@ concurrently. The default value is `os.availableParallelism() - 1`.
 ### `--test-force-exit`
 
 <!-- YAML
-added: REPLACEME
+added: v22.0.0
 -->
 
 Configures the test runner to exit the process once all known tests have
@@ -2049,7 +2035,7 @@ node --test --test-shard=3/3
 
 <!-- YAML
 added:
-  - REPLACEME
+  - v22.1.0
 -->
 
 A regular expression that configures the test runner to skip tests
@@ -2169,39 +2155,6 @@ added: v12.0.0
 
 Set default [`tls.DEFAULT_MIN_VERSION`][] to 'TLSv1.3'. Use to disable support
 for TLSv1.2, which is not as secure as TLSv1.3.
-
-### `--trace-atomics-wait`
-
-<!-- YAML
-added: v14.3.0
-deprecated:
-  - v18.8.0
-  - v16.18.0
--->
-
-> Stability: 0 - Deprecated
-
-Print short summaries of calls to [`Atomics.wait()`][] to stderr.
-The output could look like this:
-
-```text
-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 1, inf) started
-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 1, inf) did not wait because the values mismatched
-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 0, 10) started
-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 0, 10) timed out
-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 4, 0, inf) started
-(node:15701) [Thread 1] Atomics.wait(&lt;address> + 4, -1, inf) started
-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 4, 0, inf) was woken up by another thread
-(node:15701) [Thread 1] Atomics.wait(&lt;address> + 4, -1, inf) was woken up by another thread
-```
-
-The fields here correspond to:
-
-* The thread id as given by [`worker_threads.threadId`][]
-* The base address of the `SharedArrayBuffer` in question, as well as the
-  byte offset corresponding to the index passed to `Atomics.wait()`
-* The expected value that was passed to `Atomics.wait()`
-* The timeout passed to `Atomics.wait`
 
 ### `--trace-deprecation`
 
@@ -2413,7 +2366,7 @@ added:
   - v18.11.0
   - v16.19.0
 changes:
-  - version: REPLACEME
+  - version: v22.0.0
     pr-url: https://github.com/nodejs/node/pull/52074
     description: Watch mode is now stable.
   - version:
@@ -2446,7 +2399,7 @@ added:
   - v18.11.0
   - v16.19.0
 changes:
-  - version: REPLACEME
+  - version: v22.0.0
     pr-url: https://github.com/nodejs/node/pull/52074
     description: Watch mode is now stable.
 -->
@@ -2511,7 +2464,7 @@ environment variable is arbitrary.
 ### `NODE_COMPILE_CACHE=dir`
 
 <!-- YAML
-added: REPLACEME
+added: v22.1.0
 -->
 
 > Stability: 1.1 - Active Development
@@ -2688,8 +2641,6 @@ one is included in the list below.
 * `--network-family-autoselection-attempt-timeout`
 * `--no-addons`
 * `--no-deprecation`
-* `--no-experimental-fetch`
-* `--no-experimental-global-customevent`
 * `--no-experimental-global-navigator`
 * `--no-experimental-repl-await`
 * `--no-experimental-websocket`
@@ -2734,7 +2685,6 @@ one is included in the list below.
 * `--tls-min-v1.1`
 * `--tls-min-v1.2`
 * `--tls-min-v1.3`
-* `--trace-atomics-wait`
 * `--trace-deprecation`
 * `--trace-event-categories`
 * `--trace-event-file-pattern`
@@ -3160,11 +3110,9 @@ node --stack-trace-limit=12 -p -e "Error.stackTraceLimit" # prints 12
 [Chrome DevTools Protocol]: https://chromedevtools.github.io/devtools-protocol/
 [CommonJS]: modules.md
 [CommonJS module]: modules.md
-[CustomEvent Web API]: https://dom.spec.whatwg.org/#customevent
 [DEP0025 warning]: deprecations.md#dep0025-requirenodesys
 [ECMAScript module]: esm.md#modules-ecmascript-modules
 [ExperimentalWarning: `vm.measureMemory` is an experimental feature]: vm.md#vmmeasurememoryoptions
-[Fetch API]: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
 [File System Permissions]: permissions.md#file-system-permissions
 [Loading ECMAScript modules using `require()`]: modules.md#loading-ecmascript-modules-using-require
 [Module customization hooks]: module.md#customization-hooks
@@ -3199,7 +3147,6 @@ node --stack-trace-limit=12 -p -e "Error.stackTraceLimit" # prints 12
 [`--print`]: #-p---print-script
 [`--redirect-warnings`]: #--redirect-warningsfile
 [`--require`]: #-r---require-module
-[`Atomics.wait()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics/wait
 [`Buffer`]: buffer.md#class-buffer
 [`CRYPTO_secure_malloc_init`]: https://www.openssl.org/docs/man3.0/man3/CRYPTO_secure_malloc_init.html
 [`NODE_OPTIONS`]: #node_optionsoptions
@@ -3219,7 +3166,6 @@ node --stack-trace-limit=12 -p -e "Error.stackTraceLimit" # prints 12
 [`tls.DEFAULT_MIN_VERSION`]: tls.md#tlsdefault_min_version
 [`unhandledRejection`]: process.md#event-unhandledrejection
 [`v8.startupSnapshot` API]: v8.md#startup-snapshot-api
-[`worker_threads.threadId`]: worker_threads.md#workerthreadid
 [collecting code coverage from tests]: test.md#collecting-code-coverage
 [conditional exports]: packages.md#conditional-exports
 [context-aware]: addons.md#context-aware-addons

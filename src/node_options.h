@@ -111,7 +111,6 @@ class EnvironmentOptions : public Options {
   bool enable_source_maps = false;
   bool experimental_fetch = true;
   bool experimental_websocket = true;
-  bool experimental_global_customevent = true;
   bool experimental_global_navigator = true;
   bool experimental_global_web_crypto = true;
   bool experimental_https_modules = false;
@@ -162,7 +161,6 @@ class EnvironmentOptions : public Options {
   bool heap_prof = false;
 #endif  // HAVE_INSPECTOR
   std::string redirect_warnings;
-  std::string run;
   std::string diagnostic_dir;
   std::string env_file;
   bool has_env_file_string = false;
@@ -179,7 +177,6 @@ class EnvironmentOptions : public Options {
   std::string test_shard;
   std::vector<std::string> test_skip_pattern;
   bool throw_deprecation = false;
-  bool trace_atomics_wait = false;
   bool trace_deprecation = false;
   bool trace_exit = false;
   bool trace_sync_io = false;
@@ -282,6 +279,7 @@ class PerProcessOptions : public Options {
   bool print_v8_help = false;
   bool print_version = false;
   std::string experimental_sea_config;
+  std::string run;
 
 #ifdef NODE_HAVE_I18N_SUPPORT
   std::string icu_data_dir;
@@ -519,7 +517,10 @@ class OptionsParser {
   template <typename OtherOptions>
   friend class OptionsParser;
 
-  friend void GetCLIOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
+  friend void GetCLIOptionsValues(
+      const v8::FunctionCallbackInfo<v8::Value>& args);
+  friend void GetCLIOptionsInfo(
+      const v8::FunctionCallbackInfo<v8::Value>& args);
   friend std::string GetBashCompletion();
 };
 
