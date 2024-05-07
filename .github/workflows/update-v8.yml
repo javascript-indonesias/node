@@ -16,7 +16,7 @@ jobs:
     if: github.repository == 'nodejs/node'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b  # v4.1.4
         with:
           persist-credentials: false
       - name: Cache node modules and update-v8
@@ -50,6 +50,7 @@ jobs:
           author: Node.js GitHub Bot <github-bot@iojs.org>
           body: This is an automated patch update of V8 to ${{ env.NEW_VERSION }}.
           branch: actions/update-v8-patch  # Custom branch *just* for this Action.
+          commit-message: 'deps: patch V8 to ${{ env.NEW_VERSION }}'
           labels: v8 engine
           title: 'deps: patch V8 to ${{ env.NEW_VERSION }}'
           update-pull-request-title-and-body: true
