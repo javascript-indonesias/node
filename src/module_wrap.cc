@@ -339,8 +339,7 @@ MaybeLocal<Module> ModuleWrap::CompileSourceTextModule(
     bool* cache_rejected) {
   Isolate* isolate = realm->isolate();
   EscapableHandleScope scope(isolate);
-  ScriptOrigin origin(isolate,
-                      url,
+  ScriptOrigin origin(url,
                       line_offset,
                       column_offset,
                       true,            // is cross origin
@@ -423,9 +422,9 @@ static Local<Array> createModuleRequestsContainer(
 
     Local<String> specifier = module_request->GetSpecifier();
 
-    // Contains the import assertions for this request in the form:
+    // Contains the import attributes for this request in the form:
     // [key1, value1, source_offset1, key2, value2, source_offset2, ...].
-    Local<FixedArray> raw_attributes = module_request->GetImportAssertions();
+    Local<FixedArray> raw_attributes = module_request->GetImportAttributes();
     Local<Object> attributes =
         createImportAttributesContainer(realm, isolate, raw_attributes, 3);
 
@@ -549,7 +548,6 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
 
   ShouldNotAbortOnUncaughtScope no_abort_scope(realm->env());
   TryCatchScope try_catch(realm->env());
-  Isolate::SafeForTerminationScope safe_for_termination(isolate);
 
   bool timed_out = false;
   bool received_signal = false;
