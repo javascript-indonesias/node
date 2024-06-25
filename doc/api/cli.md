@@ -635,7 +635,9 @@ vm.measureMemory();
 ### `--disable-wasm-trap-handler`
 
 <!-- YAML
-added: v22.2.0
+added:
+- v22.2.0
+- v20.15.0
 -->
 
 By default, Node.js enables trap-handler-based WebAssembly bound
@@ -1123,6 +1125,14 @@ added: v12.3.0
 
 Enable experimental WebAssembly module support.
 
+### `--experimental-webstorage`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+Enable experimental [`Web Storage`][] support.
+
 ### `--force-context-aware`
 
 <!-- YAML
@@ -1462,7 +1472,9 @@ endpoint on `http://host:port/json/list`.
 ### `--inspect-wait[=[host:]port]`
 
 <!-- YAML
-added: v22.2.0
+added:
+  - v22.2.0
+  - v20.15.0
 -->
 
 Activate inspector on `host:port` and wait for debugger to be attached.
@@ -1490,6 +1502,17 @@ added: v12.0.0
 Disable [runtime allocation of executable memory][jitless]. This may be
 required on some platforms for security reasons. It can also reduce attack
 surface on other platforms, but the performance impact may be severe.
+
+### `--localstorage-file=file`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+The file used to store `localStorage` data. If the file does not exist, it is
+created the first time `localStorage` is accessed. The same file may be shared
+between multiple Node.js processes concurrently. This flag is a no-op unless
+Node.js is started with the `--experimental-webstorage` flag.
 
 ### `--max-http-header-size=size`
 
@@ -1986,7 +2009,7 @@ changes:
                  `PATH` environment variable accordingly.
 -->
 
-> Stability: 1.1 - Active development
+> Stability: 1.2 - Release candidate
 
 This runs a specified command from a package.json's `"scripts"` object.
 If no `"command"` is provided, it will list the available scripts.
@@ -2833,6 +2856,7 @@ one is included in the list below.
 * `--experimental-vm-modules`
 * `--experimental-wasi-unstable-preview1`
 * `--experimental-wasm-modules`
+* `--experimental-webstorage`
 * `--force-context-aware`
 * `--force-fips`
 * `--force-node-api-uncaught-exceptions-policy`
@@ -2849,6 +2873,7 @@ one is included in the list below.
 * `--inspect-publish-uid`
 * `--inspect-wait`
 * `--inspect`
+* `--localstorage-file`
 * `--max-http-header-size`
 * `--napi-modules`
 * `--network-family-autoselection-attempt-timeout`
@@ -3376,6 +3401,7 @@ node --stack-trace-limit=12 -p -e "Error.stackTraceLimit" # prints 12
 [`NODE_OPTIONS`]: #node_optionsoptions
 [`NO_COLOR`]: https://no-color.org
 [`SlowBuffer`]: buffer.md#class-slowbuffer
+[`Web Storage`]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API
 [`WebSocket`]: https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
 [`YoungGenerationSizeFromSemiSpaceSize`]: https://chromium.googlesource.com/v8/v8.git/+/refs/tags/10.3.129/src/heap/heap.cc#328
 [`dns.lookup()`]: dns.md#dnslookuphostname-options-callback
