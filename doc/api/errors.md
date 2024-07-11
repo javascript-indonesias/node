@@ -1010,7 +1010,8 @@ An invalid message length was provided.
 added: v15.0.0
 -->
 
-Invalid scrypt algorithm parameters were provided.
+One or more [`crypto.scrypt()`][] or [`crypto.scryptSync()`][] parameters are
+outside their legal range.
 
 <a id="ERR_CRYPTO_INVALID_STATE"></a>
 
@@ -1069,13 +1070,6 @@ A crypto operation failed for an otherwise unspecified reason.
 
 The PBKDF2 algorithm failed for unspecified reasons. OpenSSL does not provide
 more details and therefore neither does Node.js.
-
-<a id="ERR_CRYPTO_SCRYPT_INVALID_PARAMETER"></a>
-
-### `ERR_CRYPTO_SCRYPT_INVALID_PARAMETER`
-
-One or more [`crypto.scrypt()`][] or [`crypto.scryptSync()`][] parameters are
-outside their legal range.
 
 <a id="ERR_CRYPTO_SCRYPT_NOT_SUPPORTED"></a>
 
@@ -2573,6 +2567,16 @@ disconnected socket.
 
 A call was made and the UDP subsystem was not running.
 
+<a id="ERR_SQLITE_ERROR"></a>
+
+### `ERR_SQLITE_ERROR`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+An error was returned from [SQLite][].
+
 <a id="ERR_SRI_PARSE"></a>
 
 ### `ERR_SRI_PARSE`
@@ -3104,6 +3108,54 @@ The `Worker` instance terminated because it reached its memory limit.
 The path for the main script of a worker is neither an absolute path
 nor a relative path starting with `./` or `../`.
 
+<a id="ERR_WORKER_MESSAGING_ERRORED"></a>
+
+### `ERR_WORKER_MESSAGING_ERRORED`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1.1 - Active development
+
+The destination thread threw an error while processing a message sent via [`postMessageToThread()`][].
+
+<a id="ERR_WORKER_MESSAGING_FAILED"></a>
+
+### `ERR_WORKER_MESSAGING_FAILED`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1.1 - Active development
+
+The thread requested in [`postMessageToThread()`][] is invalid or has no `workerMessage` listener.
+
+<a id="ERR_WORKER_MESSAGING_SAME_THREAD"></a>
+
+### `ERR_WORKER_MESSAGING_SAME_THREAD`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1.1 - Active development
+
+The thread id requested in [`postMessageToThread()`][] is the current thread id.
+
+<a id="ERR_WORKER_MESSAGING_TIMEOUT"></a>
+
+### `ERR_WORKER_MESSAGING_TIMEOUT`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1.1 - Active development
+
+Sending a message via [`postMessageToThread()`][] timed out.
+
 <a id="ERR_WORKER_UNSERIALIZABLE_ERROR"></a>
 
 ### `ERR_WORKER_UNSERIALIZABLE_ERROR`
@@ -3212,6 +3264,18 @@ The UTF-16 encoding was used with [`hash.digest()`][]. While the
 `hash.digest()` method does allow an `encoding` argument to be passed in,
 causing the method to return a string rather than a `Buffer`, the UTF-16
 encoding (e.g. `ucs` or `utf16le`) is not supported.
+
+<a id="ERR_CRYPTO_SCRYPT_INVALID_PARAMETER"></a>
+
+### `ERR_CRYPTO_SCRYPT_INVALID_PARAMETER`
+
+<!-- YAML
+removed: REPLACEME
+-->
+
+An incompatible combination of options was passed to [`crypto.scrypt()`][] or
+[`crypto.scryptSync()`][]. New versions of Node.js use the error code
+[`ERR_INCOMPATIBLE_OPTION_PAIR`][] instead, which is consistent with other APIs.
 
 <a id="ERR_FS_INVALID_SYMLINK_TYPE"></a>
 
@@ -3975,6 +4039,7 @@ An error occurred trying to allocate memory. This should never happen.
 [Node.js error codes]: #nodejs-error-codes
 [Permission Model]: permissions.md#permission-model
 [RFC 7230 Section 3]: https://tools.ietf.org/html/rfc7230#section-3
+[SQLite]: sqlite.md
 [Subresource Integrity specification]: https://www.w3.org/TR/SRI/#the-integrity-attribute
 [V8's stack trace API]: https://v8.dev/docs/stack-trace-api
 [WHATWG Supported Encodings]: util.md#whatwg-supported-encodings
@@ -3987,6 +4052,7 @@ An error occurred trying to allocate memory. This should never happen.
 [`--no-addons`]: cli.md#--no-addons
 [`--unhandled-rejections`]: cli.md#--unhandled-rejectionsmode
 [`Class: assert.AssertionError`]: assert.md#class-assertassertionerror
+[`ERR_INCOMPATIBLE_OPTION_PAIR`]: #err_incompatible_option_pair
 [`ERR_INVALID_ARG_TYPE`]: #err_invalid_arg_type
 [`ERR_MISSING_MESSAGE_PORT_IN_TRANSFER_LIST`]: #err_missing_message_port_in_transfer_list
 [`ERR_MISSING_TRANSFERABLE_IN_TRANSFER_LIST`]: #err_missing_transferable_in_transfer_list
@@ -4027,6 +4093,7 @@ An error occurred trying to allocate memory. This should never happen.
 [`new URLSearchParams(iterable)`]: url.md#new-urlsearchparamsiterable
 [`package.json`]: packages.md#nodejs-packagejson-field-definitions
 [`postMessage()`]: worker_threads.md#portpostmessagevalue-transferlist
+[`postMessageToThread()`]: worker_threads.md#workerpostmessagetothreadthreadid-value-transferlist-timeout
 [`process.on('exit')`]: process.md#event-exit
 [`process.send()`]: process.md#processsendmessage-sendhandle-options-callback
 [`process.setUncaughtExceptionCaptureCallback()`]: process.md#processsetuncaughtexceptioncapturecallbackfn
