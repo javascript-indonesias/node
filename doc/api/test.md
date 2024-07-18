@@ -511,11 +511,6 @@ node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-de
 * No test results are reported by this reporter.
 * This reporter should ideally be used alongside another reporter.
 
-### Limitations
-
-The test runner's code coverage functionality does not support excluding
-specific files or directories from the coverage report.
-
 ## Mocking
 
 The `node:test` module supports mocking during testing via a top-level `mock`
@@ -532,9 +527,9 @@ test('spies on a function', () => {
     return a + b;
   });
 
-  assert.strictEqual(sum.mock.calls.length, 0);
+  assert.strictEqual(sum.mock.callCount(), 0);
   assert.strictEqual(sum(3, 4), 7);
-  assert.strictEqual(sum.mock.calls.length, 1);
+  assert.strictEqual(sum.mock.callCount(), 1);
 
   const call = sum.mock.calls[0];
   assert.deepStrictEqual(call.arguments, [3, 4]);
@@ -556,9 +551,9 @@ test('spies on a function', () => {
     return a + b;
   });
 
-  assert.strictEqual(sum.mock.calls.length, 0);
+  assert.strictEqual(sum.mock.callCount(), 0);
   assert.strictEqual(sum(3, 4), 7);
-  assert.strictEqual(sum.mock.calls.length, 1);
+  assert.strictEqual(sum.mock.callCount(), 1);
 
   const call = sum.mock.calls[0];
   assert.deepStrictEqual(call.arguments, [3, 4]);
@@ -586,9 +581,9 @@ test('spies on an object method', (t) => {
   };
 
   t.mock.method(number, 'add');
-  assert.strictEqual(number.add.mock.calls.length, 0);
+  assert.strictEqual(number.add.mock.callCount(), 0);
   assert.strictEqual(number.add(3), 8);
-  assert.strictEqual(number.add.mock.calls.length, 1);
+  assert.strictEqual(number.add.mock.callCount(), 1);
 
   const call = number.add.mock.calls[0];
 
@@ -2027,9 +2022,9 @@ test('spies on an object method', (t) => {
   };
 
   t.mock.method(number, 'subtract');
-  assert.strictEqual(number.subtract.mock.calls.length, 0);
+  assert.strictEqual(number.subtract.mock.callCount(), 0);
   assert.strictEqual(number.subtract(3), 2);
-  assert.strictEqual(number.subtract.mock.calls.length, 1);
+  assert.strictEqual(number.subtract.mock.callCount(), 1);
 
   const call = number.subtract.mock.calls[0];
 
@@ -3209,6 +3204,16 @@ test('top level test', (t) => {
 });
 ```
 
+### `context.filePath`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+The absolute path of the test file that created the current test. If a test file
+imports additional modules that generate tests, the imported tests will return
+the path of the root test file.
+
 ### `context.fullName`
 
 <!-- YAML
@@ -3442,6 +3447,16 @@ added:
 An instance of `SuiteContext` is passed to each suite function in order to
 interact with the test runner. However, the `SuiteContext` constructor is not
 exposed as part of the API.
+
+### `context.filePath`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+The absolute path of the test file that created the current suite. If a test
+file imports additional modules that generate suites, the imported suites will
+return the path of the root test file.
 
 ### `context.name`
 

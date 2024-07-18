@@ -1027,7 +1027,7 @@ class Environment : public MemoryRetainer {
   std::unique_ptr<v8::BackingStore> release_managed_buffer(const uv_buf_t& buf);
 
   void AddUnmanagedFd(int fd);
-  void RemoveUnmanagedFd(int fd);
+  void RemoveUnmanagedFd(int fd, bool schedule_native_immediate = false);
 
   template <typename T>
   void ForEachRealm(T&& iterator) const;
@@ -1056,6 +1056,8 @@ class Environment : public MemoryRetainer {
   std::unordered_map<std::string, size_t> alias_to_md_id_map;
   std::vector<std::string> supported_hash_algorithms;
 #endif  // HAVE_OPENSSL
+
+  v8::Global<v8::Module> temporary_required_module_facade_original;
 
  private:
   inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>,
