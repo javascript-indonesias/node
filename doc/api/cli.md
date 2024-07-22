@@ -490,40 +490,6 @@ For example, to run a module with "development" resolutions:
 node -C development app.js
 ```
 
-### `--test-coverage-exclude`
-
-<!-- YAML
-added:
-  - v22.5.0
--->
-
-> Stability: 1 - Experimental
-
-Excludes specific files from code coverage using a glob pattern, which can match
-both absolute and relative file paths.
-
-This option may be specified multiple times to exclude multiple glob patterns.
-
-If both `--test-coverage-exclude` and `--test-coverage-include` are provided,
-files must meet **both** criteria to be included in the coverage report.
-
-### `--test-coverage-include`
-
-<!-- YAML
-added:
-  - v22.5.0
--->
-
-> Stability: 1 - Experimental
-
-Includes specific files in code coverage using a glob pattern, which can match
-both absolute and relative file paths.
-
-This option may be specified multiple times to include multiple glob patterns.
-
-If both `--test-coverage-exclude` and `--test-coverage-include` are provided,
-files must meet **both** criteria to be included in the coverage report.
-
 ### `--cpu-prof`
 
 <!-- YAML
@@ -940,39 +906,6 @@ files with no extension will be treated as WebAssembly if they begin with the
 WebAssembly magic number (`\0asm`); otherwise they will be treated as ES module
 JavaScript.
 
-### `--experimental-detect-module`
-
-<!-- YAML
-added:
-  - v21.1.0
-  - v20.10.0
--->
-
-> Stability: 1.1 - Active development
-
-Node.js will inspect the source code of ambiguous input to determine whether it
-contains ES module syntax; if such syntax is detected, the input will be treated
-as an ES module.
-
-Ambiguous input is defined as:
-
-* Files with a `.js` extension or no extension; and either no controlling
-  `package.json` file or one that lacks a `type` field; and
-  `--experimental-default-type` is not specified.
-* String input (`--eval` or STDIN) when neither `--input-type` nor
-  `--experimental-default-type` are specified.
-
-ES module syntax is defined as syntax that would throw when evaluated as
-CommonJS. This includes the following:
-
-* `import` statements (but _not_ `import()` expressions, which are valid in
-  CommonJS).
-* `export` statements.
-* `import.meta` references.
-* `await` at the top level of a module.
-* Lexical redeclarations of the CommonJS wrapper variables (`require`, `module`,
-  `exports`, `__dirname`, `__filename`).
-
 ### `--experimental-eventsource`
 
 <!-- YAML
@@ -1031,6 +964,17 @@ added:
 > Stability: 1 - Experimental
 
 Enable experimental support for the `https:` protocol in `import` specifiers.
+
+### `--experimental-network-inspection`
+
+<!-- YAML
+added:
+  - REPLACEME
+-->
+
+> Stability: 1 - Experimental
+
+Enable experimental support for the network inspection with Chrome DevTools.
 
 ### `--experimental-permission`
 
@@ -1452,7 +1396,8 @@ or poisoning attack. Avoid using this option.
 added: v6.3.0
 -->
 
-Activate inspector on `host:port`. Default is `127.0.0.1:9229`.
+Activate inspector on `host:port`. Default is `127.0.0.1:9229`. If port `0` is
+specified, a random available port will be used.
 
 V8 inspector integration allows tools such as Chrome DevTools and IDEs to debug
 and profile Node.js instances. The tools attach to Node.js instances via a
@@ -1486,7 +1431,8 @@ added: v7.6.0
 -->
 
 Activate inspector on `host:port` and break at start of user script.
-Default `host:port` is `127.0.0.1:9229`.
+Default `host:port` is `127.0.0.1:9229`. If port `0` is specified,
+a random available port will be used.
 
 See [V8 Inspector integration for Node.js][] for further explanation on Node.js debugger.
 
@@ -1499,7 +1445,8 @@ added: v7.6.0
 Set the `host:port` to be used when the inspector is activated.
 Useful when activating the inspector by sending the `SIGUSR1` signal.
 
-Default host is `127.0.0.1`.
+Default host is `127.0.0.1`. If port `0` is specified,
+a random available port will be used.
 
 See the [security warning][] below regarding the `host`
 parameter usage.
@@ -1520,7 +1467,8 @@ added:
 -->
 
 Activate inspector on `host:port` and wait for debugger to be attached.
-Default `host:port` is `127.0.0.1:9229`.
+Default `host:port` is `127.0.0.1:9229`. If port `0` is specified,
+a random available port will be used.
 
 See [V8 Inspector integration for Node.js][] for further explanation on Node.js debugger.
 
@@ -1608,6 +1556,21 @@ added: v0.8.0
 -->
 
 Silence deprecation warnings.
+
+### `--no-experimental-detect-module`
+
+<!-- YAML
+added:
+  - v21.1.0
+  - v20.10.0
+changes:
+  - version:
+    - REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/53619
+    description: Syntax detection is enabled by default.
+-->
+
+Disable using [syntax detection][] to determine module type.
 
 ### `--no-experimental-global-navigator`
 
@@ -2193,6 +2156,40 @@ added:
 
 The maximum number of test files that the test runner CLI will execute
 concurrently. The default value is `os.availableParallelism() - 1`.
+
+### `--test-coverage-exclude`
+
+<!-- YAML
+added:
+  - v22.5.0
+-->
+
+> Stability: 1 - Experimental
+
+Excludes specific files from code coverage using a glob pattern, which can match
+both absolute and relative file paths.
+
+This option may be specified multiple times to exclude multiple glob patterns.
+
+If both `--test-coverage-exclude` and `--test-coverage-include` are provided,
+files must meet **both** criteria to be included in the coverage report.
+
+### `--test-coverage-include`
+
+<!-- YAML
+added:
+  - v22.5.0
+-->
+
+> Stability: 1 - Experimental
+
+Includes specific files in code coverage using a glob pattern, which can match
+both absolute and relative file paths.
+
+This option may be specified multiple times to include multiple glob patterns.
+
+If both `--test-coverage-exclude` and `--test-coverage-include` are provided,
+files must meet **both** criteria to be included in the coverage report.
 
 ### `--test-force-exit`
 
@@ -3480,6 +3477,7 @@ node --stack-trace-limit=12 -p -e "Error.stackTraceLimit" # prints 12
 [semi-space]: https://www.memorymanagement.org/glossary/s.html#semi.space
 [single executable application]: single-executable-applications.md
 [snapshot testing]: test.md#snapshot-testing
+[syntax detection]: packages.md#syntax-detection
 [test reporters]: test.md#test-reporters
 [timezone IDs]: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 [tracking issue for user-land snapshots]: https://github.com/nodejs/node/issues/44014
