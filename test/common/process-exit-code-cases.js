@@ -36,7 +36,7 @@ function getTestCases(isWorker = false) {
   function exitWithOneOnUncaught() {
     process.exitCode = 99;
     process.on('exit', (code) => {
-      // cannot use assert because it will be uncaughtException -> 1 exit code
+      // Cannot use assert because it will be uncaughtException -> 1 exit code
       // that will render this test useless
       if (code !== 1 || process.exitCode !== 1) {
         console.log('wrong code! expected 1 for uncaughtException');
@@ -62,23 +62,25 @@ function getTestCases(isWorker = false) {
   cases.push({ func: changeCodeInsideExit, result: 99 });
 
   function zeroExitWithUncaughtHandler() {
+    const noop = () => { };
     process.on('exit', (code) => {
-      assert.strictEqual(process.exitCode, 0);
+      process.off('uncaughtException', noop);
+      assert.strictEqual(process.exitCode, undefined);
       assert.strictEqual(code, 0);
     });
-    process.on('uncaughtException', () => { });
+    process.on('uncaughtException', noop);
     throw new Error('ok');
   }
   cases.push({ func: zeroExitWithUncaughtHandler, result: 0 });
 
   function changeCodeInUncaughtHandler() {
+    const modifyExitCode = () => { process.exitCode = 97; };
     process.on('exit', (code) => {
+      process.off('uncaughtException', modifyExitCode);
       assert.strictEqual(process.exitCode, 97);
       assert.strictEqual(code, 97);
     });
-    process.on('uncaughtException', () => {
-      process.exitCode = 97;
-    });
+    process.on('uncaughtException', modifyExitCode);
     throw new Error('ok');
   }
   cases.push({ func: changeCodeInUncaughtHandler, result: 97 });
@@ -113,7 +115,7 @@ function getTestCases(isWorker = false) {
 
   function exitWithThrowInUncaughtHandler() {
     process.on('uncaughtException', () => {
-      throw new Error('ok')
+      throw new Error('ok');
     });
     throw new Error('bad');
   }
