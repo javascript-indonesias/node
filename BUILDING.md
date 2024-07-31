@@ -112,7 +112,6 @@ platforms. This is true regardless of entries in the table below.
 | GNU/Linux        | s390x            | kernel >= 4.18[^1], glibc >= 2.28 | Tier 2       | e.g. RHEL 8                          |
 | GNU/Linux        | loong64          | kernel >= 5.19, glibc >= 2.36     | Experimental |                                      |
 | Windows          | x64              | >= Windows 10/Server 2016         | Tier 1       | [^2],[^3]                            |
-| Windows          | x64              | Windows 8.1/Server 2012           | Experimental |                                      |
 | Windows          | arm64            | >= Windows 10                     | Tier 2       |                                      |
 | macOS            | x64              | >= 11.0                           | Tier 1       | For notes about compilation see [^4] |
 | macOS            | arm64            | >= 11.0                           | Tier 1       |                                      |
@@ -593,6 +592,11 @@ rebuild may take a lot more time than previous builds. Additionally,
 `distclean` removes the file that stores the results of `./configure`. If you
 ran `./configure` with non-default options (such as `--debug`), you will need
 to run it again before invoking `make -j4`.
+
+If you received the error `nodejs g++ fatal error compilation terminated cc1plus`
+during compilation, this is likely a memory issue and you should either provide
+more RAM or create swap space to accommodate toolchain requirements or reduce
+the number of parallel build tasks (`-j<n>`).
 
 ### Windows
 
