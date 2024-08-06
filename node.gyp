@@ -14,6 +14,7 @@
     'force_dynamic_crt%': 0,
     'ossfuzz' : 'false',
     'node_module_version%': '',
+    'node_use_amaro%': 'true',
     'node_shared_brotli%': 'false',
     'node_shared_zlib%': 'false',
     'node_shared_http_parser%': 'false',
@@ -56,7 +57,6 @@
       'deps/acorn/acorn/dist/acorn.js',
       'deps/acorn/acorn-walk/dist/walk.js',
       'deps/minimatch/index.js',
-      'deps/amaro/dist/index.js',
       '<@(node_builtin_shareable_builtins)',
     ],
     'node_sources': [
@@ -68,6 +68,7 @@
       'src/api/exceptions.cc',
       'src/api/hooks.cc',
       'src/api/utils.cc',
+      'src/async_context_frame.cc',
       'src/async_wrap.cc',
       'src/base_object.cc',
       'src/cares_wrap.cc',
@@ -185,6 +186,7 @@
       'src/aliased_buffer-inl.h',
       'src/aliased_struct.h',
       'src/aliased_struct-inl.h',
+      'src/async_context_frame.h',
       'src/async_wrap.h',
       'src/async_wrap-inl.h',
       'src/base_object.h',
@@ -461,6 +463,11 @@
       }, {
         'use_openssl_def%': 0,
       }],
+      [ 'node_use_amaro=="true"', {
+          'deps_files': [
+              'deps/amaro/dist/index.js',
+          ]
+      } ]
     ],
   },
 
