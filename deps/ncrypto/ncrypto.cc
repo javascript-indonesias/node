@@ -1,12 +1,12 @@
 #include "ncrypto.h"
 #include <algorithm>
 #include <cstring>
-#include "openssl/bn.h"
-#include "openssl/evp.h"
-#include "openssl/pkcs12.h"
-#include "openssl/x509v3.h"
+#include <openssl/bn.h>
+#include <openssl/evp.h>
+#include <openssl/pkcs12.h>
+#include <openssl/x509v3.h>
 #if OPENSSL_VERSION_MAJOR >= 3
-#include "openssl/provider.h"
+#include <openssl/provider.h>
 #endif
 
 namespace ncrypto {
@@ -703,4 +703,264 @@ bool SafeX509InfoAccessPrint(const BIOPointer& out, X509_EXTENSION* ext) {
   return ok;
 }
 
+// ============================================================================
+// X509Pointer
+
+X509Pointer::X509Pointer(X509* x509) : cert_(x509) {}
+
+X509Pointer::X509Pointer(X509Pointer&& other) noexcept
+    : cert_(other.release()) {}
+
+X509Pointer& X509Pointer::operator=(X509Pointer&& other) noexcept {
+  if (this == &other) return *this;
+  this->~X509Pointer();
+  return *new (this) X509Pointer(std::move(other));
+}
+
+X509Pointer::~X509Pointer() { reset(); }
+
+void X509Pointer::reset(X509* x509) {
+  cert_.reset(x509);
+}
+
+X509* X509Pointer::release() {
+  return cert_.release();
+}
+
+X509View X509Pointer::view() const {
+  return X509View(cert_.get());
+}
+
+BIOPointer X509View::toPEM() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return {};
+  BIOPointer bio(BIO_new(BIO_s_mem()));
+  if (!bio) return {};
+  if (PEM_write_bio_X509(bio.get(), const_cast<X509*>(cert_)) <= 0) return {};
+  return bio;
+}
+
+BIOPointer X509View::toDER() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return {};
+  BIOPointer bio(BIO_new(BIO_s_mem()));
+  if (!bio) return {};
+  if (i2d_X509_bio(bio.get(), const_cast<X509*>(cert_)) <= 0) return {};
+  return bio;
+}
+
+BIOPointer X509View::getSubject() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return {};
+  BIOPointer bio(BIO_new(BIO_s_mem()));
+  if (!bio) return {};
+  if (X509_NAME_print_ex(bio.get(), X509_get_subject_name(cert_),
+                         0, kX509NameFlagsMultiline) <= 0) {
+    return {};
+  }
+  return bio;
+}
+
+BIOPointer X509View::getSubjectAltName() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return {};
+  BIOPointer bio(BIO_new(BIO_s_mem()));
+  if (!bio) return {};
+  int index = X509_get_ext_by_NID(cert_, NID_subject_alt_name, -1);
+  if (index < 0 || !SafeX509SubjectAltNamePrint(bio, X509_get_ext(cert_, index))) {
+    return {};
+  }
+  return bio;
+}
+
+BIOPointer X509View::getIssuer() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return {};
+  BIOPointer bio(BIO_new(BIO_s_mem()));
+  if (!bio) return {};
+  if (X509_NAME_print_ex(bio.get(), X509_get_issuer_name(cert_), 0,
+                         kX509NameFlagsMultiline) <= 0) {
+    return {};
+  }
+  return bio;
+}
+
+BIOPointer X509View::getInfoAccess() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return {};
+  BIOPointer bio(BIO_new(BIO_s_mem()));
+  if (!bio) return {};
+  int index = X509_get_ext_by_NID(cert_, NID_info_access, -1);
+  if (index < 0) return {};
+  if (!SafeX509InfoAccessPrint(bio, X509_get_ext(cert_, index))) {
+    return {};
+  }
+  return bio;
+}
+
+BIOPointer X509View::getValidFrom() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return {};
+  BIOPointer bio(BIO_new(BIO_s_mem()));
+  if (!bio) return {};
+  ASN1_TIME_print(bio.get(), X509_get_notBefore(cert_));
+  return bio;
+}
+
+BIOPointer X509View::getValidTo() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return {};
+  BIOPointer bio(BIO_new(BIO_s_mem()));
+  if (!bio) return {};
+  ASN1_TIME_print(bio.get(), X509_get_notAfter(cert_));
+  return bio;
+}
+
+DataPointer X509View::getSerialNumber() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return {};
+  if (ASN1_INTEGER* serial_number = X509_get_serialNumber(const_cast<X509*>(cert_))) {
+    if (auto bn = BignumPointer(ASN1_INTEGER_to_BN(serial_number, nullptr))) {
+      return bn.toHex();
+    }
+  }
+  return {};
+}
+
+Result<EVPKeyPointer, int> X509View::getPublicKey() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return Result<EVPKeyPointer, int>(EVPKeyPointer {});
+  auto pkey = EVPKeyPointer(X509_get_pubkey(const_cast<X509*>(cert_)));
+  if (!pkey) return Result<EVPKeyPointer, int>(ERR_get_error());
+  return pkey;
+}
+
+StackOfASN1 X509View::getKeyUsage() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return {};
+  return StackOfASN1(static_cast<STACK_OF(ASN1_OBJECT)*>(
+      X509_get_ext_d2i(cert_, NID_ext_key_usage, nullptr, nullptr)));
+}
+
+bool X509View::isCA() const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return false;
+  return X509_check_ca(const_cast<X509*>(cert_)) == 1;
+}
+
+bool X509View::isIssuedBy(const X509View& issuer) const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr || issuer.cert_ == nullptr) return false;
+  return X509_check_issued(const_cast<X509*>(issuer.cert_),
+                           const_cast<X509*>(cert_)) == X509_V_OK;
+}
+
+bool X509View::checkPrivateKey(const EVPKeyPointer& pkey) const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr || pkey == nullptr) return false;
+  return X509_check_private_key(const_cast<X509*>(cert_), pkey.get()) == 1;
+}
+
+bool X509View::checkPublicKey(const EVPKeyPointer& pkey) const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr || pkey == nullptr) return false;
+  return X509_verify(const_cast<X509*>(cert_), pkey.get()) == 1;
+}
+
+X509View::CheckMatch X509View::checkHost(const std::string_view host, int flags,
+                                         DataPointer* peerName) const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return CheckMatch::NO_MATCH;
+  char* peername;
+  switch (X509_check_host(const_cast<X509*>(cert_), host.data(), host.size(), flags, &peername)) {
+    case 0: return CheckMatch::NO_MATCH;
+    case 1: {
+      if (peername != nullptr) {
+        DataPointer name(peername, strlen(peername));
+        if (peerName != nullptr) *peerName = std::move(name);
+      }
+      return CheckMatch::MATCH;
+    }
+    case -2: return CheckMatch::INVALID_NAME;
+    default: return CheckMatch::OPERATION_FAILED;
+  }
+}
+
+X509View::CheckMatch X509View::checkEmail(const std::string_view email, int flags) const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return CheckMatch::NO_MATCH;
+  switch (X509_check_email(const_cast<X509*>(cert_), email.data(), email.size(), flags)) {
+    case 0: return CheckMatch::NO_MATCH;
+    case 1: return CheckMatch::MATCH;
+    case -2: return CheckMatch::INVALID_NAME;
+    default: return CheckMatch::OPERATION_FAILED;
+  }
+}
+
+X509View::CheckMatch X509View::checkIp(const std::string_view ip, int flags) const {
+  ClearErrorOnReturn clearErrorOnReturn;
+  if (cert_ == nullptr) return CheckMatch::NO_MATCH;
+  switch (X509_check_ip_asc(const_cast<X509*>(cert_), ip.data(), flags)) {
+    case 0: return CheckMatch::NO_MATCH;
+    case 1: return CheckMatch::MATCH;
+    case -2: return CheckMatch::INVALID_NAME;
+    default: return CheckMatch::OPERATION_FAILED;
+  }
+}
+
+X509View X509View::From(const SSLPointer& ssl) {
+  ClearErrorOnReturn clear_error_on_return;
+  if (!ssl) return {};
+  return X509View(SSL_get_certificate(ssl.get()));
+}
+
+X509View X509View::From(const SSLCtxPointer& ctx) {
+  ClearErrorOnReturn clear_error_on_return;
+  if (!ctx) return {};
+  return X509View(SSL_CTX_get0_certificate(ctx.get()));
+}
+
+X509Pointer X509View::clone() const {
+  ClearErrorOnReturn clear_error_on_return;
+  if (!cert_) return {};
+  return X509Pointer(X509_dup(const_cast<X509*>(cert_)));
+}
+
+Result<X509Pointer, int> X509Pointer::Parse(Buffer<const unsigned char> buffer) {
+  ClearErrorOnReturn clearErrorOnReturn;
+  BIOPointer bio(BIO_new_mem_buf(buffer.data, buffer.len));
+  if (!bio) return Result<X509Pointer, int>(ERR_get_error());
+
+  X509Pointer pem(PEM_read_bio_X509_AUX(bio.get(), nullptr, NoPasswordCallback, nullptr));
+  if (pem) return Result<X509Pointer, int>(std::move(pem));
+  BIO_reset(bio.get());
+
+  X509Pointer der(d2i_X509_bio(bio.get(), nullptr));
+  if (der) return Result<X509Pointer, int>(std::move(der));
+
+  return Result<X509Pointer, int>(ERR_get_error());
+}
+
+
+X509Pointer X509Pointer::IssuerFrom(const SSLPointer& ssl, const X509View& view) {
+  return IssuerFrom(SSL_get_SSL_CTX(ssl.get()), view);
+}
+
+X509Pointer X509Pointer::IssuerFrom(const SSL_CTX* ctx, const X509View& cert) {
+  X509_STORE* store = SSL_CTX_get_cert_store(ctx);
+  DeleteFnPtr<X509_STORE_CTX, X509_STORE_CTX_free> store_ctx(
+      X509_STORE_CTX_new());
+  X509Pointer result;
+  X509* issuer;
+  if (store_ctx.get() != nullptr &&
+      X509_STORE_CTX_init(store_ctx.get(), store, nullptr, nullptr) == 1 &&
+      X509_STORE_CTX_get1_issuer(&issuer, store_ctx.get(), cert.get()) == 1) {
+    result.reset(issuer);
+  }
+  return result;
+}
+
+X509Pointer X509Pointer::PeerFrom(const SSLPointer& ssl) {
+  return X509Pointer(SSL_get_peer_certificate(ssl.get()));
+}
 }  // namespace ncrypto
