@@ -2738,6 +2738,12 @@ when the option is used on a platform that does not support it.
 
 ### `--watch-preserve-output`
 
+<!-- YAML
+added:
+  - v19.3.0
+  - v18.13.0
+-->
+
 Disable the clearing of the console when watch mode restarts the process.
 
 ```bash
@@ -2993,10 +2999,12 @@ one is included in the list below.
 * `--snapshot-blob`
 * `--test-coverage-exclude`
 * `--test-coverage-include`
+* `--test-name-pattern`
 * `--test-only`
 * `--test-reporter-destination`
 * `--test-reporter`
 * `--test-shard`
+* `--test-skip-pattern`
 * `--throw-deprecation`
 * `--title`
 * `--tls-cipher-list`
