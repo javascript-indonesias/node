@@ -1096,7 +1096,7 @@ report is not generated. See the documentation on
 ### `--experimental-test-isolation=mode`
 
 <!-- YAML
-added: REPLACEME
+added: v22.8.0
 -->
 
 > Stability: 1.0 - Early development
@@ -1405,6 +1405,9 @@ with the ones provided in [`NODE_OPTIONS`][].
 Follows [ECMAScript module][] resolution rules.
 Use [`--require`][] to load a [CommonJS module][].
 Modules preloaded with `--require` will run before modules preloaded with `--import`.
+
+Modules are preloaded into the main thread as well as any worker threads,
+forked processes, or clustered processes.
 
 ### `--input-type=type`
 
@@ -2055,6 +2058,9 @@ Only CommonJS modules are supported.
 Use [`--import`][] to preload an [ECMAScript module][].
 Modules preloaded with `--require` will run before modules preloaded with `--import`.
 
+Modules are preloaded into the main thread as well as any worker threads,
+forked processes, or clustered processes.
+
 ### `--run`
 
 <!-- YAML
@@ -2221,7 +2227,7 @@ is ignored and concurrency is one. Otherwise, concurrency defaults to
 ### `--test-coverage-branches=threshold`
 
 <!-- YAML
-added: REPLACEME
+added: v22.8.0
 -->
 
 > Stability: 1 - Experimental
@@ -2249,7 +2255,7 @@ files must meet **both** criteria to be included in the coverage report.
 ### `--test-coverage-functions=threshold`
 
 <!-- YAML
-added: REPLACEME
+added: v22.8.0
 -->
 
 > Stability: 1 - Experimental
@@ -2277,7 +2283,7 @@ files must meet **both** criteria to be included in the coverage report.
 ### `--test-coverage-lines=threshold`
 
 <!-- YAML
-added: REPLACEME
+added: v22.8.0
 -->
 
 > Stability: 1 - Experimental
@@ -2867,7 +2873,7 @@ When set, colors will not be used in the REPL.
 ### `NODE_DISABLE_COMPILE_CACHE=1`
 
 <!-- YAML
-added: REPLACEME
+added: v22.8.0
 -->
 
 > Stability: 1.1 - Active Development
