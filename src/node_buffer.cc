@@ -84,7 +84,7 @@ using v8::Value;
 
 namespace {
 
-class CallbackInfo {
+class CallbackInfo : public Cleanable {
  public:
   static inline Local<ArrayBuffer> CreateTrackedArrayBuffer(
       Environment* env,
@@ -97,7 +97,7 @@ class CallbackInfo {
   CallbackInfo& operator=(const CallbackInfo&) = delete;
 
  private:
-  static void CleanupHook(void* data);
+  void Clean();
   inline void OnBackingStoreFree();
   inline void CallAndResetCallback();
   inline CallbackInfo(Environment* env,
@@ -111,7 +111,6 @@ class CallbackInfo {
   void* const hint_;
   Environment* const env_;
 };
-
 
 Local<ArrayBuffer> CallbackInfo::CreateTrackedArrayBuffer(
     Environment* env,
@@ -152,25 +151,23 @@ CallbackInfo::CallbackInfo(Environment* env,
       data_(data),
       hint_(hint),
       env_(env) {
-  env->AddCleanupHook(CleanupHook, this);
+  env->cleanable_queue()->PushFront(this);
   env->isolate()->AdjustAmountOfExternalAllocatedMemory(sizeof(*this));
 }
 
-void CallbackInfo::CleanupHook(void* data) {
-  CallbackInfo* self = static_cast<CallbackInfo*>(data);
-
+void CallbackInfo::Clean() {
   {
-    HandleScope handle_scope(self->env_->isolate());
-    Local<ArrayBuffer> ab = self->persistent_.Get(self->env_->isolate());
+    HandleScope handle_scope(env_->isolate());
+    Local<ArrayBuffer> ab = persistent_.Get(env_->isolate());
     if (!ab.IsEmpty() && ab->IsDetachable()) {
       ab->Detach(Local<Value>()).Check();
-      self->persistent_.Reset();
+      persistent_.Reset();
     }
   }
 
   // Call the callback in this case, but don't delete `this` yet because the
   // BackingStore deleter callback will do so later.
-  self->CallAndResetCallback();
+  CallAndResetCallback();
 }
 
 void CallbackInfo::CallAndResetCallback() {
@@ -182,7 +179,7 @@ void CallbackInfo::CallAndResetCallback() {
   }
   if (callback != nullptr) {
     // Clean up all Environment-related state and run the callback.
-    env_->RemoveCleanupHook(CleanupHook, this);
+    cleanable_queue_.Remove();
     int64_t change_in_bytes = -static_cast<int64_t>(sizeof(*this));
     env_->isolate()->AdjustAmountOfExternalAllocatedMemory(change_in_bytes);
 
@@ -1443,58 +1440,6 @@ void CopyArrayBuffer(const FunctionCallbackInfo<Value>& args) {
   memcpy(dest, src, bytes_to_copy);
 }
 
-size_t convert_latin1_to_utf8_s(const char* src,
-                                size_t src_len,
-                                char* dst,
-                                size_t dst_len) noexcept {
-  size_t src_pos = 0;
-  size_t dst_pos = 0;
-
-  const auto safe_len = std::min(src_len, dst_len >> 1);
-  if (safe_len > 16) {
-    // convert_latin1_to_utf8 will never write more than input length * 2.
-    dst_pos += simdutf::convert_latin1_to_utf8(src, safe_len, dst);
-    src_pos += safe_len;
-  }
-
-  // Based on:
-  // https://github.com/simdutf/simdutf/blob/master/src/scalar/latin1_to_utf8/latin1_to_utf8.h
-  // with an upper limit on the number of bytes to write.
-
-  const auto src_ptr = reinterpret_cast<const uint8_t*>(src);
-  const auto dst_ptr = reinterpret_cast<uint8_t*>(dst);
-
-  size_t skip_pos = src_pos;
-  while (src_pos < src_len && dst_pos < dst_len) {
-    if (skip_pos <= src_pos && src_pos + 16 <= src_len &&
-        dst_pos + 16 <= dst_len) {
-      uint64_t v1;
-      memcpy(&v1, src_ptr + src_pos + 0, 8);
-      uint64_t v2;
-      memcpy(&v2, src_ptr + src_pos + 8, 8);
-      if (((v1 | v2) & UINT64_C(0x8080808080808080)) == 0) {
-        memcpy(dst_ptr + dst_pos, src_ptr + src_pos, 16);
-        dst_pos += 16;
-        src_pos += 16;
-      } else {
-        skip_pos = src_pos + 16;
-      }
-    } else {
-      const auto byte = src_ptr[src_pos++];
-      if ((byte & 0x80) == 0) {
-        dst_ptr[dst_pos++] = byte;
-      } else if (dst_pos + 2 <= dst_len) {
-        dst_ptr[dst_pos++] = (byte >> 6) | 0b11000000;
-        dst_ptr[dst_pos++] = (byte & 0b111111) | 0b10000000;
-      } else {
-        break;
-      }
-    }
-  }
-
-  return dst_pos;
-}
-
 template <encoding encoding>
 uint32_t WriteOneByteString(const char* src,
                             uint32_t src_len,
@@ -1505,7 +1450,7 @@ uint32_t WriteOneByteString(const char* src,
   }
 
   if (encoding == UTF8) {
-    return convert_latin1_to_utf8_s(src, src_len, dst, dst_len);
+    return simdutf::convert_latin1_to_utf8_safe(src, src_len, dst, dst_len);
   } else if (encoding == LATIN1 || encoding == ASCII) {
     const auto size = std::min(src_len, dst_len);
     memcpy(dst, src, size);

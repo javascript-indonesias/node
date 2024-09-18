@@ -259,8 +259,8 @@ the [Permission Model][].
 The valid arguments for the `--allow-fs-write` flag are:
 
 * `*` - To allow all `FileSystemWrite` operations.
-* Multiple paths can be allowed using multiple `--allow-fs-read` flags.
-  Example `--allow-fs-read=/folder1/ --allow-fs-read=/folder1/`
+* Multiple paths can be allowed using multiple `--allow-fs-write` flags.
+  Example `--allow-fs-write=/folder1/ --allow-fs-write=/folder1/`
 
 Paths delimited by comma (`,`) are no longer allowed.
 When passing a single flag with a comma a warning will be displayed.
@@ -474,12 +474,16 @@ source node_bash_completion
 added:
   - v14.9.0
   - v12.19.0
+changes:
+  - version:
+    - v22.9.0
+    pr-url: https://github.com/nodejs/node/pull/54209
+    description: The flag is no longer experimental.
 -->
 
-> Stability: 1 - Experimental
+> Stability: 2 - Stable
 
-Enable experimental support for custom [conditional exports][] resolution
-conditions.
+Provide custom [conditional exports][] resolution conditions.
 
 Any number of custom string condition names are permitted.
 
@@ -824,6 +828,8 @@ in the file, the value from the environment takes precedence.
 You can pass multiple `--env-file` arguments. Subsequent files override
 pre-existing variables defined in previous files.
 
+An error is thrown if the file does not exist.
+
 ```bash
 node --env-file=.env --env-file=.development.env index.js
 ```
@@ -862,6 +868,9 @@ Export keyword before a key is ignored:
 ```text
 export USERNAME="nodejs" # will result in `nodejs` as the value.
 ```
+
+If you want to load environment variables from a file that may not exist, you
+can use the [`--env-file-if-exists`][] flag instead.
 
 ### `-e`, `--eval "script"`
 
@@ -1757,6 +1766,15 @@ is being linked to Node.js. Sharing the OpenSSL configuration may have unwanted
 implications and it is recommended to use a configuration section specific to
 Node.js which is `nodejs_conf` and is default when this option is not used.
 
+### `--env-file-if-exists=config`
+
+<!-- YAML
+added: v22.9.0
+-->
+
+Behavior is the same as [`--env-file`][], but an error is not thrown if the file
+does not exist.
+
 ### `--pending-deprecation`
 
 <!-- YAML
@@ -2092,6 +2110,8 @@ the current directory, to the `PATH` in order to execute the binaries from
 different folders where multiple `node_modules` directories are present, if
 `ancestor-folder/node_modules/.bin` is a directory.
 
+`--run` executes the command in the directory containing the related `package.json`.
+
 For example, the following command will run the `test` script of
 the `package.json` in the current folder:
 
@@ -2332,7 +2352,7 @@ changes:
 -->
 
 Configures the test runner to only execute top level tests that have the `only`
-option set.
+option set. This flag is not necessary when test isolation is disabled.
 
 ### `--test-reporter`
 
@@ -3452,7 +3472,11 @@ documented here:
 
 ### `--perf-prof-unwinding-info`
 
-### `--max-old-space-size=SIZE` (in megabytes)
+<!-- Anchor to make sure old links find a target -->
+
+<a id="--max-old-space-sizesize-in-megabytes"></a>
+
+### `--max-old-space-size=SIZE` (in MiB)
 
 Sets the max memory size of V8's old memory section. As memory
 consumption approaches the limit, V8 will spend more time on
@@ -3465,10 +3489,14 @@ On a machine with 2 GiB of memory, consider setting this to
 node --max-old-space-size=1536 index.js
 ```
 
-### `--max-semi-space-size=SIZE` (in megabytes)
+<!-- Anchor to make sure old links find a target -->
+
+<a id="--max-semi-space-sizesize-in-megabytes"></a>
+
+### `--max-semi-space-size=SIZE` (in MiB)
 
 Sets the maximum [semi-space][] size for V8's [scavenge garbage collector][] in
-MiB (megabytes).
+MiB (mebibytes).
 Increasing the max size of a semi-space may improve throughput for Node.js at
 the cost of more memory consumption.
 
@@ -3536,6 +3564,8 @@ node --stack-trace-limit=12 -p -e "Error.stackTraceLimit" # prints 12
 [`--build-snapshot`]: #--build-snapshot
 [`--cpu-prof-dir`]: #--cpu-prof-dir
 [`--diagnostic-dir`]: #--diagnostic-dirdirectory
+[`--env-file-if-exists`]: #--env-file-if-existsconfig
+[`--env-file`]: #--env-fileconfig
 [`--experimental-default-type=module`]: #--experimental-default-typetype
 [`--experimental-sea-config`]: single-executable-applications.md#generating-single-executable-preparation-blobs
 [`--experimental-strip-types`]: #--experimental-strip-types
