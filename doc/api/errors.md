@@ -1295,18 +1295,20 @@ added: v16.7.0
 
 When using [`fs.cp()`][], `src` or `dest` pointed to an invalid path.
 
-<a id="ERR_FS_CP_FIFO_PIPE"></a>
+<a id="ERR_HTTP_BODY_NOT_ALLOWED"></a>
 
 ### `ERR_HTTP_BODY_NOT_ALLOWED`
 
 An error is thrown when writing to an HTTP response which does not allow
-contents. <a id="ERR_HTTP_BODY_NOT_ALLOWED"></a>
+contents.
+
+<a id="ERR_HTTP_CONTENT_LENGTH_MISMATCH"></a>
 
 ### `ERR_HTTP_CONTENT_LENGTH_MISMATCH`
 
 Response body size doesn't match with the specified content-length header value.
 
-<a id="ERR_HTTP_CONTENT_LENGTH_MISMATCH"></a>
+<a id="ERR_FS_CP_FIFO_PIPE"></a>
 
 ### `ERR_FS_CP_FIFO_PIPE`
 
@@ -2276,21 +2278,6 @@ function.
 An error occurred while attempting to retrieve the JavaScript `undefined`
 value.
 
-<a id="ERR_NAPI_TSFN_START_IDLE_LOOP"></a>
-
-### `ERR_NAPI_TSFN_START_IDLE_LOOP`
-
-On the main thread, values are removed from the queue associated with the
-thread-safe function in an idle loop. This error indicates that an error
-has occurred when attempting to start the loop.
-
-<a id="ERR_NAPI_TSFN_STOP_IDLE_LOOP"></a>
-
-### `ERR_NAPI_TSFN_STOP_IDLE_LOOP`
-
-Once no more items are left in the queue, the idle loop must be suspended. This
-error indicates that the idle loop has failed to stop.
-
 <a id="ERR_NOT_BUILDING_SNAPSHOT"></a>
 
 ### `ERR_NOT_BUILDING_SNAPSHOT`
@@ -2426,8 +2413,8 @@ object.
 
 > Stability: 1 - Experimental
 
-When trying to `require()` a [ES Module][] under `--experimental-require-module`,
-a CommonJS to ESM or ESM to CommonJS edge participates in an immediate cycle.
+When trying to `require()` a [ES Module][], a CommonJS to ESM or ESM to CommonJS edge
+participates in an immediate cycle.
 This is not allowed because ES Modules cannot be evaluated while they are
 already being evaluated.
 
@@ -2441,8 +2428,8 @@ module, and should be done lazily in an inner function.
 
 > Stability: 1 - Experimental
 
-When trying to `require()` a [ES Module][] under `--experimental-require-module`,
-the module turns out to be asynchronous. That is, it contains top-level await.
+When trying to `require()` a [ES Module][], the module turns out to be asynchronous.
+That is, it contains top-level await.
 
 To see where the top-level await is, use
 `--experimental-print-required-tla` (this would execute the modules
@@ -2452,12 +2439,20 @@ before looking for the top-level awaits).
 
 ### `ERR_REQUIRE_ESM`
 
-> Stability: 1 - Experimental
+<!-- YAML
+changes:
+  - version: REPLACEME
+    pr-url: https://github.com/nodejs/node/pull/55085
+    description: require() now supports loading synchronous ES modules by default.
+-->
+
+> Stability: 0 - Deprecated
 
 An attempt was made to `require()` an [ES Module][].
 
-To enable `require()` for synchronous module graphs (without
-top-level `await`), use `--experimental-require-module`.
+This error has been deprecated since `require()` now supports loading synchronous
+ES modules. When `require()` encounters an ES module that contains top-level
+`await`, it will throw [`ERR_REQUIRE_ASYNC_MODULE`][] instead.
 
 <a id="ERR_SCRIPT_EXECUTION_INTERRUPTED"></a>
 
@@ -2572,6 +2567,18 @@ disconnected socket.
 ### `ERR_SOCKET_DGRAM_NOT_RUNNING`
 
 A call was made and the UDP subsystem was not running.
+
+<a id="ERR_SOURCE_MAP_CORRUPT"></a>
+
+### `ERR_SOURCE_MAP_CORRUPT`
+
+The source map could not be parsed because it does not exist, or is corrupt.
+
+<a id="ERR_SOURCE_MAP_MISSING_SOURCE"></a>
+
+### `ERR_SOURCE_MAP_MISSING_SOURCE`
+
+A file imported from a source map was not found.
 
 <a id="ERR_SQLITE_ERROR"></a>
 
@@ -2803,9 +2810,9 @@ event is emitted before continuing.
 Attempting to set a TLS protocol `minVersion` or `maxVersion` conflicts with an
 attempt to set the `secureProtocol` explicitly. Use one mechanism or the other.
 
-<a id="ERR_TLS_PSK_SET_IDENTIY_HINT_FAILED"></a>
+<a id="ERR_TLS_PSK_SET_IDENTITY_HINT_FAILED"></a>
 
-### `ERR_TLS_PSK_SET_IDENTIY_HINT_FAILED`
+### `ERR_TLS_PSK_SET_IDENTITY_HINT_FAILED`
 
 Failed to set PSK identity hint. Hint may be too long.
 
@@ -3589,6 +3596,39 @@ removed: v10.0.0
 
 Used by the `Node-API` when `Constructor.prototype` is not an object.
 
+<a id="ERR_NAPI_TSFN_START_IDLE_LOOP"></a>
+
+### `ERR_NAPI_TSFN_START_IDLE_LOOP`
+
+<!-- YAML
+added:
+  - v10.6.0
+  - v8.16.0
+removed:
+  - v14.2.0
+  - v12.17.0
+-->
+
+On the main thread, values are removed from the queue associated with the
+thread-safe function in an idle loop. This error indicates that an error
+has occurred when attempting to start the loop.
+
+<a id="ERR_NAPI_TSFN_STOP_IDLE_LOOP"></a>
+
+### `ERR_NAPI_TSFN_STOP_IDLE_LOOP`
+
+<!-- YAML
+added:
+  - v10.6.0
+  - v8.16.0
+removed:
+  - v14.2.0
+  - v12.17.0
+-->
+
+Once no more items are left in the queue, the idle loop must be suspended. This
+error indicates that the idle loop has failed to stop.
+
 <a id="ERR_NO_LONGER_SUPPORTED"></a>
 
 ### `ERR_NO_LONGER_SUPPORTED`
@@ -3629,6 +3669,42 @@ removed: v10.0.0
 -->
 
 The `node:repl` module was unable to parse data from the REPL history file.
+
+<a id="ERR_QUIC_CONNECTION_FAILED"></a>
+
+### `ERR_QUIC_CONNECTION_FAILED`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1 - Experimental
+
+Establishing a QUIC connection failed.
+
+<a id="ERR_QUIC_ENDPOINT_CLOSED"></a>
+
+### `ERR_QUIC_ENDPOINT_CLOSED`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1 - Experimental
+
+A QUIC Endpoint closed with an error.
+
+<a id="ERR_QUIC_OPEN_STREAM_FAILED"></a>
+
+### `ERR_QUIC_OPEN_STREAM_FAILED`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1 - Experimental
+
+Opening a QUIC stream failed.
 
 <a id="ERR_SOCKET_CANNOT_SEND"></a>
 
@@ -4055,6 +4131,7 @@ Type stripping is not supported for files descendent of a `node_modules` directo
 [`ERR_INVALID_ARG_TYPE`]: #err_invalid_arg_type
 [`ERR_MISSING_MESSAGE_PORT_IN_TRANSFER_LIST`]: #err_missing_message_port_in_transfer_list
 [`ERR_MISSING_TRANSFERABLE_IN_TRANSFER_LIST`]: #err_missing_transferable_in_transfer_list
+[`ERR_REQUIRE_ASYNC_MODULE`]: #err_require_async_module
 [`EventEmitter`]: events.md#class-eventemitter
 [`MessagePort`]: worker_threads.md#class-messageport
 [`Object.getPrototypeOf`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getPrototypeOf

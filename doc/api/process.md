@@ -1956,8 +1956,6 @@ added: v4.8.0
 
 A boolean value that is `true` if the current Node.js build includes support for ALPN in TLS.
 
-***
-
 ## `process.features.tls_ocsp`
 
 <!-- YAML
@@ -1967,8 +1965,6 @@ added: v0.11.13
 * {boolean}
 
 A boolean value that is `true` if the current Node.js build includes support for OCSP in TLS.
-
-***
 
 ## `process.features.tls_sni`
 
@@ -1980,7 +1976,18 @@ added: v0.5.3
 
 A boolean value that is `true` if the current Node.js build includes support for SNI in TLS.
 
-***
+## `process.features.typescript`
+
+<!-- YAML
+added: REPLACEME
+-->
+
+> Stability: 1.0 - Early development
+
+* {boolean|string}
+
+A value that is `"strip"` if Node.js is run with `--experimental-strip-types`,
+`"transform"` if Node.js is run with `--experimental-transform-types`, and `false` otherwise.
 
 ## `process.features.uv`
 
@@ -2807,7 +2814,9 @@ console.log(memoryUsage.rss());
 <!-- YAML
 added: v0.1.26
 changes:
-  - version: v22.7.0
+  - version:
+    - v22.7.0
+    - v20.18.0
     pr-url: https://github.com/nodejs/node/pull/51280
     description: Changed stability to Legacy.
   - version: v18.0.0
