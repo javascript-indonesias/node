@@ -104,11 +104,10 @@ To download `SHASUMS256.txt` using `curl`:
 curl -O https://nodejs.org/dist/vx.y.z/SHASUMS256.txt
 ```
 
-To check that a downloaded file matches the checksum, run
-it through `sha256sum` with a command such as:
+To check that downloaded files match the checksum, use `sha256sum`:
 
 ```bash
-grep node-vx.y.z.tar.gz SHASUMS256.txt | sha256sum -c -
+sha256sum -c SHASUMS256.txt --ignore-missing
 ```
 
 For Current and LTS, the GPG detached signature of `SHASUMS256.txt` is in
@@ -320,8 +319,6 @@ For information about the governance of the Node.js project, see
   **Kohei Ueno** <<kohei.ueno119@gmail.com>> (he/him)
 * [daeyeon](https://github.com/daeyeon) -
   **Daeyeon Jeong** <<daeyeon.dev@gmail.com>> (he/him)
-* [danielleadams](https://github.com/danielleadams) -
-  **Danielle Adams** <<adamzdanielle@gmail.com>> (she/her)
 * [debadree25](https://github.com/debadree25) -
   **Debadree Chatterjee** <<debadree333@gmail.com>> (he/him)
 * [deokjinkim](https://github.com/deokjinkim) -
@@ -502,6 +499,8 @@ For information about the governance of the Node.js project, see
   **Claudio Rodriguez** <<cjrodr@yahoo.com>>
 * [danbev](https://github.com/danbev) -
   **Daniel Bevenius** <<daniel.bevenius@gmail.com>> (he/him)
+* [danielleadams](https://github.com/danielleadams) -
+  **Danielle Adams** <<adamzdanielle@gmail.com>> (she/her)
 * [DavidCai1993](https://github.com/DavidCai1993) -
   **David Cai** <<davidcai1993@yahoo.com>> (he/him)
 * [davisjam](https://github.com/davisjam) -
