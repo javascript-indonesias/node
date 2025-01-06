@@ -329,7 +329,7 @@ class AsyncHooks : public MemoryRetainer {
                          v8::Local<v8::Function> resolve);
   // Used for testing since V8 doesn't provide API for retrieving configured
   // JS promise hooks.
-  v8::Local<v8::Array> GetPromiseHooks(v8::Isolate* isolate);
+  v8::Local<v8::Array> GetPromiseHooks(v8::Isolate* isolate) const;
   inline v8::Local<v8::String> provider_string(int idx);
 
   inline void no_force_checks();
@@ -401,7 +401,16 @@ class AsyncHooks : public MemoryRetainer {
   void grow_async_ids_stack();
 
   v8::Global<v8::Array> js_execution_async_resources_;
-  std::vector<v8::Local<v8::Object>> native_execution_async_resources_;
+
+  // TODO(@jasnell): Note that this is technically illegal use of
+  // v8::Locals which should be kept on the stack. Here, the entries
+  // in this object grows and shrinks with the C stack, and entries
+  // will be in the right handle scopes, but v8::Locals are supposed
+  // to remain on the stack and not the heap. For general purposes
+  // this *should* be ok but may need to be looked at further should
+  // v8 become stricter in the future about v8::Locals being held in
+  // the stack.
+  v8::LocalVector<v8::Object> native_execution_async_resources_;
 
   // Non-empty during deserialization
   const SerializeInfo* info_ = nullptr;
@@ -848,7 +857,7 @@ class Environment final : public MemoryRetainer {
   void AtExit(void (*cb)(void* arg), void* arg);
   void RunAtExitCallbacks();
 
-  v8::Maybe<bool> CheckUnsettledTopLevelAwait();
+  v8::Maybe<bool> CheckUnsettledTopLevelAwait() const;
   void RunWeakRefCleanup();
 
   v8::MaybeLocal<v8::Value> RunSnapshotSerializeCallback() const;
@@ -1070,14 +1079,6 @@ class Environment final : public MemoryRetainer {
 
   v8::Global<v8::Module> temporary_required_module_facade_original;
 
-  void SetAsyncResourceContextFrame(std::uintptr_t async_resource_handle,
-                                    v8::Global<v8::Value>&&);
-
-  const v8::Global<v8::Value>& GetAsyncResourceContextFrame(
-      std::uintptr_t async_resource_handle);
-
-  void RemoveAsyncResourceContextFrame(std::uintptr_t async_resource_handle);
-
  private:
   inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>,
                                                      v8::Local<v8::Value>),
@@ -1252,9 +1253,6 @@ class Environment final : public MemoryRetainer {
   // track of the BackingStore for a given pointer.
   std::unordered_map<char*, std::unique_ptr<v8::BackingStore>>
       released_allocated_buffers_;
-
-  std::unordered_map<std::uintptr_t, v8::Global<v8::Value>>
-      async_resource_context_frames_;
 };
 
 }  // namespace node
