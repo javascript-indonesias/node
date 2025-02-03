@@ -182,11 +182,14 @@ added:
   * `useBigIntArguments` {boolean} If `true`, integer arguments to `function`
     are converted to `BigInt`s. If `false`, integer arguments are passed as
     JavaScript numbers. **Default:** `false`.
-  * `varargs` {boolean} If `true`, `function` can accept a variable number of
-    arguments. If `false`, `function` must be invoked with exactly
-    `function.length` arguments. **Default:** `false`.
+  * `varargs` {boolean} If `true`, `function` may be invoked with any number of
+    arguments (between zero and [`SQLITE_MAX_FUNCTION_ARG`][]). If `false`,
+    `function` must be invoked with exactly `function.length` arguments.
+    **Default:** `false`.
 * `function` {Function} The JavaScript function to call when the SQLite
-  function is invoked.
+  function is invoked. The return value of this function should be a valid
+  SQLite data type: see [Type conversion between JavaScript and SQLite][].
+  The result defaults to `NULL` if the return value is `undefined`.
 
 This method is used to create SQLite user-defined functions. This method is a
 wrapper around [`sqlite3_create_function_v2()`][].
@@ -346,7 +349,7 @@ over hand-crafted SQL strings when handling user input.
 <!-- YAML
 added: v22.5.0
 changes:
-  - version: REPLACEME
+  - version: v23.7.0
     pr-url: https://github.com/nodejs/node/pull/56385
     description: Add support for `DataView` and typed array objects for `anonymousParameters`.
 -->
@@ -382,7 +385,7 @@ execution of this prepared statement. This property is a wrapper around
 <!-- YAML
 added: v22.5.0
 changes:
-  - version: REPLACEME
+  - version: v23.7.0
     pr-url: https://github.com/nodejs/node/pull/56385
     description: Add support for `DataView` and typed array objects for `anonymousParameters`.
 -->
@@ -408,7 +411,7 @@ added:
   - v23.4.0
   - v22.13.0
 changes:
-  - version: REPLACEME
+  - version: v23.7.0
     pr-url: https://github.com/nodejs/node/pull/56385
     description: Add support for `DataView` and typed array objects for `anonymousParameters`.
 -->
@@ -431,7 +434,7 @@ the values in `namedParameters` and `anonymousParameters`.
 <!-- YAML
 added: v22.5.0
 changes:
-  - version: REPLACEME
+  - version: v23.7.0
     pr-url: https://github.com/nodejs/node/pull/56385
     description: Add support for `DataView` and typed array objects for `anonymousParameters`.
 -->
@@ -515,13 +518,13 @@ more data types than SQLite, only a subset of JavaScript types are supported.
 Attempting to write an unsupported data type to SQLite will result in an
 exception.
 
-| SQLite    | JavaScript           |
-| --------- | -------------------- |
-| `NULL`    | {null}               |
-| `INTEGER` | {number} or {bigint} |
-| `REAL`    | {number}             |
-| `TEXT`    | {string}             |
-| `BLOB`    | {Uint8Array}         |
+| SQLite    | JavaScript                 |
+| --------- | -------------------------- |
+| `NULL`    | {null}                     |
+| `INTEGER` | {number} or {bigint}       |
+| `REAL`    | {number}                   |
+| `TEXT`    | {string}                   |
+| `BLOB`    | {TypedArray} or {DataView} |
 
 ## `sqlite.constants`
 
@@ -599,10 +602,12 @@ resolution handler passed to [`database.applyChangeset()`][]. See also
 [Constants Passed To The Conflict Handler]: https://www.sqlite.org/session/c_changeset_conflict.html
 [Constants Returned From The Conflict Handler]: https://www.sqlite.org/session/c_changeset_abort.html
 [SQL injection]: https://en.wikipedia.org/wiki/SQL_injection
+[Type conversion between JavaScript and SQLite]: #type-conversion-between-javascript-and-sqlite
 [`ATTACH DATABASE`]: https://www.sqlite.org/lang_attach.html
 [`PRAGMA foreign_keys`]: https://www.sqlite.org/pragma.html#pragma_foreign_keys
 [`SQLITE_DETERMINISTIC`]: https://www.sqlite.org/c3ref/c_deterministic.html
 [`SQLITE_DIRECTONLY`]: https://www.sqlite.org/c3ref/c_deterministic.html
+[`SQLITE_MAX_FUNCTION_ARG`]: https://www.sqlite.org/limits.html#max_function_arg
 [`database.applyChangeset()`]: #databaseapplychangesetchangeset-options
 [`sqlite3_changes64()`]: https://www.sqlite.org/c3ref/changes.html
 [`sqlite3_close_v2()`]: https://www.sqlite.org/c3ref/close.html

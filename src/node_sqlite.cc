@@ -213,7 +213,7 @@ class UserDefinedFunction {
     } else if (result->IsString()) {
       Utf8Value val(isolate, result.As<String>());
       sqlite3_result_text(ctx, *val, val.length(), SQLITE_TRANSIENT);
-    } else if (result->IsUint8Array()) {
+    } else if (result->IsArrayBufferView()) {
       ArrayBufferViewContents<uint8_t> buf(result);
       sqlite3_result_blob(ctx, buf.data(), buf.length(), SQLITE_TRANSIENT);
     } else if (result->IsBigInt()) {
@@ -1735,7 +1735,7 @@ static void Initialize(Local<Object> target,
                          "StatementSync",
                          StatementSync::GetConstructorTemplate(env));
 
-  target->Set(context, OneByteString(isolate, "constants"), constants).Check();
+  target->Set(context, env->constants_string(), constants).Check();
 }
 
 }  // namespace sqlite
