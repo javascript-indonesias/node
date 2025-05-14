@@ -316,9 +316,7 @@ class DotsProgressIndicator(SimpleProgressIndicator):
 
 class ActionsAnnotationProgressIndicator(DotsProgressIndicator):
   def AboutToRun(self, case):
-    case.additional_flags = case.additional_flags.copy() if hasattr(case, 'additional_flags') else []
-    case.additional_flags.append('--test-reporter=./test/common/test-error-reporter.js')
-    case.additional_flags.append('--test-reporter-destination=stdout')
+    pass
 
   def GetAnnotationInfo(self, test, output):
     traceback = output.stdout + output.stderr
@@ -604,12 +602,21 @@ class TestCase(object):
 
   def Run(self):
     try:
-      result = self.RunCommand(self.GetCommand(), {
+      run_configuration = self.GetRunConfiguration()
+      command = run_configuration['command']
+      envs = {}
+      if 'envs' in run_configuration:
+        envs.update(run_configuration['envs'])
+      envs.update({
         "TEST_SERIAL_ID": "%d" % self.serial_id,
         "TEST_THREAD_ID": "%d" % self.thread_id,
         "TEST_PARALLEL" : "%d" % self.parallel,
         "GITHUB_STEP_SUMMARY": "",
       })
+      result = self.RunCommand(
+        command,
+        envs
+      )
     finally:
       # Tests can leave the tty in non-blocking mode. If the test runner
       # tries to print to stdout/stderr after that and the tty buffer is
@@ -1448,6 +1455,9 @@ def BuildOptions():
   result.add_option("--type",
       help="Type of build (simple, fips, coverage)",
       default=None)
+  result.add_option("--error-reporter",
+      help="use error reporter",
+      default=True, action="store_true")
   return result
 
 
@@ -1585,6 +1595,7 @@ IGNORED_SUITES = [
   'node-api',
   'pummel',
   'sqlite',
+  'system-ca',
   'tick-processor',
   'v8-updates'
 ]
@@ -1662,6 +1673,10 @@ def Main():
     # the optimizer to kick in, so this flag will force it to run.
     options.node_args.append("--always-turbofan")
     options.progress = "deopts"
+
+  if options.error_reporter:
+    options.node_args.append('--test-reporter=./test/common/test-error-reporter.js')
+    options.node_args.append('--test-reporter-destination=stdout')
 
   if options.worker:
     run_worker = join(workspace, "tools", "run-worker.js")

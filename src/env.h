@@ -48,6 +48,7 @@
 #include "req_wrap.h"
 #include "util.h"
 #include "uv.h"
+#include "v8-external-memory-accounter.h"
 #include "v8.h"
 
 #if HAVE_OPENSSL
@@ -66,10 +67,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-namespace v8 {
-class CppHeap;
-}
 
 namespace node {
 
@@ -111,19 +108,6 @@ class ModuleWrap;
 
 class Environment;
 class Realm;
-
-// Disables zero-filling for ArrayBuffer allocations in this scope. This is
-// similar to how we implement Buffer.allocUnsafe() in JS land.
-class NoArrayBufferZeroFillScope {
- public:
-  inline explicit NoArrayBufferZeroFillScope(IsolateData* isolate_data);
-  inline ~NoArrayBufferZeroFillScope();
-
- private:
-  NodeArrayBufferAllocator* node_allocator_;
-
-  friend class Environment;
-};
 
 struct IsolateDataSerializeInfo {
   std::vector<SnapshotIndex> primitive_values;
@@ -258,7 +242,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
   const SnapshotData* snapshot_data_;
   std::optional<SnapshotConfig> snapshot_config_;
 
-  std::unique_ptr<v8::CppHeap> cpp_heap_;
   std::shared_ptr<PerIsolateOptions> options_;
   worker::Worker* worker_context_ = nullptr;
   PerIsolateWrapperData* wrapper_data_;
@@ -709,6 +692,7 @@ class Environment final : public MemoryRetainer {
   void StartProfilerIdleNotifier();
 
   inline v8::Isolate* isolate() const;
+  inline v8::ExternalMemoryAccounter* external_memory_accounter() const;
   inline uv_loop_t* event_loop() const;
   void TryLoadAddon(const char* filename,
                     int flags,
@@ -752,6 +736,8 @@ class Environment final : public MemoryRetainer {
   bool exiting() const;
   inline ExitCode exit_code(const ExitCode default_code) const;
 
+  inline void set_exit_code(const ExitCode code);
+
   // This stores whether the --abort-on-uncaught-exception flag was passed
   // to Node.
   inline bool abort_on_uncaught_exception() const;
@@ -780,12 +766,12 @@ class Environment final : public MemoryRetainer {
 
   inline performance::PerformanceState* performance_state();
 
-  void CollectUVExceptionInfo(v8::Local<v8::Value> context,
-                              int errorno,
-                              const char* syscall = nullptr,
-                              const char* message = nullptr,
-                              const char* path = nullptr,
-                              const char* dest = nullptr);
+  v8::Maybe<void> CollectUVExceptionInfo(v8::Local<v8::Value> context,
+                                         int errorno,
+                                         const char* syscall = nullptr,
+                                         const char* message = nullptr,
+                                         const char* path = nullptr,
+                                         const char* dest = nullptr);
 
   // If this flag is set, calls into JS (if they would be observable
   // from userland) must be avoided.  This flag does not indicate whether
@@ -1089,6 +1075,7 @@ class Environment final : public MemoryRetainer {
 
   std::list<binding::DLib> loaded_addons_;
   v8::Isolate* const isolate_;
+  v8::ExternalMemoryAccounter* const external_memory_accounter_;
   IsolateData* const isolate_data_;
 
   bool env_handle_initialized_ = false;

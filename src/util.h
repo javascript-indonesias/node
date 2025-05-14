@@ -25,6 +25,7 @@
 #if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
 
 #include "uv.h"
+#include "v8-inspector.h"
 #include "v8.h"
 
 #include "node.h"
@@ -42,6 +43,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <set>
 #include <string>
 #include <string_view>
@@ -314,7 +316,7 @@ class KVStore {
                         v8::Local<v8::String> key) const = 0;
   virtual int32_t Query(const char* key) const = 0;
   virtual void Delete(v8::Isolate* isolate, v8::Local<v8::String> key) = 0;
-  virtual v8::Local<v8::Array> Enumerate(v8::Isolate* isolate) const = 0;
+  virtual v8::MaybeLocal<v8::Array> Enumerate(v8::Isolate* isolate) const = 0;
 
   virtual std::shared_ptr<KVStore> Clone(v8::Isolate* isolate) const;
   virtual v8::Maybe<void> AssignFromObject(v8::Local<v8::Context> context,
@@ -387,6 +389,11 @@ constexpr size_t strsize(const T (&)[N]) {
 template <typename T, size_t kStackStorageSize = 1024>
 class MaybeStackBuffer {
  public:
+  // Disallow copy constructor
+  MaybeStackBuffer(const MaybeStackBuffer&) = delete;
+  // Disallow copy assignment operator
+  MaybeStackBuffer& operator=(const MaybeStackBuffer& other) = delete;
+
   const T* out() const {
     return buf_;
   }
@@ -649,38 +656,6 @@ struct MallocedBuffer {
   MallocedBuffer& operator=(const MallocedBuffer&) = delete;
 };
 
-template <typename T>
-class NonCopyableMaybe {
- public:
-  NonCopyableMaybe() : empty_(true) {}
-  explicit NonCopyableMaybe(T&& value)
-      : empty_(false),
-        value_(std::move(value)) {}
-
-  bool IsEmpty() const {
-    return empty_;
-  }
-
-  const T* get() const {
-    return empty_ ? nullptr : &value_;
-  }
-
-  const T* operator->() const {
-    CHECK(!empty_);
-    return &value_;
-  }
-
-  T&& Release() {
-    CHECK_EQ(empty_, false);
-    empty_ = true;
-    return std::move(value_);
-  }
-
- private:
-  bool empty_;
-  T value_;
-};
-
 // Test whether some value can be called with ().
 template <typename T, typename = void>
 struct is_callable : std::is_function<T> { };
@@ -709,12 +684,13 @@ using DeleteFnPtr = typename FunctionDeleter<T, function>::Pointer;
 inline v8::Maybe<void> FromV8Array(v8::Local<v8::Context> context,
                                    v8::Local<v8::Array> js_array,
                                    std::vector<v8::Global<v8::Value>>* out);
-std::vector<std::string_view> SplitString(const std::string_view in,
-                                          const std::string_view delim);
 
 inline v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                            std::string_view str,
                                            v8::Isolate* isolate = nullptr);
+inline v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+                                           v8_inspector::StringView str,
+                                           v8::Isolate* isolate);
 template <typename T, typename test_for_number =
     typename std::enable_if<std::numeric_limits<T>::is_specialized, bool>::type>
 inline v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
@@ -732,6 +708,12 @@ template <typename T, typename U>
 inline v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                            const std::unordered_map<T, U>& map,
                                            v8::Isolate* isolate = nullptr);
+
+template <typename T, std::size_t U>
+inline v8::MaybeLocal<v8::Value> ToV8Value(
+    v8::Local<v8::Context> context,
+    const std::ranges::elements_view<T, U>& vec,
+    v8::Isolate* isolate = nullptr);
 
 // These macros expects a `Isolate* isolate` and a `Local<Context> context`
 // to be in the scope.
@@ -1012,9 +994,12 @@ v8::Maybe<int> GetValidFileMode(Environment* env,
                                 v8::Local<v8::Value> input,
                                 uv_fs_type type);
 
+#ifdef _WIN32
 // Returns true if OS==Windows and filename ends in .bat or .cmd,
 // case insensitive.
 inline bool IsWindowsBatchFile(const char* filename);
+inline std::wstring ConvertToWideString(const std::string& str, UINT code_page);
+#endif  // _WIN32
 
 }  // namespace node
 

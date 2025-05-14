@@ -127,7 +127,9 @@ class EnvironmentOptions : public Options {
   bool experimental_websocket = true;
   bool experimental_sqlite = true;
   bool experimental_webstorage = false;
+#ifdef NODE_OPENSSL_HAS_QUIC
   bool experimental_quic = false;
+#endif
   std::string localstorage_file;
   bool experimental_global_navigator = true;
   bool experimental_global_web_crypto = true;
@@ -144,7 +146,7 @@ class EnvironmentOptions : public Options {
   bool allow_worker_threads = false;
   bool experimental_repl_await = true;
   bool experimental_vm_modules = false;
-  bool async_context_frame = false;
+  bool async_context_frame = true;
   bool expose_internals = false;
   bool force_node_api_uncaught_exceptions_policy = false;
   bool frozen_intrinsics = false;
@@ -171,6 +173,7 @@ class EnvironmentOptions : public Options {
   std::string cpu_prof_name;
   bool cpu_prof = false;
   bool experimental_network_inspection = false;
+  bool experimental_worker_inspection = false;
   std::string heap_prof_dir;
   std::string heap_prof_name;
   static const uint64_t kDefaultHeapProfInterval = 512 * 1024;
@@ -195,6 +198,7 @@ class EnvironmentOptions : public Options {
   std::vector<std::string> test_name_pattern;
   std::vector<std::string> test_reporter;
   std::vector<std::string> test_reporter_destination;
+  std::string test_global_setup_path;
   bool test_only = false;
   bool test_udp_no_try_send = false;
   std::string test_isolation = "process";
@@ -256,6 +260,8 @@ class EnvironmentOptions : public Options {
 
   bool report_exclude_env = false;
   bool report_exclude_network = false;
+  std::string experimental_config_file_path;
+  bool experimental_default_config_file = false;
 
   inline DebugOptions* get_debug_options() { return &debug_options_; }
   inline const DebugOptions& debug_options() const { return debug_options_; }
@@ -388,6 +394,7 @@ enum OptionType {
   kHostPort,
   kStringList,
 };
+std::unordered_map<std::string, OptionType> MapEnvOptionsFlagInputType();
 
 template <typename Options>
 class OptionsParser {
@@ -402,6 +409,10 @@ class OptionsParser {
   // These methods add a single option to the parser. Optionally, it can be
   // specified whether the option should be allowed from environment variable
   // sources (i.e. NODE_OPTIONS).
+
+  // default_is_true is only a hint in printing help text, it does not
+  // affect the default value of the option. Set the default value in the
+  // Options struct instead.
   void AddOption(const char* name,
                  const char* help_text,
                  bool Options::*field,
@@ -568,6 +579,10 @@ class OptionsParser {
   friend void GetCLIOptionsInfo(
       const v8::FunctionCallbackInfo<v8::Value>& args);
   friend std::string GetBashCompletion();
+  friend std::unordered_map<std::string, OptionType>
+  MapEnvOptionsFlagInputType();
+  friend void GetEnvOptionsInputType(
+      const v8::FunctionCallbackInfo<v8::Value>& args);
 };
 
 using StringVector = std::vector<std::string>;

@@ -397,6 +397,60 @@ their dependencies. When a change is detected, the test runner will
 rerun the tests affected by the change.
 The test runner will continue to run until the process is terminated.
 
+## Global setup and teardown
+
+<!-- YAML
+added: v24.0.0
+-->
+
+> Stability: 1.0 - Early development
+
+The test runner supports specifying a module that will be evaluated before all tests are executed and
+can be used to setup global state or fixtures for tests. This is useful for preparing resources or setting up
+shared state that is required by multiple tests.
+
+This module can export any of the following:
+
+* A `globalSetup` function which runs once before all tests start
+* A `globalTeardown` function which runs once after all tests complete
+
+The module is specified using the `--test-global-setup` flag when running tests from the command line.
+
+```cjs
+// setup-module.js
+async function globalSetup() {
+  // Setup shared resources, state, or environment
+  console.log('Global setup executed');
+  // Run servers, create files, prepare databases, etc.
+}
+
+async function globalTeardown() {
+  // Clean up resources, state, or environment
+  console.log('Global teardown executed');
+  // Close servers, remove files, disconnect from databases, etc.
+}
+
+module.exports = { globalSetup, globalTeardown };
+```
+
+```mjs
+// setup-module.mjs
+export async function globalSetup() {
+  // Setup shared resources, state, or environment
+  console.log('Global setup executed');
+  // Run servers, create files, prepare databases, etc.
+}
+
+export async function globalTeardown() {
+  // Clean up resources, state, or environment
+  console.log('Global teardown executed');
+  // Close servers, remove files, disconnect from databases, etc.
+}
+```
+
+If the global setup function throws an error, no tests will be run and the process will exit with a non-zero exit code.
+The global teardown function will not be called in this case.
+
 ## Running tests from the command line
 
 The Node.js test runner can be invoked from the command line by passing the
@@ -1404,7 +1458,7 @@ added:
   - v20.13.0
 changes:
   - version:
-    - REPLACEME
+    - v24.0.0
     pr-url: https://github.com/nodejs/node/pull/56664
     description: This function no longer returns a `Promise`.
 -->
@@ -1461,7 +1515,7 @@ added:
   - v16.17.0
 changes:
   - version:
-    - REPLACEME
+    - v24.0.0
     pr-url: https://github.com/nodejs/node/pull/56664
     description: This function no longer returns a `Promise`.
   - version:
@@ -1734,7 +1788,9 @@ describe('tests', async () => {
 ## `assert`
 
 <!-- YAML
-added: v23.7.0
+added:
+  - v23.7.0
+  - v22.14.0
 -->
 
 An object whose methods are used to configure available assertions on the
@@ -1748,7 +1804,9 @@ preloaded with `--require` or `--import`.
 ### `assert.register(name, fn)`
 
 <!-- YAML
-added: v23.7.0
+added:
+  - v23.7.0
+  - v22.14.0
 -->
 
 Defines a new assertion function with the provided name and function. If an
@@ -2113,6 +2171,11 @@ test('spies on an object method', (t) => {
 added:
   - v22.3.0
   - v20.18.0
+changes:
+  - version:
+    - v24.0.0
+    pr-url: https://github.com/nodejs/node/pull/58007
+    description: Support JSON modules.
 -->
 
 > Stability: 1.0 - Early development
@@ -2136,10 +2199,10 @@ added:
     mock will throw an exception when used as a CJS or builtin module.
 * Returns: {MockModuleContext} An object that can be used to manipulate the mock.
 
-This function is used to mock the exports of ECMAScript modules, CommonJS
-modules, and Node.js builtin modules. Any references to the original module
-prior to mocking are not impacted. In order to enable module mocking, Node.js must
-be started with the [`--experimental-test-module-mocks`][] command-line flag.
+This function is used to mock the exports of ECMAScript modules, CommonJS modules, JSON modules, and
+Node.js builtin modules. Any references to the original module prior to mocking are not impacted. In
+order to enable module mocking, Node.js must be started with the
+[`--experimental-test-module-mocks`][] command-line flag.
 
 The following example demonstrates how a mock is created for a module.
 
@@ -2225,8 +2288,6 @@ changes:
     pr-url: https://github.com/nodejs/node/pull/55398
     description: The Mock Timers is now stable.
 -->
-
-> Stability: 2 - Stable
 
 Mocking timers is a technique commonly used in software testing to simulate and
 control the behavior of timers, such as `setInterval` and `setTimeout`,
@@ -3258,7 +3319,9 @@ test('test', (t) => {
 #### `context.assert.fileSnapshot(value, path[, options])`
 
 <!-- YAML
-added: v23.7.0
+added:
+  - v23.7.0
+  - v22.14.0
 -->
 
 * `value` {any} A value to serialize to a string. If Node.js was started with
@@ -3375,13 +3438,18 @@ added:
 
 The name of the test.
 
-### `context.plan(count)`
+### `context.plan(count[,options])`
 
 <!-- YAML
 added:
   - v22.2.0
   - v20.15.0
 changes:
+  - version:
+    - v23.9.0
+    - v22.15.0
+    pr-url: https://github.com/nodejs/node/pull/56765
+    description: Add the `options` parameter.
   - version:
     - v23.4.0
     - v22.13.0
@@ -3390,6 +3458,16 @@ changes:
 -->
 
 * `count` {number} The number of assertions and subtests that are expected to run.
+* `options` {Object} Additional options for the plan.
+  * `wait` {boolean|number} The wait time for the plan:
+    * If `true`, the plan waits indefinitely for all assertions and subtests to run.
+    * If `false`, the plan performs an immediate check after the test function completes,
+      without waiting for any pending assertions or subtests.
+      Any assertions or subtests that complete after this check will not be counted towards the plan.
+    * If a number, it specifies the maximum wait time in milliseconds
+      before timing out while waiting for expected assertions and subtests to be matched.
+      If the timeout is reached, the test will fail.
+      **Default:** `false`.
 
 This function is used to set the number of assertions and subtests that are expected to run
 within the test. If the number of assertions and subtests that run does not match the
@@ -3427,6 +3505,26 @@ test('planning with streams', (t, done) => {
   });
 });
 ```
+
+When using the `wait` option, you can control how long the test will wait for the expected assertions.
+For example, setting a maximum wait time ensures that the test will wait for asynchronous assertions
+to complete within the specified timeframe:
+
+```js
+test('plan with wait: 2000 waits for async assertions', (t) => {
+  t.plan(1, { wait: 2000 }); // Waits for up to 2 seconds for the assertion to complete.
+
+  const asyncActivity = () => {
+    setTimeout(() => {
+      t.assert.ok(true, 'Async assertion completed within the wait time');
+    }, 1000); // Completes after 1 second, within the 2-second wait time.
+  };
+
+  asyncActivity(); // The test will pass because the assertion is completed in time.
+});
+```
+
+Note: If a `wait` timeout is specified, it begins counting down only after the test function finishes executing.
 
 ### `context.runOnly(shouldRunOnlyTests)`
 
@@ -3521,7 +3619,7 @@ added:
   - v16.17.0
 changes:
   - version:
-    - REPLACEME
+    - v24.0.0
     pr-url: https://github.com/nodejs/node/pull/56664
     description: This function no longer returns a `Promise`.
   - version:
@@ -3587,7 +3685,9 @@ test('top level test', async (t) => {
 ### `context.waitFor(condition[, options])`
 
 <!-- YAML
-added: v23.7.0
+added:
+  - v23.7.0
+  - v22.14.0
 -->
 
 * `condition` {Function|AsyncFunction} An assertion function that is invoked

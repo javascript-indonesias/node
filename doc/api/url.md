@@ -628,9 +628,11 @@ console.log(JSON.stringify(myURLs));
 
 <!-- YAML
 added: v16.7.0
+changes:
+ - version: v24.0.0
+   pr-url: https://github.com/nodejs/node/pull/57513
+   description: Marking the API stable.
 -->
-
-> Stability: 1 - Experimental
 
 * `blob` {Blob}
 * Returns: {string}
@@ -664,9 +666,11 @@ to other workers or the main thread.
 
 <!-- YAML
 added: v16.7.0
+changes:
+ - version: v24.0.0
+   pr-url: https://github.com/nodejs/node/pull/57513
+   description: Marking the API stable.
 -->
-
-> Stability: 1 - Experimental
 
 * `id` {string} A `'blob:nodedata:...` URL string returned by a prior call to
   `URL.createObjectURL()`.
@@ -716,11 +720,11 @@ if `input` is not a valid.
 
 ### Class: `URLPattern`
 
-> Stability: 1 - Experimental
-
 <!-- YAML
-added: REPLACEME
+added: v23.8.0
 -->
+
+> Stability: 1 - Experimental
 
 The `URLPattern` API provides an interface to match URLs or parts of URLs
 against a pattern.
@@ -767,7 +771,7 @@ case-insensitive matching if set to true.
 
 The constructor can throw a `TypeError` to indicate parsing failure.
 
-#### `new URLPattern(objg[, baseURL][, options])`
+#### `new URLPattern(obj[, baseURL][, options])`
 
 * `obj` {Object} An input pattern
 * `baseURL` {string | undefined} A base URL string
@@ -956,7 +960,7 @@ added:
 * `iterable` {Iterable} An iterable object whose elements are key-value pairs
 
 Instantiate a new `URLSearchParams` object with an iterable map in a way that
-is similar to [`Map`][]'s constructor. `iterable` can be an `Array` or any
+is similar to {Map}'s constructor. `iterable` can be an `Array` or any
 iterable object. That means `iterable` can be another `URLSearchParams`, in
 which case the constructor will simply create a clone of the provided
 `URLSearchParams`. Elements of `iterable` are key-value pairs, and can
@@ -1560,8 +1564,6 @@ changes:
     description: The Legacy URL API is deprecated. Use the WHATWG URL API.
 -->
 
-> Stability: 3 - Legacy: Use the WHATWG URL API instead.
-
 The legacy `urlObject` (`require('node:url').Url` or
 `import { Url } from 'node:url'`) is
 created and returned by the `url.parse()` function.
@@ -1688,8 +1690,6 @@ changes:
                  `slashes` option with no protocol is now also respected at all
                  times.
 -->
-
-> Stability: 3 - Legacy: Use the WHATWG URL API instead.
 
 * `urlObject` {Object|string} A URL object (as returned by `url.parse()` or
   constructed otherwise). If a string, it is converted to an object by passing
@@ -1851,8 +1851,6 @@ changes:
                  contains a hostname.
 -->
 
-> Stability: 3 - Legacy: Use the WHATWG URL API instead.
-
 * `from` {string} The base URL to use if `to` is a relative URL.
 * `to` {string} The target URL to resolve.
 
@@ -1951,7 +1949,6 @@ console.log(myURL.origin);
 [WHATWG URL Standard]: https://url.spec.whatwg.org/
 [`Error`]: errors.md#class-error
 [`JSON.stringify()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
-[`Map`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
 [`TypeError`]: errors.md#class-typeerror
 [`URLSearchParams`]: #class-urlsearchparams
 [`array.toString()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/toString

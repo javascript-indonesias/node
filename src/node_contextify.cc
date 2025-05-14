@@ -111,9 +111,8 @@ using v8::Value;
 namespace {
 
 // Convert an int to a V8 Name (String or Symbol).
-Local<Name> Uint32ToName(Local<Context> context, uint32_t index) {
-  return Uint32::New(context->GetIsolate(), index)->ToString(context)
-      .ToLocalChecked();
+MaybeLocal<String> Uint32ToName(Local<Context> context, uint32_t index) {
+  return Uint32::New(context->GetIsolate(), index)->ToString(context);
 }
 
 }  // anonymous namespace
@@ -329,7 +328,7 @@ ContextifyContext* ContextifyContext::New(Local<Context> v8_context,
              .ToLocal(&wrapper)) {
       return {};
     }
-
+    DCHECK_NOT_NULL(env->isolate()->GetCppHeap());
     result = cppgc::MakeGarbageCollected<ContextifyContext>(
         env->isolate()->GetCppHeap()->GetAllocationHandle(),
         env,
@@ -852,8 +851,11 @@ Intercepted ContextifyContext::IndexedPropertyQueryCallback(
     return Intercepted::kNo;
   }
 
-  return ContextifyContext::PropertyQueryCallback(
-      Uint32ToName(ctx->context(), index), args);
+  Local<String> name;
+  if (Uint32ToName(ctx->context(), index).ToLocal(&name)) {
+    return ContextifyContext::PropertyQueryCallback(name, args);
+  }
+  return Intercepted::kNo;
 }
 
 // static
@@ -866,8 +868,11 @@ Intercepted ContextifyContext::IndexedPropertyGetterCallback(
     return Intercepted::kNo;
   }
 
-  return ContextifyContext::PropertyGetterCallback(
-      Uint32ToName(ctx->context(), index), args);
+  Local<String> name;
+  if (Uint32ToName(ctx->context(), index).ToLocal(&name)) {
+    return ContextifyContext::PropertyGetterCallback(name, args);
+  }
+  return Intercepted::kNo;
 }
 
 Intercepted ContextifyContext::IndexedPropertySetterCallback(
@@ -881,8 +886,11 @@ Intercepted ContextifyContext::IndexedPropertySetterCallback(
     return Intercepted::kNo;
   }
 
-  return ContextifyContext::PropertySetterCallback(
-      Uint32ToName(ctx->context(), index), value, args);
+  Local<String> name;
+  if (Uint32ToName(ctx->context(), index).ToLocal(&name)) {
+    return ContextifyContext::PropertySetterCallback(name, value, args);
+  }
+  return Intercepted::kNo;
 }
 
 // static
@@ -895,8 +903,11 @@ Intercepted ContextifyContext::IndexedPropertyDescriptorCallback(
     return Intercepted::kNo;
   }
 
-  return ContextifyContext::PropertyDescriptorCallback(
-      Uint32ToName(ctx->context(), index), args);
+  Local<String> name;
+  if (Uint32ToName(ctx->context(), index).ToLocal(&name)) {
+    return ContextifyContext::PropertyDescriptorCallback(name, args);
+  }
+  return Intercepted::kNo;
 }
 
 Intercepted ContextifyContext::IndexedPropertyDefinerCallback(
@@ -910,8 +921,11 @@ Intercepted ContextifyContext::IndexedPropertyDefinerCallback(
     return Intercepted::kNo;
   }
 
-  return ContextifyContext::PropertyDefinerCallback(
-      Uint32ToName(ctx->context(), index), desc, args);
+  Local<String> name;
+  if (Uint32ToName(ctx->context(), index).ToLocal(&name)) {
+    return ContextifyContext::PropertyDefinerCallback(name, desc, args);
+  }
+  return Intercepted::kNo;
 }
 
 // static
@@ -961,6 +975,7 @@ void ContextifyScript::RegisterExternalReferences(
 
 ContextifyScript* ContextifyScript::New(Environment* env,
                                         Local<Object> object) {
+  DCHECK_NOT_NULL(env->isolate()->GetCppHeap());
   return cppgc::MakeGarbageCollected<ContextifyScript>(
       env->isolate()->GetCppHeap()->GetAllocationHandle(), env, object);
 }
@@ -1130,21 +1145,19 @@ Maybe<void> StoreCodeCacheResult(
   if (produce_cached_data) {
     bool cached_data_produced = new_cached_data != nullptr;
     if (cached_data_produced) {
-      MaybeLocal<Object> buf =
-          Buffer::Copy(env,
-                       reinterpret_cast<const char*>(new_cached_data->data),
-                       new_cached_data->length);
-      if (target->Set(context, env->cached_data_string(), buf.ToLocalChecked())
+      Local<Object> buf;
+      if (!Buffer::Copy(env,
+                        reinterpret_cast<const char*>(new_cached_data->data),
+                        new_cached_data->length)
+               .ToLocal(&buf) ||
+          target->Set(context, env->cached_data_string(), buf).IsNothing() ||
+          target
+              ->Set(context,
+                    env->cached_data_produced_string(),
+                    Boolean::New(env->isolate(), cached_data_produced))
               .IsNothing()) {
         return Nothing<void>();
       }
-    }
-    if (target
-            ->Set(context,
-                  env->cached_data_produced_string(),
-                  Boolean::New(env->isolate(), cached_data_produced))
-            .IsNothing()) {
-      return Nothing<void>();
     }
   }
   return JustVoid();
@@ -1154,7 +1167,7 @@ Maybe<void> StoreCodeCacheResult(
 MaybeLocal<Function> CompileFunction(Local<Context> context,
                                      Local<String> filename,
                                      Local<String> content,
-                                     std::vector<Local<String>>* parameters) {
+                                     LocalVector<String>* parameters) {
   ScriptOrigin script_origin(filename, 0, 0, true);
   ScriptCompiler::Source script_source(content, script_origin);
 
@@ -1179,14 +1192,19 @@ void ContextifyScript::CreateCachedData(
   ASSIGN_OR_RETURN_UNWRAP_CPPGC(&wrapped_script, args.This());
   std::unique_ptr<ScriptCompiler::CachedData> cached_data(
       ScriptCompiler::CreateCodeCache(wrapped_script->unbound_script()));
-  if (!cached_data) {
-    args.GetReturnValue().Set(Buffer::New(env, 0).ToLocalChecked());
-  } else {
-    MaybeLocal<Object> buf = Buffer::Copy(
-        env,
-        reinterpret_cast<const char*>(cached_data->data),
-        cached_data->length);
-    args.GetReturnValue().Set(buf.ToLocalChecked());
+
+  auto maybeRet = ([&] {
+    if (!cached_data) {
+      return Buffer::New(env, 0);
+    }
+    return Buffer::Copy(env,
+                        reinterpret_cast<const char*>(cached_data->data),
+                        cached_data->length);
+  })();
+
+  Local<Object> ret;
+  if (maybeRet.ToLocal(&ret)) {
+    args.GetReturnValue().Set(ret);
   }
 }
 
@@ -1220,7 +1238,10 @@ void ContextifyScript::RunInContext(const FunctionCallbackInfo<Value>& args) {
   TRACE_EVENT0(TRACING_CATEGORY_NODE2(vm, script), "RunInContext");
 
   CHECK(args[1]->IsNumber());
-  int64_t timeout = args[1]->IntegerValue(env->context()).FromJust();
+  int64_t timeout;
+  if (!args[1]->IntegerValue(env->context()).To(&timeout)) {
+    return;
+  }
 
   CHECK(args[2]->IsBoolean());
   bool display_errors = args[2]->IsTrue();
@@ -1343,7 +1364,12 @@ bool ContextifyScript::EvalMachine(Local<Context> context,
     return false;
   }
 
-  args.GetReturnValue().Set(result.ToLocalChecked());
+  // We checked for res being empty previously so this is a bit redundant
+  // but still safer than using ToLocalChecked.
+  Local<Value> res;
+  if (!result.ToLocal(&res)) return false;
+
+  args.GetReturnValue().Set(res);
   return true;
 }
 
@@ -1463,7 +1489,7 @@ void ContextifyContext::CompileFunction(
   Context::Scope scope(parsing_context);
 
   // Read context extensions from buffer
-  std::vector<Local<Object>> context_extensions;
+  LocalVector<Object> context_extensions(isolate);
   if (!context_extensions_buf.IsEmpty()) {
     for (uint32_t n = 0; n < context_extensions_buf->Length(); n++) {
       Local<Value> val;
@@ -1474,7 +1500,7 @@ void ContextifyContext::CompileFunction(
   }
 
   // Read params from params buffer
-  std::vector<Local<String>> params;
+  LocalVector<String> params(isolate);
   if (!params_buf.IsEmpty()) {
     for (uint32_t n = 0; n < params_buf->Length(); n++) {
       Local<Value> val;
@@ -1506,22 +1532,24 @@ void ContextifyContext::CompileFunction(
   args.GetReturnValue().Set(result);
 }
 
-static std::vector<Local<String>> GetCJSParameters(IsolateData* data) {
-  return {
-      data->exports_string(),
-      data->require_string(),
-      data->module_string(),
-      data->__filename_string(),
-      data->__dirname_string(),
-  };
+static LocalVector<String> GetCJSParameters(IsolateData* data) {
+  LocalVector<String> result(data->isolate(),
+                             {
+                                 data->exports_string(),
+                                 data->require_string(),
+                                 data->module_string(),
+                                 data->__filename_string(),
+                                 data->__dirname_string(),
+                             });
+  return result;
 }
 
 Local<Object> ContextifyContext::CompileFunctionAndCacheResult(
     Environment* env,
     Local<Context> parsing_context,
     ScriptCompiler::Source* source,
-    std::vector<Local<String>> params,
-    std::vector<Local<Object>> context_extensions,
+    LocalVector<String> params,
+    LocalVector<Object> context_extensions,
     ScriptCompiler::CompileOptions options,
     bool produce_cached_data,
     Local<Symbol> id_symbol,
@@ -1657,7 +1685,7 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
     options = ScriptCompiler::kConsumeCodeCache;
   }
 
-  std::vector<Local<String>> params;
+  LocalVector<String> params(isolate);
   if (is_cjs_scope) {
     params = GetCJSParameters(env->isolate_data());
   }
@@ -1685,13 +1713,19 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
   return scope.Escape(fn);
 }
 
+static std::string GetRequireEsmWarning(Local<String> filename) {
+  Isolate* isolate = Isolate::GetCurrent();
+  Utf8Value filename_utf8(isolate, filename);
+
+  std::string warning_message =
+      "Failed to load the ES module: " + filename_utf8.ToString() +
+      ". Make sure to set \"type\": \"module\" in the nearest package.json "
+      "file "
+      "or use the .mjs extension.";
+  return warning_message;
+}
+
 static bool warned_about_require_esm = false;
-// TODO(joyeecheung): this was copied from the warning previously emitted in the
-// JS land, but it's not very helpful. There should be specific information
-// about which file or which package.json to update.
-const char* require_esm_warning =
-    "To load an ES module, set \"type\": \"module\" in the package.json or use "
-    "the .mjs extension.";
 
 static bool ShouldRetryAsESM(Realm* realm,
                              Local<String> message,
@@ -1777,8 +1811,8 @@ static void CompileFunctionForCJSLoader(
         // This needs to call process.emit('warning') in JS which can throw if
         // the user listener throws. In that case, don't try to throw the syntax
         // error.
-        should_throw =
-            ProcessEmitWarningSync(env, require_esm_warning).IsJust();
+        std::string warning_message = GetRequireEsmWarning(filename);
+        should_throw = ProcessEmitWarningSync(env, warning_message).IsJust();
       }
       if (should_throw) {
         isolate->ThrowException(cjs_exception);
@@ -1848,21 +1882,6 @@ bool ShouldRetryAsESM(Realm* realm,
   }
 
   return false;
-}
-
-static void ShouldRetryAsESM(const FunctionCallbackInfo<Value>& args) {
-  Realm* realm = Realm::GetCurrent(args);
-
-  CHECK_EQ(args.Length(), 3);  // message, code, resource_name
-  CHECK(args[0]->IsString());
-  Local<String> message = args[0].As<String>();
-  CHECK(args[1]->IsString());
-  Local<String> code = args[1].As<String>();
-  CHECK(args[2]->IsString());
-  Local<String> resource_name = args[2].As<String>();
-
-  args.GetReturnValue().Set(
-      ShouldRetryAsESM(realm, message, code, resource_name));
 }
 
 static void ContainsModuleSyntax(const FunctionCallbackInfo<Value>& args) {
@@ -1969,7 +1988,6 @@ void CreatePerIsolateProperties(IsolateData* isolate_data,
             CompileFunctionForCJSLoader);
 
   SetMethod(isolate, target, "containsModuleSyntax", ContainsModuleSyntax);
-  SetMethod(isolate, target, "shouldRetryAsESM", ShouldRetryAsESM);
 }
 
 static void CreatePerContextProperties(Local<Object> target,
@@ -2015,7 +2033,6 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(WatchdogHasPendingSigint);
   registry->Register(MeasureMemory);
   registry->Register(ContainsModuleSyntax);
-  registry->Register(ShouldRetryAsESM);
 }
 }  // namespace contextify
 }  // namespace node

@@ -16,6 +16,7 @@ namespace node {
 
 using ncrypto::BignumPointer;
 using ncrypto::DataPointer;
+using ncrypto::Digest;
 using ncrypto::EVPKeyCtxPointer;
 using ncrypto::EVPKeyPointer;
 using ncrypto::RSAPointer;
@@ -55,8 +56,7 @@ EVPKeyCtxPointer RsaKeyGenTraits::Setup(RsaKeyPairGenConfig* params) {
   }
 
   if (params->params.variant == kKeyVariantRSA_PSS) {
-    if (params->params.md != nullptr &&
-        !ctx.setRsaPssKeygenMd(params->params.md)) {
+    if (params->params.md && !ctx.setRsaPssKeygenMd(params->params.md)) {
       return {};
     }
 
@@ -64,18 +64,18 @@ EVPKeyCtxPointer RsaKeyGenTraits::Setup(RsaKeyPairGenConfig* params) {
     // OpenSSL 1.1.1 behaves as recommended by RFC 8017 and defaults the MGF1
     // hash algorithm to the RSA-PSS hashAlgorithm. Remove this code if the
     // behavior of OpenSSL 3 changes.
-    const EVP_MD* mgf1_md = params->params.mgf1_md;
-    if (mgf1_md == nullptr && params->params.md != nullptr) {
+    auto& mgf1_md = params->params.mgf1_md;
+    if (!mgf1_md && params->params.md) {
       mgf1_md = params->params.md;
     }
 
-    if (mgf1_md != nullptr && !ctx.setRsaPssKeygenMgf1Md(mgf1_md)) {
+    if (mgf1_md && !ctx.setRsaPssKeygenMgf1Md(mgf1_md)) {
       return {};
     }
 
     int saltlen = params->params.saltlen;
-    if (saltlen < 0 && params->params.md != nullptr) {
-      saltlen = EVP_MD_size(params->params.md);
+    if (saltlen < 0 && params->params.md) {
+      saltlen = params->params.md.size();
     }
 
     if (saltlen >= 0 && !ctx.setRsaPssSaltlen(saltlen)) {
@@ -141,8 +141,8 @@ Maybe<void> RsaKeyGenTraits::AdditionalConfig(
     if (!args[*offset]->IsUndefined()) {
       CHECK(args[*offset]->IsString());
       Utf8Value digest(env->isolate(), args[*offset]);
-      params->params.md = ncrypto::getDigestByName(digest.ToStringView());
-      if (params->params.md == nullptr) {
+      params->params.md = Digest::FromName(*digest);
+      if (!params->params.md) {
         THROW_ERR_CRYPTO_INVALID_DIGEST(env, "Invalid digest: %s", *digest);
         return Nothing<void>();
       }
@@ -151,8 +151,8 @@ Maybe<void> RsaKeyGenTraits::AdditionalConfig(
     if (!args[*offset + 1]->IsUndefined()) {
       CHECK(args[*offset + 1]->IsString());
       Utf8Value digest(env->isolate(), args[*offset + 1]);
-      params->params.mgf1_md = ncrypto::getDigestByName(digest.ToStringView());
-      if (params->params.mgf1_md == nullptr) {
+      params->params.mgf1_md = Digest::FromName(*digest);
+      if (!params->params.mgf1_md) {
         THROW_ERR_CRYPTO_INVALID_DIGEST(
             env, "Invalid MGF1 digest: %s", *digest);
         return Nothing<void>();
@@ -204,6 +204,7 @@ WebCryptoCipherStatus RSA_Cipher(Environment* env,
 
   auto data = cipher(m_pkey, nparams, in);
   if (!data) return WebCryptoCipherStatus::FAILED;
+  DCHECK(!data.isSecure());
 
   *out = ByteSource::Allocated(data.release());
   return WebCryptoCipherStatus::OK;
@@ -276,9 +277,8 @@ Maybe<void> RSACipherTraits::AdditionalConfig(
     case kKeyVariantRSA_OAEP: {
       CHECK(args[offset + 1]->IsString());  // digest
       Utf8Value digest(env->isolate(), args[offset + 1]);
-
-      params->digest = ncrypto::getDigestByName(digest.ToStringView());
-      if (params->digest == nullptr) {
+      params->digest = Digest::FromName(*digest);
+      if (!params->digest) {
         THROW_ERR_CRYPTO_INVALID_DIGEST(env, "Invalid digest: %s", *digest);
         return Nothing<void>();
       }
@@ -318,9 +318,9 @@ WebCryptoCipherStatus RSACipherTraits::DoCipher(Environment* env,
   return WebCryptoCipherStatus::FAILED;
 }
 
-Maybe<void> ExportJWKRsaKey(Environment* env,
-                            const KeyObjectData& key,
-                            Local<Object> target) {
+bool ExportJWKRsaKey(Environment* env,
+                     const KeyObjectData& key,
+                     Local<Object> target) {
   Mutex::ScopedLock lock(key.mutex());
   const auto& m_pkey = key.GetAsymmetricKey();
 
@@ -328,7 +328,7 @@ Maybe<void> ExportJWKRsaKey(Environment* env,
   if (!rsa ||
       target->Set(env->context(), env->jwk_kty_string(), env->jwk_rsa_string())
           .IsNothing()) {
-    return Nothing<void>();
+    return false;
   }
 
   auto pub_key = rsa.getPublicKey();
@@ -337,7 +337,7 @@ Maybe<void> ExportJWKRsaKey(Environment* env,
           .IsNothing() ||
       SetEncodedValue(env, target, env->jwk_e_string(), pub_key.e)
           .IsNothing()) {
-    return Nothing<void>();
+    return false;
   }
 
   if (key.GetKeyType() == kKeyTypePrivate) {
@@ -354,11 +354,11 @@ Maybe<void> ExportJWKRsaKey(Environment* env,
             .IsNothing() ||
         SetEncodedValue(env, target, env->jwk_qi_string(), pvt_key.qi)
             .IsNothing()) {
-      return Nothing<void>();
+      return false;
     }
   }
 
-  return JustVoid();
+  return true;
 }
 
 KeyObjectData ImportJWKRsaKey(Environment* env,
@@ -441,16 +441,16 @@ KeyObjectData ImportJWKRsaKey(Environment* env,
   return KeyObjectData::CreateAsymmetric(type, std::move(pkey));
 }
 
-Maybe<void> GetRsaKeyDetail(Environment* env,
-                            const KeyObjectData& key,
-                            Local<Object> target) {
+bool GetRsaKeyDetail(Environment* env,
+                     const KeyObjectData& key,
+                     Local<Object> target) {
   Mutex::ScopedLock lock(key.mutex());
   const auto& m_pkey = key.GetAsymmetricKey();
 
   // TODO(tniessen): Remove the "else" branch once we drop support for OpenSSL
   // versions older than 1.1.1e via FIPS / dynamic linking.
   const ncrypto::Rsa rsa = m_pkey;
-  if (!rsa) return Nothing<void>();
+  if (!rsa) return false;
 
   auto pub_key = rsa.getPublicKey();
 
@@ -461,7 +461,7 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
                     env->isolate(),
                     static_cast<double>(BignumPointer::GetBitCount(pub_key.n))))
           .IsNothing()) {
-    return Nothing<void>();
+    return false;
   }
 
   auto public_exponent = ArrayBuffer::NewBackingStore(
@@ -479,7 +479,7 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
                 env->public_exponent_string(),
                 ArrayBuffer::New(env->isolate(), std::move(public_exponent)))
           .IsNothing()) {
-    return Nothing<void>();
+    return false;
   }
 
   if (m_pkey.id() == EVP_PKEY_RSA_PSS) {
@@ -500,7 +500,7 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
                     env->hash_algorithm_string(),
                     OneByteString(env->isolate(), params.digest))
               .IsNothing()) {
-        return Nothing<void>();
+        return false;
       }
 
       // If, for some reason, the MGF is not MGF1, then the MGF1 hash function
@@ -512,7 +512,7 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
                       env->mgf1_hash_algorithm_string(),
                       OneByteString(env->isolate(), digest))
                 .IsNothing()) {
-          return Nothing<void>();
+          return false;
         }
       }
 
@@ -521,12 +521,12 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
                     env->salt_length_string(),
                     Integer::New(env->isolate(), params.salt_length))
               .IsNothing()) {
-        return Nothing<void>();
+        return false;
       }
     }
   }
 
-  return JustVoid();
+  return true;
 }
 
 namespace RSAAlg {

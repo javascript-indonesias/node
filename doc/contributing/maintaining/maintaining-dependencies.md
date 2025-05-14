@@ -19,6 +19,7 @@ This a list of all the dependencies:
 * [googletest][]
 * [histogram][]
 * [icu-small][]
+* [inspector\_protocol][inspector_protocol]
 * [libuv][]
 * [llhttp][]
 * [minimatch][]
@@ -29,12 +30,12 @@ This a list of all the dependencies:
 * [openssl][]
 * [postject][]
 * [simdjson][]
-* [simdutf][]
 * [sqlite][]
 * [undici][]
 * [uvwasi][]
 * [V8][]
 * [zlib][]
+* [zstd][]
 
 Any code which meets one or more of these conditions should
 be managed as a dependency:
@@ -271,6 +272,12 @@ and Java libraries providing Unicode and Globalization
 support for software applications.
 See [maintaining-icu][] for more information.
 
+### inspector\_protocol
+
+The [inspector\_protocol](https://chromium.googlesource.com/deps/inspector_protocol/)
+is Chromium's of code generators and templates for the inspector protocol.
+See [this doc](../../../tools/inspector_protocol/README.md) for more information.
+
 ### libuv
 
 The [libuv](https://github.com/libuv/libuv) dependency is a
@@ -356,11 +363,6 @@ The [postject](https://github.com/nodejs/postject) dependency is used for the
 The [simdjson](https://github.com/simdjson/simdjson) dependency is
 a C++ library for fast JSON parsing.
 
-### simdutf
-
-The [simdutf](https://github.com/simdutf/simdutf) dependency is
-a C++ library for fast UTF-8 decoding and encoding.
-
 ### sqlite
 
 The [sqlite](https://github.com/sqlite/sqlite) dependency is
@@ -393,6 +395,11 @@ dependency lossless data-compression library,
 it comes from the Chromium team's zlib fork which incorporated
 performance improvements not currently available in standard zlib.
 
+### zstd
+
+The [zstd](https://github.com/facebook/zstd) dependency is used for compression
+according to [RFC 8878](https://datatracker.ietf.org/doc/html/rfc8878).
+
 [acorn]: #acorn
 [ada]: #ada
 [amaro]: #amaro
@@ -405,6 +412,7 @@ performance improvements not currently available in standard zlib.
 [googletest]: #googletest
 [histogram]: #histogram
 [icu-small]: #icu-small
+[inspector_protocol]: #inspector_protocol
 [libuv]: #libuv
 [llhttp]: #llhttp
 [maintaining-V8]: ./maintaining-V8.md
@@ -421,10 +429,10 @@ performance improvements not currently available in standard zlib.
 [openssl]: #openssl
 [postject]: #postject
 [simdjson]: #simdjson
-[simdutf]: #simdutf
 [sqlite]: #sqlite
 [undici]: #undici
 [update-openssl-action]: ../../../.github/workflows/update-openssl.yml
 [uvwasi]: #uvwasi
 [v8]: #v8
 [zlib]: #zlib
+[zstd]: #zstd

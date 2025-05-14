@@ -431,7 +431,7 @@ TLSWrap::TLSWrap(Environment* env,
   StreamBase::AttachToObject(GetObject());
   stream->PushStreamListener(this);
 
-  env_->isolate()->AdjustAmountOfExternalAllocatedMemory(kExternalSize);
+  env_->external_memory_accounter()->Increase(env_->isolate(), kExternalSize);
 
   InitSSL();
   Debug(this, "Created new TLSWrap");
@@ -1317,7 +1317,7 @@ void TLSWrap::Destroy() {
   // And destroy
   InvokeQueued(UV_ECANCELED, "Canceled because of SSL destruction");
 
-  env()->isolate()->AdjustAmountOfExternalAllocatedMemory(-kExternalSize);
+  env()->external_memory_accounter()->Decrease(env()->isolate(), kExternalSize);
   ssl_.reset();
 
   enc_in_ = nullptr;
@@ -1612,7 +1612,7 @@ void TLSWrap::CertCbDone(const FunctionCallbackInfo<Value>& args) {
     // Store the SNI context for later use.
     w->sni_context_ = BaseObjectPtr<SecureContext>(sc);
 
-    if (UseSNIContext(w->ssl_, w->sni_context_) && !w->SetCACerts(sc)) {
+    if (w->ssl_.setSniContext(w->sni_context_->ctx()) && !w->SetCACerts(sc)) {
       // Not clear why sometimes we throw error, and sometimes we call
       // onerror(). Both cause .destroy(), but onerror does a bit more.
       unsigned long err = ERR_get_error();  // NOLINT(runtime/int)
@@ -1675,8 +1675,7 @@ void TLSWrap::SetKeyCert(const FunctionCallbackInfo<Value>& args) {
   if (cons->HasInstance(ctx)) {
     SecureContext* sc = Unwrap<SecureContext>(ctx.As<Object>());
     CHECK_NOT_NULL(sc);
-    if (!UseSNIContext(w->ssl_, BaseObjectPtr<SecureContext>(sc)) ||
-        !w->SetCACerts(sc)) {
+    if (!w->ssl_.setSniContext(sc->ctx()) || !w->SetCACerts(sc)) {
       unsigned long err = ERR_get_error();  // NOLINT(runtime/int)
       return ThrowCryptoError(env, err, "SetKeyCert");
     }
@@ -1851,8 +1850,7 @@ void TLSWrap::VerifyError(const FunctionCallbackInfo<Value>& args) {
   // peer certificate is questionable but it's compatible with what was
   // here before.
   long x509_verify_error =  // NOLINT(runtime/int)
-      VerifyPeerCertificate(
-          w->ssl_,
+      w->ssl_.verifyPeerCertificate().value_or(
           X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT);
 
   if (x509_verify_error == X509_V_OK)
@@ -1870,7 +1868,7 @@ void TLSWrap::VerifyError(const FunctionCallbackInfo<Value>& args) {
                             .FromMaybe(Local<Object>());
 
   auto code = X509Pointer::ErrorCode(x509_verify_error);
-  if (Set(env, error, env->code_string(), code.data()))
+  if (Set(env, error, env->code_string(), code))
     args.GetReturnValue().Set(error);
 }
 
@@ -2159,10 +2157,11 @@ void TLSWrap::SetMaxSendFragment(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
   TLSWrap* w;
   ASSIGN_OR_RETURN_UNWRAP(&w, args.This());
-  int rv = SSL_set_max_send_fragment(
-      w->ssl_.get(),
-      args[0]->Int32Value(env->context()).FromJust());
-  args.GetReturnValue().Set(rv);
+  int val;
+  if (args[0]->Int32Value(env->context()).To(&val)) {
+    int32_t ret = SSL_set_max_send_fragment(w->ssl_.get(), val);
+    args.GetReturnValue().Set(ret);
+  }
 }
 #endif  // SSL_set_max_send_fragment
 

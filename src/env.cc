@@ -44,20 +44,21 @@ using v8::BackingStore;
 using v8::BackingStoreInitializationMode;
 using v8::Boolean;
 using v8::Context;
-using v8::CppHeap;
-using v8::CppHeapCreateParams;
 using v8::EmbedderGraph;
 using v8::EscapableHandleScope;
+using v8::ExternalMemoryAccounter;
 using v8::Function;
 using v8::HandleScope;
 using v8::HeapProfiler;
 using v8::HeapSpaceStatistics;
 using v8::Integer;
 using v8::Isolate;
+using v8::JustVoid;
 using v8::Local;
 using v8::Maybe;
 using v8::MaybeLocal;
 using v8::NewStringType;
+using v8::Nothing;
 using v8::Number;
 using v8::Object;
 using v8::ObjectTemplate;
@@ -577,19 +578,10 @@ IsolateData::IsolateData(Isolate* isolate,
       platform_(platform),
       snapshot_data_(snapshot_data),
       options_(std::move(options)) {
-  v8::CppHeap* cpp_heap = isolate->GetCppHeap();
-
   uint16_t cppgc_id = kDefaultCppGCEmbedderID;
   // We do not care about overflow since we just want this to be different
   // from the cppgc id.
   uint16_t non_cppgc_id = cppgc_id + 1;
-  if (cpp_heap == nullptr) {
-    cpp_heap_ = CppHeap::Create(platform, v8::CppHeapCreateParams{{}});
-    // TODO(joyeecheung): pass it into v8::Isolate::CreateParams and let V8
-    // own it when we can keep the isolate registered/task runner discoverable
-    // during isolate disposal.
-    isolate->AttachCppHeap(cpp_heap_.get());
-  }
 
   {
     // GC could still be run after the IsolateData is destroyed, so we store
@@ -613,13 +605,7 @@ IsolateData::IsolateData(Isolate* isolate,
   }
 }
 
-IsolateData::~IsolateData() {
-  if (cpp_heap_ != nullptr) {
-    // The CppHeap must be detached before being terminated.
-    isolate_->DetachCppHeap();
-    cpp_heap_->Terminate();
-  }
-}
+IsolateData::~IsolateData() {}
 
 // Deprecated API, embedders should use v8::Object::Wrap() directly instead.
 void SetCppgcReference(Isolate* isolate,
@@ -800,6 +786,7 @@ Environment::Environment(IsolateData* isolate_data,
                          EnvironmentFlags::Flags flags,
                          ThreadId thread_id)
     : isolate_(isolate),
+      external_memory_accounter_(new ExternalMemoryAccounter()),
       isolate_data_(isolate_data),
       async_hooks_(isolate, MAYBE_FIELD_PTR(env_info, async_hooks)),
       immediate_info_(isolate, MAYBE_FIELD_PTR(env_info, immediate_info)),
@@ -825,15 +812,9 @@ Environment::Environment(IsolateData* isolate_data,
       thread_id_(thread_id.id == static_cast<uint64_t>(-1)
                      ? AllocateEnvironmentThreadId().id
                      : thread_id.id) {
-  constexpr bool is_shared_ro_heap =
-#ifdef NODE_V8_SHARED_RO_HEAP
-      true;
-#else
-      false;
-#endif
-  if (is_shared_ro_heap && !is_main_thread()) {
-    // If this is a Worker thread and we are in shared-readonly-heap mode,
-    // we can always safely use the parent's Isolate's code cache.
+  if (!is_main_thread()) {
+    // If this is a Worker thread, we can always safely use the parent's
+    // Isolate's code cache because of the shared read-only heap.
     CHECK_NOT_NULL(isolate_data->worker_context());
     builtin_loader()->CopySourceAndCodeCacheReferenceFrom(
         isolate_data->worker_context()->env()->builtin_loader());
@@ -1059,6 +1040,8 @@ Environment::~Environment() {
       addon.Close();
     }
   }
+
+  delete external_memory_accounter_;
 }
 
 void Environment::InitializeLibuv() {
@@ -1589,54 +1572,66 @@ Local<Value> Environment::GetNow() {
   return Number::New(isolate(), static_cast<double>(now));
 }
 
-void CollectExceptionInfo(Environment* env,
-                          Local<Object> obj,
-                          int errorno,
-                          const char* err_string,
-                          const char* syscall,
-                          const char* message,
-                          const char* path,
-                          const char* dest) {
-  obj->Set(env->context(),
-           env->errno_string(),
-           Integer::New(env->isolate(), errorno)).Check();
-
-  obj->Set(env->context(), env->code_string(),
-           OneByteString(env->isolate(), err_string)).Check();
-
-  if (message != nullptr) {
-    obj->Set(env->context(), env->message_string(),
-             OneByteString(env->isolate(), message)).Check();
+Maybe<void> CollectExceptionInfo(Environment* env,
+                                 Local<Object> obj,
+                                 int errorno,
+                                 const char* err_string,
+                                 const char* syscall,
+                                 const char* message,
+                                 const char* path,
+                                 const char* dest) {
+  if (obj->Set(env->context(),
+               env->errno_string(),
+               Integer::New(env->isolate(), errorno))
+          .IsNothing() ||
+      obj->Set(env->context(),
+               env->code_string(),
+               OneByteString(env->isolate(), err_string))
+          .IsNothing() ||
+      (message != nullptr && obj->Set(env->context(),
+                                      env->message_string(),
+                                      OneByteString(env->isolate(), message))
+                                 .IsNothing())) {
+    return Nothing<void>();
   }
 
   Local<Value> path_buffer;
   if (path != nullptr) {
-    path_buffer =
-      Buffer::Copy(env->isolate(), path, strlen(path)).ToLocalChecked();
-    obj->Set(env->context(), env->path_string(), path_buffer).Check();
+    if (!Buffer::Copy(env->isolate(), path, strlen(path))
+             .ToLocal(&path_buffer) ||
+        obj->Set(env->context(), env->path_string(), path_buffer).IsNothing()) {
+      return Nothing<void>();
+    }
   }
 
   Local<Value> dest_buffer;
   if (dest != nullptr) {
-    dest_buffer =
-      Buffer::Copy(env->isolate(), dest, strlen(dest)).ToLocalChecked();
-    obj->Set(env->context(), env->dest_string(), dest_buffer).Check();
+    if (!Buffer::Copy(env->isolate(), dest, strlen(dest))
+             .ToLocal(&dest_buffer) ||
+        obj->Set(env->context(), env->dest_string(), dest_buffer).IsNothing()) {
+      return Nothing<void>();
+    }
   }
 
   if (syscall != nullptr) {
-    obj->Set(env->context(), env->syscall_string(),
-             OneByteString(env->isolate(), syscall)).Check();
+    if (obj->Set(env->context(),
+                 env->syscall_string(),
+                 OneByteString(env->isolate(), syscall))
+            .IsNothing()) {
+      return Nothing<void>();
+    }
   }
+
+  return JustVoid();
 }
 
-void Environment::CollectUVExceptionInfo(Local<Value> object,
-                                         int errorno,
-                                         const char* syscall,
-                                         const char* message,
-                                         const char* path,
-                                         const char* dest) {
-  if (!object->IsObject() || errorno == 0)
-    return;
+Maybe<void> Environment::CollectUVExceptionInfo(Local<Value> object,
+                                                int errorno,
+                                                const char* syscall,
+                                                const char* message,
+                                                const char* path,
+                                                const char* dest) {
+  if (!object->IsObject() || errorno == 0) return JustVoid();
 
   Local<Object> obj = object.As<Object>();
   const char* err_string = uv_err_name(errorno);
@@ -1645,7 +1640,7 @@ void Environment::CollectUVExceptionInfo(Local<Value> object,
     message = uv_strerror(errorno);
   }
 
-  CollectExceptionInfo(
+  return CollectExceptionInfo(
       this, obj, errorno, err_string, syscall, message, path, dest);
 }
 

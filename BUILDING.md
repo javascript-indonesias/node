@@ -31,6 +31,8 @@ file a new issue.
     * [Building a debug build](#building-a-debug-build)
     * [Building an ASan build](#building-an-asan-build)
     * [Speeding up frequent rebuilds when developing](#speeding-up-frequent-rebuilds-when-developing)
+      * [ccache](#ccache)
+      * [Loading JS files from disk instead of embedding](#loading-js-files-from-disk-instead-of-embedding)
     * [Troubleshooting Unix and macOS builds](#troubleshooting-unix-and-macos-builds)
   * [Windows](#windows)
     * [Windows Prerequisites](#windows-prerequisites)
@@ -38,6 +40,7 @@ file a new issue.
       * [Option 2: Automated install with WinGet](#option-2-automated-install-with-winget)
       * [Option 3: Automated install with Boxstarter](#option-3-automated-install-with-boxstarter)
     * [Building Node.js](#building-nodejs-2)
+      * [Using ccache](#using-ccache)
   * [Android](#android)
 * [`Intl` (ECMA-402) support](#intl-ecma-402-support)
   * [Build with full ICU support (all locales supported by ICU)](#build-with-full-icu-support-all-locales-supported-by-icu)
@@ -107,15 +110,15 @@ platforms. This is true regardless of entries in the table below.
 | GNU/Linux        | x64              | kernel >= 3.10, musl >= 1.1.19    | Experimental | e.g. Alpine 3.8                      |
 | GNU/Linux        | x86              | kernel >= 3.10, glibc >= 2.17     | Experimental | Downgraded as of Node.js 10          |
 | GNU/Linux        | arm64            | kernel >= 4.18[^1], glibc >= 2.28 | Tier 1       | e.g. Ubuntu 20.04, Debian 10, RHEL 8 |
-| GNU/Linux        | armv7            | kernel >= 4.18[^1], glibc >= 2.28 | Tier 1       | e.g. Ubuntu 22.04, Debian 12         |
+| GNU/Linux        | armv7            | kernel >= 4.18[^1], glibc >= 2.28 | Experimental | Downgraded as of Node.js 24          |
 | GNU/Linux        | armv6            | kernel >= 4.14, glibc >= 2.24     | Experimental | Downgraded as of Node.js 12          |
 | GNU/Linux        | ppc64le >=power8 | kernel >= 4.18[^1], glibc >= 2.28 | Tier 2       | e.g. Ubuntu 20.04, RHEL 8            |
 | GNU/Linux        | s390x            | kernel >= 4.18[^1], glibc >= 2.28 | Tier 2       | e.g. RHEL 8                          |
 | GNU/Linux        | loong64          | kernel >= 5.19, glibc >= 2.36     | Experimental |                                      |
 | Windows          | x64              | >= Windows 10/Server 2016         | Tier 1       | [^2],[^3]                            |
 | Windows          | arm64            | >= Windows 10                     | Tier 2       |                                      |
-| macOS            | x64              | >= 11.0                           | Tier 1       | For notes about compilation see [^4] |
-| macOS            | arm64            | >= 11.0                           | Tier 1       |                                      |
+| macOS            | x64              | >= 13.5                           | Tier 1       | For notes about compilation see [^4] |
+| macOS            | arm64            | >= 13.5                           | Tier 1       |                                      |
 | SmartOS          | x64              | >= 18                             | Tier 2       |                                      |
 | AIX              | ppc64be >=power8 | >= 7.2 TL04                       | Tier 2       |                                      |
 | FreeBSD          | x64              | >= 13.2                           | Experimental |                                      |
@@ -140,7 +143,7 @@ platforms. This is true regardless of entries in the table below.
     Windows binary (`node.exe`) in WSL will not work without workarounds such as
     stdio redirection.
 
-[^4]: Our macOS Binaries are compiled with 11.0 as a target. Xcode 16 is
+[^4]: Our macOS Binaries are compiled with 13.5 as a target. Xcode 16 is
     required to compile.
 
 <!--lint enable final-definition-->
@@ -159,18 +162,17 @@ Depending on the host platform, the selection of toolchains may vary.
 
 Binaries at <https://nodejs.org/download/release/> are produced on:
 
-| Binary package          | Platform and Toolchain                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
-| aix-ppc64               | AIX 7.2 TL04 on PPC64BE with GCC 12[^5]                                                                       |
-| darwin-x64              | macOS 13, Xcode 16 with -mmacosx-version-min=11.0                                                             |
-| darwin-arm64 (and .pkg) | macOS 13 (arm64), Xcode 14 with -mmacosx-version-min=11.0                                                     |
-| linux-arm64             | RHEL 8 with gcc-toolset-12[^6]                                                                                |
-| linux-armv7l            | Cross-compiled on RHEL 9 x64 with a [custom GCC toolchain](https://github.com/rvagg/rpi-newer-crosstools)[^7] |
-| linux-ppc64le           | RHEL 8 with gcc-toolset-12[^6]                                                                                |
-| linux-s390x             | RHEL 8 with gcc-toolset-12[^6]                                                                                |
-| linux-x64               | RHEL 8 with gcc-toolset-12[^6]                                                                                |
-| win-arm64               | Windows Server 2022 (x64) with Visual Studio 2022                                                             |
-| win-x64                 | Windows Server 2022 (x64) with Visual Studio 2022                                                             |
+| Binary package          | Platform and Toolchain                                    |
+| ----------------------- | --------------------------------------------------------- |
+| aix-ppc64               | AIX 7.2 TL04 on PPC64BE with GCC 12[^5]                   |
+| darwin-x64              | macOS 13, Xcode 16 with -mmacosx-version-min=13.5         |
+| darwin-arm64 (and .pkg) | macOS 13 (arm64), Xcode 16 with -mmacosx-version-min=13.5 |
+| linux-arm64             | RHEL 8 with gcc-toolset-12[^6]                            |
+| linux-ppc64le           | RHEL 8 with gcc-toolset-12[^6]                            |
+| linux-s390x             | RHEL 8 with gcc-toolset-12[^6]                            |
+| linux-x64               | RHEL 8 with gcc-toolset-12[^6]                            |
+| win-arm64               | Windows Server 2022 (x64) with Visual Studio 2022         |
+| win-x64                 | Windows Server 2022 (x64) with Visual Studio 2022         |
 
 <!--lint disable final-definition-->
 
@@ -181,11 +183,6 @@ Binaries at <https://nodejs.org/download/release/> are produced on:
     and libstdc++ >= 6.0.25 (`GLIBCXX_3.4.25`). These are available on
     distributions natively supporting GCC 8.1 or higher, such as Debian 10,
     RHEL 8 and Ubuntu 20.04.
-
-[^7]: Binaries produced on these systems are compatible with glibc >= 2.28
-    and libstdc++ >= 6.0.30 (`GLIBCXX_3.4.30`). These are available on
-    distributions natively supporting GCC 12.1 or higher, such as Debian 12,
-    Ubuntu 22.04.
 
 <!--lint enable final-definition-->
 
@@ -540,6 +537,8 @@ make test-only
 
 #### Speeding up frequent rebuilds when developing
 
+##### ccache
+
 Tips: The `ccache` utility is widely used and should generally work fine.
 If you encounter any difficulties, consider disabling `mold` as a
 troubleshooting step.
@@ -573,8 +572,7 @@ export CC="ccache cc"          # add to ~/.zshrc or other shell config file
 export CXX="ccache c++"        # add to ~/.zshrc or other shell config file
 ```
 
-This will allow for near-instantaneous rebuilds when switching branches back
-and forth that were built with cache.
+##### Loading JS files from disk instead of embedding
 
 When modifying only the JS layer in `lib`, it is possible to externally load it
 without modifying the executable:
@@ -636,7 +634,10 @@ Refs:
   [Visual Studio 2022 (17.6 or newer)](https://visualstudio.microsoft.com/downloads/)
   or the "C++ build tools" workload from the
   [Build Tools](https://aka.ms/vs/17/release/vs_buildtools.exe),
-  with the default optional components
+  with the default optional components. Starting with Node.js v24, ClangCL is required to compile
+  on Windows. To enable it, two additional components are needed:
+  * C++ Clang Compiler for Windows (Microsoft.VisualStudio.Component.VC.Llvm.Clang)
+  * MSBuild support for LLVM toolset (Microsoft.VisualStudio.Component.VC.Llvm.ClangToolset)
 * Basic Unix tools required for some tests,
   [Git for Windows](https://git-scm.com/download/win) includes Git Bash
   and tools which can be included in the global `PATH`.
@@ -660,13 +661,11 @@ Optional requirements for compiling for Windows on ARM (ARM64):
   * Visual C++ ATL for ARM64
 * Windows 10 SDK 10.0.17763.0 or newer
 
-Optional requirements for compiling with ClangCL:
-
-* Visual Studio optional components
-  * C++ Clang Compiler for Windows
-  * MSBuild support for LLVM toolset
-
 NOTE: Currently we only support compiling with Clang that comes from Visual Studio.
+
+When building with ClangCL, if the output from `vcbuild.bat` shows that the components are not installed
+even when the Visual Studio Installer shows that they are installed, try removing the components
+first and then reinstalling them again.
 
 ##### Option 2: Automated install with WinGet
 
@@ -684,7 +683,7 @@ easily. These files will install the following
 To install Node.js prerequisites from Powershell Terminal:
 
 ```powershell
-winget configure .\configurations\configuration.dsc.yaml
+winget configure .\.configurations\configuration.dsc.yaml
 ```
 
 Alternatively, you can use [Dev Home](https://learn.microsoft.com/en-us/windows/dev-home/)
@@ -764,6 +763,42 @@ To test if Node.js was built correctly:
 
 ```powershell
 Release\node -e "console.log('Hello from Node.js', process.version)"
+```
+
+##### Using ccache:
+
+Follow <https://github.com/ccache/ccache/wiki/MS-Visual-Studio>, and you
+should notice that obj file will be bigger than the normal one.
+
+First, install ccache. Assuming the installation of ccache is in `c:\ccache`
+(where you can find `ccache.exe`), copy `c:\ccache\ccache.exe` to `c:\ccache\cl.exe`
+with this command.
+
+```powershell
+cp c:\ccache\ccache.exe c:\ccache\cl.exe
+```
+
+With newer version of Visual Studio, it may need the copy to be `clang-cl.exe`
+instead. If the output of `vcbuild.bat` suggestion missing `clang-cl.exe`, copy
+it differently:
+
+```powershell
+cp c:\ccache\ccache.exe c:\ccache\clang-cl.exe
+```
+
+When building Node.js, provide a path to your ccache via the option:
+
+```powershell
+.\vcbuild.bat ccache c:\ccache\
+```
+
+This will allow for near-instantaneous rebuilds when switching branches back
+and forth that were built with cache.
+
+To use it with ClangCL, run this instead:
+
+```powershell
+.\vcbuild.bat clang-cl ccache c:\ccache\
 ```
 
 ### Android

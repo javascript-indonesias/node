@@ -69,12 +69,16 @@
         'NODE_PLATFORM="win32"',
         '_UNICODE=1',
       ],
-      'msvs_precompiled_header': 'tools/msvs/pch/node_pch.h',
-      'msvs_precompiled_source': 'tools/msvs/pch/node_pch.cc',
-      'sources': [
-        '<(_msvs_precompiled_header)',
-        '<(_msvs_precompiled_source)',
-      ],
+      'conditions': [
+          ['clang != 1 or use_ccache_win != 1', {
+            'msvs_precompiled_header': 'tools/msvs/pch/node_pch.h',
+            'msvs_precompiled_source': 'tools/msvs/pch/node_pch.cc',
+            'sources': [
+              '<(_msvs_precompiled_header)',
+              '<(_msvs_precompiled_source)',
+            ],
+          }]
+      ]
     }, { # POSIX
       'defines': [ '__POSIX__' ],
     }],
@@ -95,9 +99,6 @@
       'defines': [
         'NODE_USE_V8_PLATFORM=0',
       ],
-    }],
-    [ 'v8_enable_shared_ro_heap==1', {
-      'defines': ['NODE_V8_SHARED_RO_HEAP',],
     }],
     [ 'node_tag!=""', {
       'defines': [ 'NODE_TAG="<(node_tag)"' ],
@@ -225,15 +226,19 @@
     }],
 
     [ 'node_shared_simdutf=="false"', {
-        'dependencies': [ 'deps/simdutf/simdutf.gyp:simdutf' ],
+        'dependencies': [ 'tools/v8_gypfiles/v8.gyp:simdutf' ],
     }],
 
     [ 'node_shared_brotli=="false"', {
       'dependencies': [ 'deps/brotli/brotli.gyp:brotli' ],
     }],
 
-    [ 'node_shared_sqlite=="false"', {
+    [ 'node_use_sqlite=="true" and node_shared_sqlite=="false"', {
       'dependencies': [ 'deps/sqlite/sqlite.gyp:sqlite' ],
+    }],
+
+    [ 'node_shared_zstd=="false"', {
+      'dependencies': [ 'deps/zstd/zstd.gyp:zstd' ],
     }],
 
     [ 'OS=="mac"', {

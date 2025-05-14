@@ -28,6 +28,7 @@
     'clang%': 0,
     'error_on_warn%': 'false',
     'suppress_all_error_on_warn%': 'false',
+    'control_flow_guard%': 'false',
 
     'openssl_product': '<(STATIC_LIB_PREFIX)openssl<(STATIC_LIB_SUFFIX)',
     'openssl_no_asm%': 0,
@@ -37,7 +38,7 @@
 
     # Reset this number to 0 on major V8 upgrades.
     # Increment by one for each non-official patch applied to deps/v8.
-    'v8_embedder_string': '-node.10',
+    'v8_embedder_string': '-node.16',
 
     ##### V8 defaults for Node.js #####
 
@@ -275,6 +276,9 @@
     # Defines these mostly for node-gyp to pickup.
     'defines': [
       '_GLIBCXX_USE_CXX11_ABI=1',
+      # This help forks when building Node.js on a 32-bit arch as
+      # libuv is always compiled with _FILE_OFFSET_BITS=64
+      '_FILE_OFFSET_BITS=64'
     ],
 
     # Forcibly disable -Werror.  We support a wide range of compilers, it's
@@ -310,6 +314,11 @@
               '/Zm2000',
             ],
           }],
+          ['control_flow_guard=="true"', {
+            'AdditionalOptions': [
+              '/guard:cf',                        # Control Flow Guard
+            ],
+          }],
         ],
         'BufferSecurityCheck': 'true',
         'DebugInformationFormat': 1,          # /Z7 embed info in .obj files
@@ -335,6 +344,11 @@
           }],
           ['target_arch=="arm64"', {
             'TargetMachine' : 0,              # NotSet. MACHINE:ARM64 is inferred from the input files.
+          }],
+          ['control_flow_guard=="true"', {
+            'AdditionalOptions': [
+              '/guard:cf',                        # Control Flow Guard
+            ],
           }],
         ],
         'GenerateDebugInformation': 'true',
@@ -557,6 +571,7 @@
           }],
           [ 'node_shared=="true"', {
             'cflags': [ '-fPIC' ],
+            'ldflags': [ '-fPIC' ],
           }],
         ],
       }],
@@ -620,7 +635,7 @@
           'GCC_ENABLE_PASCAL_STRINGS': 'NO',        # No -mpascal-strings
           'GCC_STRICT_ALIASING': 'NO',              # -fno-strict-aliasing
           'PREBINDING': 'NO',                       # No -Wl,-prebind
-          'MACOSX_DEPLOYMENT_TARGET': '11.0',       # -mmacosx-version-min=11.0
+          'MACOSX_DEPLOYMENT_TARGET': '13.5',       # -mmacosx-version-min=13.5
           'USE_HEADERMAP': 'NO',
           'WARNING_CFLAGS': [
             '-Wall',

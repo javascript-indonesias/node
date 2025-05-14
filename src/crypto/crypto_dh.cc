@@ -7,7 +7,9 @@
 #include "memory_tracker-inl.h"
 #include "ncrypto.h"
 #include "node_errors.h"
+#ifndef OPENSSL_IS_BORINGSSL
 #include "openssl/bnerr.h"
+#endif
 #include "openssl/dh.h"
 #include "threadpoolwork-inl.h"
 #include "v8.h"
@@ -53,11 +55,17 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
 
 namespace {
 MaybeLocal<Value> DataPointerToBuffer(Environment* env, DataPointer&& data) {
+  struct Flag {
+    bool secure;
+  };
   auto backing = ArrayBuffer::NewBackingStore(
       data.get(),
       data.size(),
-      [](void* data, size_t len, void* ptr) { DataPointer free_me(data, len); },
-      nullptr);
+      [](void* data, size_t len, void* ptr) {
+        std::unique_ptr<Flag> flag(static_cast<Flag*>(ptr));
+        DataPointer free_me(data, len, flag->secure);
+      },
+      new Flag{data.isSecure()});
   data.release();
 
   auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
@@ -88,11 +96,15 @@ void New(const FunctionCallbackInfo<Value>& args) {
   if (args[0]->IsInt32()) {
     int32_t bits = args[0].As<Int32>()->Value();
     if (bits < 2) {
+#ifndef OPENSSL_IS_BORINGSSL
 #if OPENSSL_VERSION_MAJOR >= 3
       ERR_put_error(ERR_LIB_DH, 0, DH_R_MODULUS_TOO_SMALL, __FILE__, __LINE__);
 #else
       ERR_put_error(ERR_LIB_BN, 0, BN_R_BITS_TOO_SMALL, __FILE__, __LINE__);
-#endif
+#endif  // OPENSSL_VERSION_MAJOR >= 3
+#else   // OPENSSL_IS_BORINGSSL
+      OPENSSL_PUT_ERROR(BN, BN_R_BITS_TOO_SMALL);
+#endif  // OPENSSL_IS_BORINGSSL
       return ThrowCryptoError(env, ERR_get_error(), "Invalid prime length");
     }
 
@@ -105,7 +117,11 @@ void New(const FunctionCallbackInfo<Value>& args) {
     }
     int32_t generator = args[1].As<Int32>()->Value();
     if (generator < 2) {
+#ifndef OPENSSL_IS_BORINGSSL
       ERR_put_error(ERR_LIB_DH, 0, DH_R_BAD_GENERATOR, __FILE__, __LINE__);
+#else
+      OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+#endif
       return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
     }
 
@@ -134,12 +150,20 @@ void New(const FunctionCallbackInfo<Value>& args) {
   if (args[1]->IsInt32()) {
     int32_t generator = args[1].As<Int32>()->Value();
     if (generator < 2) {
+#ifndef OPENSSL_IS_BORINGSSL
       ERR_put_error(ERR_LIB_DH, 0, DH_R_BAD_GENERATOR, __FILE__, __LINE__);
+#else
+      OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+#endif
       return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
     }
     bn_g = BignumPointer::New();
     if (!bn_g.setWord(generator)) {
+#ifndef OPENSSL_IS_BORINGSSL
       ERR_put_error(ERR_LIB_DH, 0, DH_R_BAD_GENERATOR, __FILE__, __LINE__);
+#else
+      OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+#endif
       return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
     }
   } else {
@@ -148,11 +172,19 @@ void New(const FunctionCallbackInfo<Value>& args) {
       return THROW_ERR_OUT_OF_RANGE(env, "generator is too big");
     bn_g = BignumPointer(reinterpret_cast<uint8_t*>(arg1.data()), arg1.size());
     if (!bn_g) {
+#ifndef OPENSSL_IS_BORINGSSL
       ERR_put_error(ERR_LIB_DH, 0, DH_R_BAD_GENERATOR, __FILE__, __LINE__);
+#else
+      OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+#endif
       return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
     }
     if (bn_g.getWord() < 2) {
+#ifndef OPENSSL_IS_BORINGSSL
       ERR_put_error(ERR_LIB_DH, 0, DH_R_BAD_GENERATOR, __FILE__, __LINE__);
+#else
+      OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+#endif
       return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
     }
   }
@@ -398,14 +430,19 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
     if (!dh) return {};
 
     key_params = EVPKeyPointer::NewDH(std::move(dh));
-  } else if (int* prime_size = std::get_if<int>(&params->params.prime)) {
+  } else if (std::get_if<int>(&params->params.prime)) {
     auto param_ctx = EVPKeyCtxPointer::NewFromID(EVP_PKEY_DH);
+#ifndef OPENSSL_IS_BORINGSSL
+    int* prime_size = std::get_if<int>(&params->params.prime);
     if (!param_ctx.initForParamgen() ||
         !param_ctx.setDhParameters(*prime_size, params->params.generator)) {
       return {};
     }
 
     key_params = param_ctx.paramgen();
+#else
+    return {};
+#endif
   } else {
     UNREACHABLE();
   }
@@ -446,48 +483,11 @@ WebCryptoKeyExportStatus DHKeyExportTraits::DoExport(
   }
 }
 
-namespace {
-ByteSource StatelessDiffieHellmanThreadsafe(const EVPKeyPointer& our_key,
-                                            const EVPKeyPointer& their_key) {
-  auto dp = DHPointer::stateless(our_key, their_key);
-  if (!dp) return {};
-
-  return ByteSource::Allocated(dp.release());
-}
-
-void Stateless(const FunctionCallbackInfo<Value>& args) {
-  Environment* env = Environment::GetCurrent(args);
-
-  CHECK(args[0]->IsObject() && args[1]->IsObject());
-  KeyObjectHandle* our_key_object;
-  ASSIGN_OR_RETURN_UNWRAP(&our_key_object, args[0].As<Object>());
-  CHECK_EQ(our_key_object->Data().GetKeyType(), kKeyTypePrivate);
-  KeyObjectHandle* their_key_object;
-  ASSIGN_OR_RETURN_UNWRAP(&their_key_object, args[1].As<Object>());
-  CHECK_NE(their_key_object->Data().GetKeyType(), kKeyTypeSecret);
-
-  const auto& our_key = our_key_object->Data().GetAsymmetricKey();
-  const auto& their_key = their_key_object->Data().GetAsymmetricKey();
-
-  Local<Value> out;
-  if (!StatelessDiffieHellmanThreadsafe(our_key, their_key)
-          .ToBuffer(env)
-              .ToLocal(&out)) return;
-
-  if (Buffer::Length(out) == 0)
-    return ThrowCryptoError(env, ERR_get_error(), "diffieHellman failed");
-
-  args.GetReturnValue().Set(out);
-}
-}  // namespace
-
 Maybe<void> DHBitsTraits::AdditionalConfig(
     CryptoJobMode mode,
     const FunctionCallbackInfo<Value>& args,
     unsigned int offset,
     DHBitsConfig* params) {
-  Environment* env = Environment::GetCurrent(args);
-
   CHECK(args[offset]->IsObject());  // public key
   CHECK(args[offset + 1]->IsObject());  // private key
 
@@ -497,11 +497,8 @@ Maybe<void> DHBitsTraits::AdditionalConfig(
   ASSIGN_OR_RETURN_UNWRAP(&public_key, args[offset], Nothing<void>());
   ASSIGN_OR_RETURN_UNWRAP(&private_key, args[offset + 1], Nothing<void>());
 
-  if (private_key->Data().GetKeyType() != kKeyTypePrivate ||
-      public_key->Data().GetKeyType() != kKeyTypePublic) {
-    THROW_ERR_CRYPTO_INVALID_KEYTYPE(env);
-    return Nothing<void>();
-  }
+  CHECK(private_key->Data().GetKeyType() == kKeyTypePrivate);
+  CHECK(public_key->Data().GetKeyType() != kKeyTypeSecret);
 
   params->public_key = public_key->Data().addRef();
   params->private_key = private_key->Data().addRef();
@@ -519,16 +516,28 @@ bool DHBitsTraits::DeriveBits(
     Environment* env,
     const DHBitsConfig& params,
     ByteSource* out) {
-  *out = StatelessDiffieHellmanThreadsafe(params.private_key.GetAsymmetricKey(),
-                                          params.public_key.GetAsymmetricKey());
+  auto dp = DHPointer::stateless(params.private_key.GetAsymmetricKey(),
+                                 params.public_key.GetAsymmetricKey());
+  if (!dp) {
+    bool can_throw =
+        per_process::v8_initialized && Isolate::TryGetCurrent() != nullptr;
+    if (can_throw) {
+      unsigned long err = ERR_get_error();  // NOLINT(runtime/int)
+      if (err) ThrowCryptoError(env, err, "diffieHellman failed");
+    }
+    return false;
+  }
+
+  *out = ByteSource::Allocated(dp.release());
+  CHECK(!out->empty());
   return true;
 }
 
-Maybe<void> GetDhKeyDetail(Environment* env,
-                           const KeyObjectData& key,
-                           Local<Object> target) {
+bool GetDhKeyDetail(Environment* env,
+                    const KeyObjectData& key,
+                    Local<Object> target) {
   CHECK_EQ(key.GetAsymmetricKey().id(), EVP_PKEY_DH);
-  return JustVoid();
+  return true;
 }
 
 void DiffieHellman::Initialize(Environment* env, Local<Object> target) {
@@ -573,7 +582,6 @@ void DiffieHellman::Initialize(Environment* env, Local<Object> target) {
   make(FIXED_ONE_BYTE_STRING(env->isolate(), "DiffieHellmanGroup"),
        DiffieHellmanGroup);
 
-  SetMethodNoSideEffect(context, target, "statelessDH", Stateless);
   DHKeyPairGenJob::Initialize(env, target);
   DHKeyExportJob::Initialize(env, target);
   DHBitsJob::Initialize(env, target);
@@ -594,7 +602,6 @@ void DiffieHellman::RegisterExternalReferences(
   registry->Register(SetPrivateKey);
 
   registry->Register(Check);
-  registry->Register(Stateless);
 
   DHKeyPairGenJob::RegisterExternalReferences(registry);
   DHKeyExportJob::RegisterExternalReferences(registry);

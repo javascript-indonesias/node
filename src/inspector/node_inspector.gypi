@@ -2,6 +2,7 @@
   'variables': {
     'protocol_tool_path': '../../deps/inspector_protocol',
     'jinja_dir': '../../tools/inspector_protocol',
+    'v8_gypfiles_dir': '../../tools/v8_gypfiles',
     'node_inspector_sources': [
       'src/inspector_agent.cc',
       'src/inspector_io.cc',
@@ -20,6 +21,7 @@
       'src/inspector/node_json.h',
       'src/inspector/node_string.cc',
       'src/inspector/node_string.h',
+      'src/inspector/protocol_helper.h',
       'src/inspector/runtime_agent.cc',
       'src/inspector/runtime_agent.h',
       'src/inspector/tracing_agent.cc',
@@ -30,6 +32,8 @@
       'src/inspector/network_inspector.h',
       'src/inspector/network_agent.cc',
       'src/inspector/network_agent.h',
+      'src/inspector/target_agent.cc',
+      'src/inspector/target_agent.h',
       'src/inspector/worker_inspector.cc',
       'src/inspector/worker_inspector.h',
     ],
@@ -45,6 +49,8 @@
       '<(SHARED_INTERMEDIATE_DIR)/src/node/inspector/protocol/NodeRuntime.h',
       '<(SHARED_INTERMEDIATE_DIR)/src/node/inspector/protocol/Network.cpp',
       '<(SHARED_INTERMEDIATE_DIR)/src/node/inspector/protocol/Network.h',
+      '<(SHARED_INTERMEDIATE_DIR)/src/node/inspector/protocol/Target.cpp',
+      '<(SHARED_INTERMEDIATE_DIR)/src/node/inspector/protocol/Target.h',
     ],
     'node_protocol_files': [
       '<(protocol_tool_path)/lib/Forward_h.template',
@@ -74,6 +80,7 @@
   ],
   'dependencies': [
     '<(protocol_tool_path)/inspector_protocol.gyp:crdtp',
+    '<(v8_gypfiles_dir)/v8.gyp:v8_inspector_headers',
   ],
   'actions': [
     {
@@ -95,6 +102,7 @@
       'action_name': 'node_protocol_generated_sources',
       'inputs': [
         'node_protocol_config.json',
+        'node_protocol.pdl',
         '<(SHARED_INTERMEDIATE_DIR)/src/node_protocol.json',
         '<@(node_protocol_files)',
         '<(protocol_tool_path)/code_generator.py',

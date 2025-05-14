@@ -30,7 +30,7 @@ class SignBase : public BaseObject {
 
   SignBase(Environment* env, v8::Local<v8::Object> wrap);
 
-  Error Init(std::string_view digest);
+  Error Init(const char* digest);
   Error Update(const char* data, size_t len);
 
   // TODO(joyeecheung): track the memory used by OpenSSL types
@@ -107,7 +107,7 @@ struct SignConfiguration final : public MemoryRetainer {
   KeyObjectData key;
   ByteSource data;
   ByteSource signature;
-  const EVP_MD* digest = nullptr;
+  ncrypto::Digest digest;
   int flags = SignConfiguration::kHasNone;
   int padding = 0;
   int salt_length = 0;

@@ -3322,13 +3322,13 @@ const server = http.createServer((req, res) => {
 });
 ```
 
-### `outgoingMessage.setTimeout(msesc[, callback])`
+### `outgoingMessage.setTimeout(msecs[, callback])`
 
 <!-- YAML
 added: v0.9.12
 -->
 
-* `msesc` {number}
+* `msecs` {number}
 * `callback` {Function} Optional function to be called when a timeout
   occurs. Same as binding to the `timeout` event.
 * Returns: {this}
@@ -4256,7 +4256,7 @@ A browser-compatible implementation of [`WebSocket`][].
 [`Headers`]: globals.md#class-headers
 [`TypeError`]: errors.md#class-typeerror
 [`URL`]: url.md#the-whatwg-url-api
-[`WebSocket`]: #websocket
+[`WebSocket`]: https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
 [`agent.createConnection()`]: #agentcreateconnectionoptions-callback
 [`agent.getName()`]: #agentgetnameoptions
 [`destroy()`]: #agentdestroy

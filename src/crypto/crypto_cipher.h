@@ -50,14 +50,12 @@ class CipherBase : public BaseObject {
                   const unsigned char* iv,
                   int iv_len,
                   unsigned int auth_tag_len);
-  void Init(const char* cipher_type,
-            const ArrayBufferOrViewContents<unsigned char>& key_buf,
-            unsigned int auth_tag_len);
   void InitIv(const char* cipher_type,
               const ByteSource& key_buf,
               const ArrayBufferOrViewContents<unsigned char>& iv_buf,
               unsigned int auth_tag_len);
-  bool InitAuthenticated(const char* cipher_type, int iv_len,
+  bool InitAuthenticated(const char* cipher_type,
+                         int iv_len,
                          unsigned int auth_tag_len);
   bool CheckCCMMessageLength(int message_len);
   UpdateResult Update(const char* data, size_t len,
@@ -72,8 +70,6 @@ class CipherBase : public BaseObject {
   bool MaybePassAuthTagToOpenSSL();
 
   static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Init(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void InitIv(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void Update(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void Final(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void SetAutoPadding(const v8::FunctionCallbackInfo<v8::Value>& args);
@@ -89,7 +85,7 @@ class CipherBase : public BaseObject {
   const CipherKind kind_;
   AuthTagState auth_tag_state_;
   unsigned int auth_tag_len_;
-  char auth_tag_[EVP_GCM_TLS_TAG_LEN];
+  char auth_tag_[ncrypto::Cipher::MAX_AUTH_TAG_LENGTH];
   bool pending_auth_failed_;
   int max_message_size_;
 };
@@ -110,7 +106,7 @@ class PublicKeyCipher {
   static bool Cipher(Environment* env,
                      const ncrypto::EVPKeyPointer& pkey,
                      int padding,
-                     const EVP_MD* digest,
+                     const ncrypto::Digest& digest,
                      const ArrayBufferOrViewContents<unsigned char>& oaep_label,
                      const ArrayBufferOrViewContents<unsigned char>& data,
                      std::unique_ptr<v8::BackingStore>* out);
@@ -148,10 +144,8 @@ class CipherJob final : public CryptoJob<CipherTraits> {
     CryptoJobMode mode = GetCryptoJobMode(args[0]);
 
     CHECK(args[1]->IsUint32());  // Cipher Mode
-
-    uint32_t cmode = args[1].As<v8::Uint32>()->Value();
-    CHECK_LE(cmode, WebCryptoCipherMode::kWebCryptoCipherDecrypt);
-    WebCryptoCipherMode cipher_mode = static_cast<WebCryptoCipherMode>(cmode);
+    auto cipher_mode =
+        static_cast<WebCryptoCipherMode>(args[1].As<v8::Uint32>()->Value());
 
     CHECK(args[2]->IsObject());  // KeyObject
     KeyObjectHandle* key;

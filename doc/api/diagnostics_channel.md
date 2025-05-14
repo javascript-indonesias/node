@@ -635,8 +635,6 @@ added:
  - v18.19.0
 -->
 
-> Stability: 1 - Experimental
-
 * `subscribers` {Object} Set of [TracingChannel Channels][] subscribers
   * `start` {Function} The [`start` event][] subscriber
   * `end` {Function} The [`end` event][] subscriber
@@ -703,8 +701,6 @@ added:
  - v19.9.0
  - v18.19.0
 -->
-
-> Stability: 1 - Experimental
 
 * `subscribers` {Object} Set of [TracingChannel Channels][] subscribers
   * `start` {Function} The [`start` event][] subscriber
@@ -775,8 +771,6 @@ added:
  - v18.19.0
 -->
 
-> Stability: 1 - Experimental
-
 * `fn` {Function} Function to wrap a trace around
 * `context` {Object} Shared object to correlate events through
 * `thisArg` {any} The receiver to be used for the function call
@@ -825,8 +819,6 @@ added:
  - v19.9.0
  - v18.19.0
 -->
-
-> Stability: 1 - Experimental
 
 * `fn` {Function} Promise-returning function to wrap a trace around
 * `context` {Object} Shared object to correlate trace events through
@@ -879,8 +871,6 @@ added:
  - v19.9.0
  - v18.19.0
 -->
-
-> Stability: 1 - Experimental
 
 * `fn` {Function} callback using function to wrap a trace around
 * `position` {number} Zero-indexed argument position of expected callback
@@ -984,8 +974,6 @@ added:
  - v22.0.0
  - v20.13.0
 -->
-
-> Stability: 1 - Experimental
 
 * Returns: {boolean} `true` if any of the individual channels has a subscriber,
   `false` if not.
@@ -1115,13 +1103,9 @@ for the sync error and one for the async error.
 
 ### Built-in Channels
 
-> Stability: 1 - Experimental
-
-While the diagnostics\_channel API is now considered stable, the built-in
-channels currently available are not. Each channel must be declared stable
-independently.
-
 #### Console
+
+> Stability: 1 - Experimental
 
 `console.log`
 
@@ -1159,6 +1143,8 @@ Emitted when `console.error()` is called. Receives and array of the arguments
 passed to `console.error()`.
 
 #### HTTP
+
+> Stability: 1 - Experimental
 
 `http.client.request.created`
 
@@ -1213,7 +1199,20 @@ The event is emitted before the response is sent.
 
 Emitted when server sends a response.
 
+#### HTTP/2
+
+> Stability: 1 - Experimental
+
+`http2.client.stream.created`
+
+* `stream` {ClientHttp2Stream}
+* `headers` {HTTP/2 Headers Object}
+
+Emitted when a stream is created on the client.
+
 #### Modules
+
+> Stability: 1 - Experimental
 
 `module.require.start`
 
@@ -1267,6 +1266,8 @@ Emitted when a `import()` throws an error. See [`error` event][].
 
 #### NET
 
+> Stability: 1 - Experimental
+
 `net.client.socket`
 
 * `socket` {net.Socket}
@@ -1301,6 +1302,8 @@ Emitted when [`net.Server.listen()`][] is returning an error.
 
 #### UDP
 
+> Stability: 1 - Experimental
+
 `udp.socket`
 
 * `socket` {dgram.Socket}
@@ -1308,6 +1311,8 @@ Emitted when [`net.Server.listen()`][] is returning an error.
 Emitted when a new UDP socket is created.
 
 #### Process
+
+> Stability: 1 - Experimental
 
 <!-- YAML
 added: v16.18.0
@@ -1319,7 +1324,17 @@ added: v16.18.0
 
 Emitted when a new process is created.
 
+`execve`
+
+* `execPath` {string}
+* `args` {string\[]}
+* `env` {string\[]}
+
+Emitted when [`process.execve()`][] is invoked.
+
 #### Worker Thread
+
+> Stability: 1 - Experimental
 
 <!-- YAML
 added: v16.18.0
@@ -1348,5 +1363,6 @@ Emitted when a new thread is created.
 [`end` event]: #endevent
 [`error` event]: #errorevent
 [`net.Server.listen()`]: net.md#serverlisten
+[`process.execve()`]: process.md#processexecvefile-args-env
 [`start` event]: #startevent
 [context loss]: async_context.md#troubleshooting-context-loss

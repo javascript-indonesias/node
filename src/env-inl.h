@@ -44,16 +44,6 @@
 
 namespace node {
 
-NoArrayBufferZeroFillScope::NoArrayBufferZeroFillScope(
-    IsolateData* isolate_data)
-    : node_allocator_(isolate_data->node_allocator()) {
-  if (node_allocator_ != nullptr) node_allocator_->zero_fill_field()[0] = 0;
-}
-
-NoArrayBufferZeroFillScope::~NoArrayBufferZeroFillScope() {
-  if (node_allocator_ != nullptr) node_allocator_->zero_fill_field()[0] = 1;
-}
-
 inline v8::Isolate* IsolateData::isolate() const {
   return isolate_;
 }
@@ -215,6 +205,11 @@ inline v8::Isolate* Environment::isolate() const {
   return isolate_;
 }
 
+inline v8::ExternalMemoryAccounter* Environment::external_memory_accounter()
+    const {
+  return external_memory_accounter_;
+}
+
 inline Environment* Environment::from_timer_handle(uv_timer_t* handle) {
   return ContainerOf(&Environment::timer_handle_, handle);
 }
@@ -349,6 +344,11 @@ inline ExitCode Environment::exit_code(const ExitCode default_code) const {
   return exit_info_[kHasExitCode] == 0
              ? default_code
              : static_cast<ExitCode>(exit_info_[kExitCode]);
+}
+
+inline void Environment::set_exit_code(const ExitCode code) {
+  exit_info_[kExitCode] = static_cast<int>(code);
+  exit_info_[kHasExitCode] = 1;
 }
 
 inline AliasedInt32Array& Environment::exit_info() {
