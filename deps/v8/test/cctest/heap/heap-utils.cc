@@ -111,11 +111,13 @@ void CreatePadding(Heap* heap, int padding_size, AllocationType allocation,
       if (length <= 0) {
         // Not enough room to create another FixedArray, so create a filler.
         if (allocation == i::AllocationType::kOld) {
-          heap->CreateFillerObjectAt(*heap->OldSpaceAllocationTopAddress(),
-                                     free_memory);
+          LinearAllocationArea* old_space =
+              &heap->isolate()->isolate_data()->old_allocation_info();
+          heap->CreateFillerObjectAt(old_space->top(), free_memory);
         } else {
-          heap->CreateFillerObjectAt(*heap->NewSpaceAllocationTopAddress(),
-                                     free_memory);
+          LinearAllocationArea* new_space =
+              &heap->isolate()->isolate_data()->new_allocation_info();
+          heap->CreateFillerObjectAt(new_space->top(), free_memory);
         }
         break;
       }
@@ -283,7 +285,7 @@ void SimulateIncrementalMarking(i::Heap* heap, bool force_completion) {
     // because of the AdvanceForTesting call in this function which is currently
     // only possible for MajorMC.
     heap->CollectGarbage(NEW_SPACE,
-                         GarbageCollectionReason::kFinalizeConcurrentMinorMS);
+                         GarbageCollectionReason::kFinalizeMinorMSForMajorGC);
   }
 
   if (marking->IsStopped()) {
@@ -293,7 +295,7 @@ void SimulateIncrementalMarking(i::Heap* heap, bool force_completion) {
   CHECK(marking->IsMarking());
   if (!force_completion) return;
 
-  IsolateSafepointScope scope(heap);
+  SafepointScope scope(heap->isolate(), kGlobalSafepointForSharedSpaceIsolate);
   MarkingBarrier::PublishAll(heap);
   marking->MarkRootsForTesting();
 
@@ -304,7 +306,8 @@ void SimulateIncrementalMarking(i::Heap* heap, bool force_completion) {
 
 void SimulateFullSpace(v8::internal::PagedSpace* space) {
   Heap* heap = space->heap();
-  IsolateSafepointScope safepoint_scope(heap);
+  SafepointScope safepoint_scope(heap->isolate(),
+                                 kGlobalSafepointForSharedSpaceIsolate);
   heap->FreeLinearAllocationAreas();
 
   // If you see this check failing, disable the flag at the start of your test:
@@ -320,7 +323,8 @@ void SimulateFullSpace(v8::internal::PagedSpace* space) {
 
 void AbandonCurrentlyFreeMemory(PagedSpace* space) {
   Heap* heap = space->heap();
-  IsolateSafepointScope safepoint_scope(heap);
+  SafepointScope safepoint_scope(heap->isolate(),
+                                 kGlobalSafepointForSharedSpaceIsolate);
   heap->FreeLinearAllocationAreas();
 
   for (PageMetadata* page : *space) {
@@ -372,8 +376,7 @@ void ForceEvacuationCandidate(PageMetadata* page) {
   Isolate* isolate = page->owner()->heap()->isolate();
   SafepointScope safepoint(isolate, kGlobalSafepointForSharedSpaceIsolate);
   CHECK(v8_flags.manual_evacuation_candidates_selection);
-  page->Chunk()->SetFlagNonExecutable(
-      MemoryChunk::FORCE_EVACUATION_CANDIDATE_FOR_TESTING);
+  page->set_forced_evacuation_candidate_for_testing(true);
   page->owner()->heap()->FreeLinearAllocationAreas();
 }
 
@@ -382,19 +385,9 @@ bool InCorrectGeneration(Tagged<HeapObject> object) {
                                     : i::HeapLayout::InYoungGeneration(object);
 }
 
-void GrowNewSpace(Heap* heap) {
-  IsolateSafepointScope scope(heap);
-  heap->ExpandNewSpaceSizeForTesting();
-  CHECK(heap->new_space()->EnsureCurrentCapacity());
-}
-
 void GrowNewSpaceToMaximumCapacity(Heap* heap) {
   IsolateSafepointScope scope(heap);
-  NewSpace* new_space = heap->new_space();
-  while (new_space->TotalCapacity() < new_space->MaximumCapacity()) {
-    heap->ExpandNewSpaceSizeForTesting();
-  }
-  CHECK(new_space->EnsureCurrentCapacity());
+  heap->new_space()->GrowToMaximumCapacityForTesting();
 }
 
 }  // namespace heap

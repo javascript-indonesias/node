@@ -869,7 +869,7 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(Float64InsertHighWord32, Operator::kNoProperties, 2, 0, 1)             \
   V(LoadStackCheckOffset, Operator::kNoProperties, 0, 0, 1)                \
   V(LoadFramePointer, Operator::kNoProperties, 0, 0, 1)                    \
-  V(LoadRootRegister, Operator::kNoProperties, 0, 0, 1)                    \
+  V(LoadRootRegister, Operator::kPure, 0, 0, 1)                            \
   V(LoadParentFramePointer, Operator::kNoProperties, 0, 0, 1)              \
   V(Int32PairAdd, Operator::kNoProperties, 4, 0, 2)                        \
   V(Int32PairSub, Operator::kNoProperties, 4, 0, 2)                        \
@@ -1395,6 +1395,11 @@ struct MachineOperatorGlobalCache {
     Store##Type##AssertNoWriteBarrier##Operator()                          \
         : Store##Type##Operator(kAssertNoWriteBarrier) {}                  \
   };                                                                       \
+  struct Store##Type##SkippedWriteBarrier##Operator final                  \
+      : public Store##Type##Operator {                                     \
+    Store##Type##SkippedWriteBarrier##Operator()                           \
+        : Store##Type##Operator(kSkippedWriteBarrier) {}                   \
+  };                                                                       \
   struct Store##Type##MapWriteBarrier##Operator final                      \
       : public Store##Type##Operator {                                     \
     Store##Type##MapWriteBarrier##Operator()                               \
@@ -1457,6 +1462,8 @@ struct MachineOperatorGlobalCache {
   Store##Type##NoWriteBarrier##Operator kStore##Type##NoWriteBarrier;      \
   Store##Type##AssertNoWriteBarrier##Operator                              \
       kStore##Type##AssertNoWriteBarrier;                                  \
+  Store##Type##SkippedWriteBarrier##Operator                               \
+      kStore##Type##SkippedWriteBarrier;                                   \
   Store##Type##MapWriteBarrier##Operator kStore##Type##MapWriteBarrier;    \
   Store##Type##PointerWriteBarrier##Operator                               \
       kStore##Type##PointerWriteBarrier;                                   \
@@ -2136,6 +2143,8 @@ const Operator* MachineOperatorBuilder::Store(StoreRepresentation store_rep) {
         return &cache_.k##Store##kRep##NoWriteBarrier;           \
       case kAssertNoWriteBarrier:                                \
         return &cache_.k##Store##kRep##AssertNoWriteBarrier;     \
+      case kSkippedWriteBarrier:                                 \
+        return &cache_.k##Store##kRep##SkippedWriteBarrier;      \
       case kMapWriteBarrier:                                     \
         return &cache_.k##Store##kRep##MapWriteBarrier;          \
       case kPointerWriteBarrier:                                 \

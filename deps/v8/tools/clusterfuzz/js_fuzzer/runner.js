@@ -70,12 +70,12 @@ class Runner {
  * Runner that randomly selects a number of tests from all corpora.
  */
 class RandomCorpusRunner extends Runner {
-  constructor(inputDir, primary, numFiles,
+  constructor(settings,
               maxTestInputs=MAX_TEST_INPUTS_PER_TEST) {
     super();
-    inputDir = path.resolve(inputDir);
-    this.primary = primary;
-    this.numFiles = numFiles;
+    const inputDir = path.resolve(settings.input_dir);
+    this.primary = settings.engine;
+    this.numFiles = settings.no_of_files;
     this.maxTestInputs = maxTestInputs;
     this.corpora = {
       'v8': corpus.create(inputDir, 'v8'),
@@ -107,11 +107,13 @@ class RandomCorpusRunner extends Runner {
  * Like above, including the Fuzzilli corpus.
  */
 class RandomCorpusRunnerWithFuzzilli extends RandomCorpusRunner {
-  constructor(inputDir, primary, numFiles,
+  constructor(settings,
               maxTestInputs=MAX_TEST_INPUTS_PER_TEST) {
-    super(inputDir, primary, numFiles, maxTestInputs);
-    this.corpora['fuzzilli'] = corpus.create(
-        inputDir, 'fuzzilli', false, this.corpora['v8']);
+    super(settings, maxTestInputs);
+    const forDiffFuzz = random.toggle(settings.diff_fuzz, 0.2);
+    this.corpora.fuzzilli = corpus.create(
+        settings.input_dir, 'fuzzilli', false, this.corpora.v8,
+        forDiffFuzz);
   }
 }
 
@@ -119,16 +121,16 @@ class RandomCorpusRunnerWithFuzzilli extends RandomCorpusRunner {
  * Runner that randomly selects Wasm cases from V8 and Fuzzilli.
  */
 class RandomWasmCorpusRunner extends Runner {
-  constructor(inputDir, engine, numFiles,
+  constructor(settings,
               maxTestInputs=MAX_WASM_TEST_INPUTS_PER_TEST) {
     super();
-    this.numFiles = numFiles;
+    this.numFiles = settings.no_of_files;
     this.maxTestInputs = maxTestInputs;
 
     // Bias a bit towards the V8 corpus.
-    const v8Corpus = corpus.create(inputDir, 'v8_wasm');
+    const v8Corpus = corpus.create(settings.input_dir, 'v8_wasm');
     const fuzzilliCorpus = corpus.create(
-        inputDir, 'fuzzilli_wasm', false, v8Corpus);
+        settings.input_dir, 'fuzzilli_wasm', false, v8Corpus);
     this.corpora = [v8Corpus, v8Corpus, fuzzilliCorpus];
   }
 
@@ -169,15 +171,17 @@ class SingleCorpusRunner extends Runner {
  * repeats and without cases from the crashes directory.
  */
 class RandomFuzzilliNoCrashCorpusRunner extends Runner {
-  constructor(inputDir, engine, numFiles) {
+  constructor(settings) {
     super();
-    this.numFiles = numFiles;
+    this.numFiles = settings.no_of_files;
 
     // We need a V8 corpus placeholder only to cross-load dependencies
     // from there, e.g. the wasm module builder.
-    const v8Corpus = corpus.create(inputDir, 'v8');
+    const v8Corpus = corpus.create(settings.input_dir, 'v8');
+    const forDiffFuzz = random.toggle(settings.diff_fuzz, 0.2);
     this.corpus = corpus.create(
-      inputDir, 'fuzzilli_no_crash', false, v8Corpus);
+      settings.input_dir, 'fuzzilli_no_crash', false, v8Corpus,
+      forDiffFuzz);
   }
 
   *inputGen() {
@@ -192,43 +196,7 @@ class RandomFuzzilliNoCrashCorpusRunner extends Runner {
   }
 }
 
-/**
- * Runner that enumerates a fixture case combined with a snippet from the DB
- * for validation.
- */
-class FixtureRunner extends Runner {
-  constructor(inputDir, engine, numFiles) {
-    // This runner ignores the usual inputs and always iterates over all
-    // snippets from the DB.
-    super();
-    this.dbPath = path.join(process.cwd(), 'db');
-  }
-
-  *inputGen() {
-    const mutateDb = new db.MutateDb(this.dbPath);
-    for (const expression of mutateDb.iterateStatements()) {
-      let templates;
-      if (expression.needsSuper) {
-        // One template for an insertion in a constructor and one in a method.
-        templates = ['cross_over_template_2.js', 'cross_over_template_3.js'];
-      } else {
-        templates = ['cross_over_template_1.js'];
-      }
-
-      for (const tmplName of templates) {
-        const tmpl = sourceHelpers.loadSource(
-          sourceHelpers.BASE_CORPUS, path.join('resources', tmplName));
-        // We glue the expression to the source. It's otherwise rather hard to
-        // pass this through into the mutation phases.
-        tmpl.__expression = expression;
-        yield [tmpl];
-      }
-    }
-  }
-}
-
 module.exports = {
-  FixtureRunner: FixtureRunner,
   RandomCorpusRunner: RandomCorpusRunner,
   RandomCorpusRunnerWithFuzzilli: RandomCorpusRunnerWithFuzzilli,
   RandomFuzzilliNoCrashCorpusRunner: RandomFuzzilliNoCrashCorpusRunner,

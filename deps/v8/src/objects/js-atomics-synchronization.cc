@@ -51,9 +51,9 @@ MaybeDirectHandle<Context> SetAsyncUnlockHandlers(
   DirectHandle<Context> handlers_context =
       isolate->factory()->NewBuiltinContext(
           isolate->native_context(), JSAtomicsMutex::kAsyncContextLength);
-  handlers_context->set(JSAtomicsMutex::kMutexAsyncContextSlot, *mutex);
-  handlers_context->set(JSAtomicsMutex::kUnlockedPromiseAsyncContextSlot,
-                        *unlocked_promise);
+  handlers_context->SetNoCell(JSAtomicsMutex::kMutexAsyncContextSlot, *mutex);
+  handlers_context->SetNoCell(JSAtomicsMutex::kUnlockedPromiseAsyncContextSlot,
+                              *unlocked_promise);
 
   DirectHandle<SharedFunctionInfo> resolve_info(
       isolate->heap()->atomics_mutex_async_unlock_resolve_handler_sfi(),
@@ -345,9 +345,18 @@ class V8_NODISCARD AsyncWaiterQueueNode final : public WaiterQueueNode {
   // Removes the node from the isolate's `async_waiter_queue_nodes` list; the
   // passing node will be invalid after this call since the corresponding
   // unique_ptr is deleted upon removal.
-  static void RemoveFromAsyncWaiterQueueList(AsyncWaiterQueueNode<T>* node) {
-    node->requester_->async_waiter_queue_nodes().remove_if(
-        [=](std::unique_ptr<WaiterQueueNode>& n) { return n.get() == node; });
+  static void RemoveFromAsyncWaiterQueueList(Isolate* requester,
+                                             AsyncWaiterQueueNode<T>* node) {
+    auto erased =
+        std::erase_if(requester->async_waiter_queue_nodes(),
+                      [requester, node](std::unique_ptr<WaiterQueueNode>& n) {
+                        if (n.get() == node) {
+                          SBXCHECK_EQ(requester, node->requester_);
+                          return true;
+                        }
+                        return false;
+                      });
+    SBXCHECK_EQ(1, erased);
   }
 
  private:
@@ -853,8 +862,8 @@ MaybeDirectHandle<JSPromise> JSAtomicsMutex::LockOrEnqueuePromise(
   DirectHandle<Foreign> wrapper =
       requester->factory()->NewForeign<kWaiterQueueForeignTag>(
           reinterpret_cast<Address>(waiter_node));
-  handlers_context->set(JSAtomicsMutex::kAsyncLockedWaiterAsyncContextSlot,
-                        *wrapper);
+  handlers_context->SetNoCell(
+      JSAtomicsMutex::kAsyncLockedWaiterAsyncContextSlot, *wrapper);
   return unlocked_promise;
 }
 
@@ -954,7 +963,8 @@ void JSAtomicsMutex::UnlockAsyncLockedMutex(
       reinterpret_cast<LockAsyncWaiterQueueNode*>(
           async_locked_waiter_wrapper->foreign_address<kWaiterQueueForeignTag>(
               IsolateForSandbox(requester)));
-  LockAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(waiter_node);
+  LockAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(requester,
+                                                           waiter_node);
   if (IsCurrentThreadOwner()) {
     Unlock(requester);
     return;
@@ -1024,7 +1034,7 @@ void JSAtomicsMutex::HandleAsyncTimeout(LockAsyncWaiterQueueNode* waiter) {
     // The native context was destroyed so the lock_promise was already removed
     // from the native context. Remove the node from the async unlocked waiter
     // list.
-    LockAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(waiter);
+    LockAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(requester, waiter);
     return;
   }
 
@@ -1049,7 +1059,7 @@ void JSAtomicsMutex::HandleAsyncTimeout(LockAsyncWaiterQueueNode* waiter) {
       requester, requester->factory()->undefined_value(), false);
   auto resolve_result = JSPromise::Resolve(lock_async_promise, result);
   USE(resolve_result);
-  LockAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(waiter);
+  LockAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(requester, waiter);
   RemovePromiseFromNativeContext(requester, lock_promise);
 }
 
@@ -1086,7 +1096,7 @@ void JSAtomicsMutex::HandleAsyncNotify(LockAsyncWaiterQueueNode* waiter) {
         SetWaiterQueueStateOnly(state, new_state);
       }
     }
-    LockAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(waiter);
+    LockAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(requester, waiter);
     return;
   }
 
@@ -1107,7 +1117,8 @@ void JSAtomicsMutex::HandleAsyncNotify(LockAsyncWaiterQueueNode* waiter) {
       // async lock call, so we don't need to put the node in the locked waiter
       // list because the original LockAsycWaiterQueueNode is already in
       // the locked waiter list.
-      LockAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(waiter);
+      LockAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(requester,
+                                                               waiter);
     }
     js_mutex->SetCurrentThreadAsOwner();
     auto resolve_result =
@@ -1293,8 +1304,8 @@ MaybeDirectHandle<JSReceiver> JSAtomicsCondition::WaitAsync(
   DirectHandle<Context> handler_context =
       requester->factory()->NewBuiltinContext(requester->native_context(),
                                               kAsyncContextLength);
-  handler_context->set(kMutexAsyncContextSlot, *mutex);
-  handler_context->set(kConditionVariableAsyncContextSlot, *cv);
+  handler_context->SetNoCell(kMutexAsyncContextSlot, *mutex);
+  handler_context->SetNoCell(kConditionVariableAsyncContextSlot, *cv);
 
   DirectHandle<SharedFunctionInfo> info(
       requester->heap()->atomics_condition_acquire_lock_sfi(), requester);
@@ -1337,7 +1348,7 @@ void JSAtomicsCondition::HandleAsyncTimeout(WaitAsyncWaiterQueueNode* waiter) {
     // The native context was destroyed so the promise was already removed
     // from the native context. Remove the node from the async unlocked waiter
     // list.
-    WaitAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(waiter);
+    WaitAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(requester, waiter);
     return;
   }
   HandleScope scope(requester);
@@ -1370,7 +1381,7 @@ void JSAtomicsCondition::HandleAsyncNotify(WaitAsyncWaiterQueueNode* waiter) {
     // The native context was destroyed so the promise was already removed
     // from the native context. Remove the node from the async unlocked waiter
     // list.
-    WaitAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(waiter);
+    WaitAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(requester, waiter);
     return;
   }
   HandleScope scope(requester);
@@ -1386,7 +1397,7 @@ void JSAtomicsCondition::HandleAsyncNotify(WaitAsyncWaiterQueueNode* waiter) {
   MaybeDirectHandle<Object> result =
       JSPromise::Resolve(promise, requester->factory()->undefined_value());
   USE(result);
-  WaitAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(waiter);
+  WaitAsyncWaiterQueueNode::RemoveFromAsyncWaiterQueueList(requester, waiter);
   RemovePromiseFromNativeContext(requester, promise);
 }
 

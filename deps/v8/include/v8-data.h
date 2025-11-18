@@ -53,9 +53,19 @@ class V8_EXPORT Data {
   bool IsFunctionTemplate() const;
 
   /**
+   * Returns true if this data is a |v8::DictionaryTemplate|.
+   */
+  bool IsDictionaryTemplate() const;
+
+  /**
    * Returns true if this data is a |v8::Context|.
    */
   bool IsContext() const;
+
+  /**
+   * Returns true if this value is a `CppHeapExternal` object.
+   */
+  bool IsCppHeapExternal() const;
 
  private:
   Data() = delete;

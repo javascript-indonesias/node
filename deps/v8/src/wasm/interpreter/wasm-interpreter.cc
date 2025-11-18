@@ -16,6 +16,7 @@
 #include "src/heap/heap-write-barrier.h"
 #include "src/objects/object-macros.h"
 #include "src/snapshot/embedded/embedded-data-inl.h"
+#include "src/wasm/canonical-types.h"
 #include "src/wasm/decoder.h"
 #include "src/wasm/function-body-decoder-impl.h"
 #include "src/wasm/interpreter/wasm-interpreter-inl.h"
@@ -27,6 +28,14 @@
 namespace v8 {
 namespace internal {
 namespace wasm {
+
+using v8::internal::Simd128;
+using int8x16 = Simd128::int8x16;
+using int16x8 = Simd128::int16x8;
+using int32x4 = Simd128::int32x4;
+using int64x2 = Simd128::int64x2;
+using float64x2 = Simd128::float64x2;
+using float32x4 = Simd128::float32x4;
 
 #define EMIT_INSTR_HANDLER(name) EmitFnId(k_##name);
 #define EMIT_INSTR_HANDLER_WITH_PC(name, pc) EmitFnId(k_##name, pc);
@@ -352,7 +361,7 @@ void NopFinalizer(const v8::WeakCallbackInfo<void>& data) {
   GlobalHandles::Destroy(global_handle_location);
 }
 
-DirectHandle<WasmInstanceObject> MakeWeak(
+IndirectHandle<WasmInstanceObject> MakeWeak(
     Isolate* isolate, DirectHandle<WasmInstanceObject> instance_object) {
   Handle<WasmInstanceObject> weak_instance =
       isolate->global_handles()->Create<WasmInstanceObject>(*instance_object);
@@ -448,15 +457,15 @@ WasmInterpreterThread::WasmInterpreterThread(Isolate* isolate)
       current_ref_stack_size_(0),
       execution_timer_(isolate, true) {
   PageAllocator* page_allocator = GetPlatformPageAllocator();
-  stack_mem_ = AllocatePages(page_allocator, nullptr, kMaxStackSize,
+  stack_mem_ = AllocatePages(page_allocator, kMaxStackSize,
                              page_allocator->AllocatePageSize(),
                              PageAllocator::kNoAccess);
   if (!stack_mem_ ||
       !SetPermissions(page_allocator, stack_mem_, current_stack_size_,
                       PageAllocator::Permission::kReadWrite)) {
-    V8::FatalProcessOutOfMemory(nullptr,
-                                "WasmInterpreterThread::WasmInterpreterThread",
-                                "Cannot allocate Wasm interpreter stack");
+    V8::FatalProcessOutOfMemory(
+        nullptr, "WasmInterpreterThread::WasmInterpreterThread",
+        {.detail = "Cannot allocate Wasm interpreter stack"});
     UNREACHABLE();
   }
 }
@@ -491,7 +500,6 @@ void WasmInterpreterThread::RaiseException(Isolate* isolate,
                                            MessageTemplate message) {
   DCHECK_EQ(WasmInterpreterThread::TRAPPED, state_);
   if (!isolate->has_exception()) {
-    ClearThreadInWasmScope wasm_flag(isolate);
     DirectHandle<JSObject> error_obj =
         isolate->factory()->NewWasmRuntimeError(message);
     JSObject::AddProperty(isolate, error_obj,
@@ -576,8 +584,6 @@ INSTRUCTION_HANDLER_FUNC TrapMemOutOfBounds(
 
 void InitTrapHandlersOnce(Isolate* isolate) {
   CHECK_LE(kInstructionCount, kInstructionTableSize);
-
-  ClearThreadInWasmScope wasm_flag(isolate);
 
   // Overwrites the instruction handlers that access memory and can cause an
   // out-of-bounds trap with builtin versions that don't have explicit bounds
@@ -4582,7 +4588,7 @@ class Handlers : public HandlersBase {
   // SIMD instructions.
 
 #if V8_TARGET_BIG_ENDIAN
-#define LANE(i, type) ((sizeof(type.val) / sizeof(type.val[0])) - (i)-1)
+#define LANE(i, type) ((sizeof(type) / sizeof(type[0])) - (i) - 1)
 #else
 #define LANE(i, type) (i)
 #endif
@@ -4593,7 +4599,7 @@ class Handlers : public HandlersBase {
       int64_t r0, double fp0) {                                                \
     valType v = pop<valType>(sp, code, wasm_runtime);                          \
     stype s;                                                                   \
-    for (int i = 0; i < num; i++) s.val[i] = v;                                \
+    for (int i = 0; i < num; i++) s[i] = v;                                    \
     push<Simd128>(sp, code, wasm_runtime, Simd128(s));                         \
     NextOp();                                                                  \
   }
@@ -4613,7 +4619,7 @@ class Handlers : public HandlersBase {
     DCHECK_LT(lane, 4);                                                        \
     Simd128 v = pop<Simd128>(sp, code, wasm_runtime);                          \
     stype s = v.to_##name();                                                   \
-    push(sp, code, wasm_runtime, s.val[LANE(lane, s)]);                        \
+    push(sp, code, wasm_runtime, s[LANE(lane, s)]);                            \
     NextOp();                                                                  \
   }
   EXTRACT_LANE_CASE(F64x2, float64x2, F64, f64x2)
@@ -4635,10 +4641,10 @@ class Handlers : public HandlersBase {
     DCHECK_LT(lane, 16);                                                       \
     Simd128 s = pop<Simd128>(sp, code, wasm_runtime);                          \
     stype ss = s.to_##name();                                                  \
-    auto res = ss.val[LANE(lane, ss)];                                         \
-    DCHECK(std::is_signed<decltype(res)>::value);                              \
-    if (std::is_unsigned<extended_type>::value) {                              \
-      using unsigned_type = std::make_unsigned<decltype(res)>::type;           \
+    auto res = ss[LANE(lane, ss)];                                             \
+    DCHECK(std::is_signed_v<decltype(res)>);                                   \
+    if (std::is_unsigned_v<extended_type>) {                                   \
+      using unsigned_type = std::make_unsigned_t<decltype(res)>;               \
       push(sp, code, wasm_runtime,                                             \
            static_cast<extended_type>(static_cast<unsigned_type>(res)));       \
     } else {                                                                   \
@@ -4660,9 +4666,9 @@ class Handlers : public HandlersBase {
     stype s1 = pop<Simd128>(sp, code, wasm_runtime).to_##name();              \
     stype res;                                                                \
     for (size_t i = 0; i < count; ++i) {                                      \
-      auto a = s1.val[LANE(i, s1)];                                           \
-      auto b = s2.val[LANE(i, s2)];                                           \
-      res.val[LANE(i, res)] = expr;                                           \
+      auto a = s1[LANE(i, s1)];                                               \
+      auto b = s2[LANE(i, s2)];                                               \
+      res[LANE(i, res)] = expr;                                               \
     }                                                                         \
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));                      \
     NextOp();                                                                 \
@@ -4745,8 +4751,8 @@ class Handlers : public HandlersBase {
     stype s = pop<Simd128>(sp, code, wasm_runtime).to_##name();               \
     stype res;                                                                \
     for (size_t i = 0; i < count; ++i) {                                      \
-      auto a = s.val[LANE(i, s)];                                             \
-      res.val[LANE(i, res)] = expr;                                           \
+      auto a = s[LANE(i, s)];                                                 \
+      res[LANE(i, res)] = expr;                                               \
     }                                                                         \
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));                      \
     NextOp();                                                                 \
@@ -4786,7 +4792,7 @@ class Handlers : public HandlersBase {
     stype s = pop<Simd128>(sp, code, wasm_runtime).to_##name();               \
     int32_t res = 0;                                                          \
     for (size_t i = 0; i < count; ++i) {                                      \
-      bool sign = std::signbit(static_cast<double>(s.val[LANE(i, s)]));       \
+      bool sign = std::signbit(static_cast<double>(s[LANE(i, s)]));           \
       res |= (sign << i);                                                     \
     }                                                                         \
     push<int32_t>(sp, code, wasm_runtime, res);                               \
@@ -4806,10 +4812,10 @@ class Handlers : public HandlersBase {
     stype s1 = pop<Simd128>(sp, code, wasm_runtime).to_##name();              \
     out_stype res;                                                            \
     for (size_t i = 0; i < count; ++i) {                                      \
-      auto a = s1.val[LANE(i, s1)];                                           \
-      auto b = s2.val[LANE(i, s2)];                                           \
+      auto a = s1[LANE(i, s1)];                                               \
+      auto b = s2[LANE(i, s2)];                                               \
       auto result = expr;                                                     \
-      res.val[LANE(i, res)] = result ? -1 : 0;                                \
+      res[LANE(i, res)] = result ? -1 : 0;                                    \
     }                                                                         \
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));                      \
     NextOp();                                                                 \
@@ -4886,7 +4892,7 @@ class Handlers : public HandlersBase {
     ctype new_val = pop<ctype>(sp, code, wasm_runtime);                        \
     Simd128 simd_val = pop<Simd128>(sp, code, wasm_runtime);                   \
     stype s = simd_val.to_##name();                                            \
-    s.val[LANE(lane, s)] = new_val;                                            \
+    s[LANE(lane, s)] = new_val;                                                \
     push<Simd128>(sp, code, wasm_runtime, Simd128(s));                         \
     NextOp();                                                                  \
   }
@@ -4964,8 +4970,8 @@ class Handlers : public HandlersBase {
     stype s = pop<Simd128>(sp, code, wasm_runtime).to_##name();               \
     stype res;                                                                \
     for (size_t i = 0; i < count; ++i) {                                      \
-      auto a = s.val[LANE(i, s)];                                             \
-      res.val[LANE(i, res)] = expr;                                           \
+      auto a = s[LANE(i, s)];                                                 \
+      res[LANE(i, res)] = expr;                                               \
     }                                                                         \
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));                      \
     NextOp();                                                                 \
@@ -4997,16 +5003,16 @@ class Handlers : public HandlersBase {
   INSTRUCTION_HANDLER_FUNC s2s_DoSimdExtMul(
       const uint8_t* code, uint32_t* sp, WasmInterpreterRuntime* wasm_runtime,
       int64_t r0, double fp0) {
-    s_type s2 = pop<Simd128>(sp, code, wasm_runtime).template to<s_type>();
-    s_type s1 = pop<Simd128>(sp, code, wasm_runtime).template to<s_type>();
+    s_type s2 = pop<s_type>(sp, code, wasm_runtime);
+    s_type s1 = pop<s_type>(sp, code, wasm_runtime);
     auto end = start + (kSimd128Size / sizeof(wide));
     d_type res;
     uint32_t i = start;
     for (size_t dst = 0; i < end; ++i, ++dst) {
       // Need static_cast for unsigned narrow types.
-      res.val[LANE(dst, res)] =
-          MultiplyLong<wide>(static_cast<narrow>(s1.val[LANE(start, s1)]),
-                             static_cast<narrow>(s2.val[LANE(start, s2)]));
+      res[LANE(dst, res)] =
+          MultiplyLong<wide>(static_cast<narrow>(s1[LANE(start, s1)]),
+                             static_cast<narrow>(s2[LANE(start, s2)]));
     }
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));
     NextOp();
@@ -5045,8 +5051,8 @@ class Handlers : public HandlersBase {
     src_type s = pop<Simd128>(sp, code, wasm_runtime).to_##name();            \
     dst_type res = {0};                                                       \
     for (size_t i = 0; i < count; ++i) {                                      \
-      ctype a = s.val[LANE(start_index + i, s)];                              \
-      res.val[LANE(i, res)] = expr;                                           \
+      ctype a = s[LANE(start_index + i, s)];                                  \
+      res[LANE(i, res)] = expr;                                               \
     }                                                                         \
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));                      \
     NextOp();                                                                 \
@@ -5108,9 +5114,9 @@ class Handlers : public HandlersBase {
     src_type s1 = pop<Simd128>(sp, code, wasm_runtime).to_##name();           \
     dst_type res;                                                             \
     for (size_t i = 0; i < count; ++i) {                                      \
-      int64_t v = i < count / 2 ? s1.val[LANE(i, s1)]                         \
-                                : s2.val[LANE(i - count / 2, s2)];            \
-      res.val[LANE(i, res)] = base::saturated_cast<dst_ctype>(v);             \
+      int64_t v =                                                             \
+          i < count / 2 ? s1[LANE(i, s1)] : s2[LANE(i - count / 2, s2)];      \
+      res[LANE(i, res)] = base::saturated_cast<dst_ctype>(v);                 \
     }                                                                         \
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));                      \
     NextOp();                                                                 \
@@ -5129,9 +5135,9 @@ class Handlers : public HandlersBase {
     int32x4 v1 = pop<Simd128>(sp, code, wasm_runtime).to_i32x4();
     int32x4 res;
     for (size_t i = 0; i < 4; ++i) {
-      res.val[LANE(i, res)] =
-          v2.val[LANE(i, v2)] ^ ((v1.val[LANE(i, v1)] ^ v2.val[LANE(i, v2)]) &
-                                 bool_val.val[LANE(i, bool_val)]);
+      res[LANE(i, res)] =
+          v2[LANE(i, v2)] ^
+          ((v1[LANE(i, v1)] ^ v2[LANE(i, v2)]) & bool_val[LANE(i, bool_val)]);
     }
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));
     NextOp();
@@ -5150,9 +5156,9 @@ class Handlers : public HandlersBase {
     int16x8 v1 = pop<Simd128>(sp, code, wasm_runtime).to_i16x8();
     int32x4 res;
     for (size_t i = 0; i < 4; i++) {
-      int32_t lo = (v1.val[LANE(i * 2, v1)] * v2.val[LANE(i * 2, v2)]);
-      int32_t hi = (v1.val[LANE(i * 2 + 1, v1)] * v2.val[LANE(i * 2 + 1, v2)]);
-      res.val[LANE(i, res)] = base::AddWithWraparound(lo, hi);
+      int32_t lo = (v1[LANE(i * 2, v1)] * v2[LANE(i * 2, v2)]);
+      int32_t hi = (v1[LANE(i * 2 + 1, v1)] * v2[LANE(i * 2 + 1, v2)]);
+      res[LANE(i, res)] = base::AddWithWraparound(lo, hi);
     }
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));
     NextOp();
@@ -5165,9 +5171,9 @@ class Handlers : public HandlersBase {
     int8x16 v1 = pop<Simd128>(sp, code, wasm_runtime).to_i8x16();
     int16x8 res;
     for (size_t i = 0; i < 8; i++) {
-      int16_t lo = (v1.val[LANE(i * 2, v1)] * v2.val[LANE(i * 2, v2)]);
-      int16_t hi = (v1.val[LANE(i * 2 + 1, v1)] * v2.val[LANE(i * 2 + 1, v2)]);
-      res.val[LANE(i, res)] = base::AddWithWraparound(lo, hi);
+      int16_t lo = (v1[LANE(i * 2, v1)] * v2[LANE(i * 2, v2)]);
+      int16_t hi = (v1[LANE(i * 2 + 1, v1)] * v2[LANE(i * 2 + 1, v2)]);
+      res[LANE(i, res)] = base::AddWithWraparound(lo, hi);
     }
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));
     NextOp();
@@ -5181,13 +5187,13 @@ class Handlers : public HandlersBase {
     int8x16 v1 = pop<Simd128>(sp, code, wasm_runtime).to_i8x16();
     int32x4 res;
     for (size_t i = 0; i < 4; i++) {
-      int32_t a = (v1.val[LANE(i * 4, v1)] * v2.val[LANE(i * 4, v2)]);
-      int32_t b = (v1.val[LANE(i * 4 + 1, v1)] * v2.val[LANE(i * 4 + 1, v2)]);
-      int32_t c = (v1.val[LANE(i * 4 + 2, v1)] * v2.val[LANE(i * 4 + 2, v2)]);
-      int32_t d = (v1.val[LANE(i * 4 + 3, v1)] * v2.val[LANE(i * 4 + 3, v2)]);
-      int32_t acc = v3.val[LANE(i, v3)];
+      int32_t a = (v1[LANE(i * 4, v1)] * v2[LANE(i * 4, v2)]);
+      int32_t b = (v1[LANE(i * 4 + 1, v1)] * v2[LANE(i * 4 + 1, v2)]);
+      int32_t c = (v1[LANE(i * 4 + 2, v1)] * v2[LANE(i * 4 + 2, v2)]);
+      int32_t d = (v1[LANE(i * 4 + 3, v1)] * v2[LANE(i * 4 + 3, v2)]);
+      int32_t acc = v3[LANE(i, v3)];
       // a + b + c + d should not wrap
-      res.val[LANE(i, res)] = base::AddWithWraparound(a + b + c + d, acc);
+      res[LANE(i, res)] = base::AddWithWraparound(a + b + c + d, acc);
     }
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));
     NextOp();
@@ -5200,9 +5206,9 @@ class Handlers : public HandlersBase {
     int8x16 v1 = pop<Simd128>(sp, code, wasm_runtime).to_i8x16();
     int8x16 res;
     for (size_t i = 0; i < kSimd128Size; ++i) {
-      int lane = v2.val[LANE(i, v2)];
-      res.val[LANE(i, res)] =
-          lane < kSimd128Size && lane >= 0 ? v1.val[LANE(lane, v1)] : 0;
+      int lane = v2[LANE(i, v2)];
+      res[LANE(i, res)] =
+          lane < kSimd128Size && lane >= 0 ? v1[LANE(lane, v1)] : 0;
     }
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));
     NextOp();
@@ -5217,10 +5223,10 @@ class Handlers : public HandlersBase {
     int8x16 v1 = pop<Simd128>(sp, code, wasm_runtime).to_i8x16();
     int8x16 res;
     for (size_t i = 0; i < kSimd128Size; ++i) {
-      int lane = value.val[i];
-      res.val[LANE(i, res)] = lane < kSimd128Size
-                                  ? v1.val[LANE(lane, v1)]
-                                  : v2.val[LANE(lane - kSimd128Size, v2)];
+      int lane = value[i];
+      res[LANE(i, res)] = lane < kSimd128Size
+                              ? v1[LANE(lane, v1)]
+                              : v2[LANE(lane - kSimd128Size, v2)];
     }
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));
     NextOp();
@@ -5230,8 +5236,7 @@ class Handlers : public HandlersBase {
       const uint8_t* code, uint32_t* sp, WasmInterpreterRuntime* wasm_runtime,
       int64_t r0, double fp0) {
     int32x4 s = pop<Simd128>(sp, code, wasm_runtime).to_i32x4();
-    bool res = s.val[LANE(0, s)] | s.val[LANE(1, s)] | s.val[LANE(2, s)] |
-               s.val[LANE(3, s)];
+    bool res = s[LANE(0, s)] | s[LANE(1, s)] | s[LANE(2, s)] | s[LANE(3, s)];
     push<int32_t>(sp, code, wasm_runtime, res);
     NextOp();
   }
@@ -5243,7 +5248,7 @@ class Handlers : public HandlersBase {
     stype s = pop<Simd128>(sp, code, wasm_runtime).to_##name();               \
     bool res = true;                                                          \
     for (size_t i = 0; i < count; ++i) {                                      \
-      res = res & static_cast<bool>(s.val[LANE(i, s)]);                       \
+      res = res & static_cast<bool>(s[LANE(i, s)]);                           \
     }                                                                         \
     push<int32_t>(sp, code, wasm_runtime, res);                               \
     NextOp();                                                                 \
@@ -5263,9 +5268,8 @@ class Handlers : public HandlersBase {
     stype a = pop<Simd128>(sp, code, wasm_runtime).to_##name();               \
     stype res;                                                                \
     for (size_t i = 0; i < count; i++) {                                      \
-      res.val[LANE(i, res)] =                                                 \
-          operation(a.val[LANE(i, a)] * b.val[LANE(i, b)]) +                  \
-          c.val[LANE(i, c)];                                                  \
+      res[LANE(i, res)] =                                                     \
+          operation(a[LANE(i, a)] * b[LANE(i, b)]) + c[LANE(i, c)];           \
     }                                                                         \
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));                      \
     NextOp();                                                                 \
@@ -5298,8 +5302,8 @@ class Handlers : public HandlersBase {
     load_type v =
         base::ReadUnalignedValue<load_type>(reinterpret_cast<Address>(address));
     s_type s;
-    for (size_t i = 0; i < arraysize(s.val); i++) {
-      s.val[LANE(i, s)] = v;
+    for (size_t i = 0; i < s.size(); i++) {
+      s[LANE(i, s)] = v;
     }
     push<Simd128>(sp, code, wasm_runtime, Simd128(s));
 
@@ -5351,7 +5355,7 @@ class Handlers : public HandlersBase {
     for (int i = 0; i < lanes; i++) {
       uint8_t shift = i * (sizeof(narrow_type) * 8);
       narrow_type el = static_cast<narrow_type>(v >> shift);
-      s.val[LANE(i, s)] = static_cast<wide_type>(el);
+      s[LANE(i, s)] = static_cast<wide_type>(el);
     }
     push<Simd128>(sp, code, wasm_runtime, Simd128(s));
 
@@ -5361,38 +5365,38 @@ class Handlers : public HandlersBase {
       s2s_DoSimdLoadExtend<int16x8, int16_t, int8_t, uint32_t,
                            memory_offset32_t>;
   static auto constexpr s2s_SimdS128Load8x8S_Idx64 =
-      s2s_DoSimdLoadExtend<int16x8, int16_t, int8_t, uint32_t,
-                           memory_offset32_t>;
+      s2s_DoSimdLoadExtend<int16x8, int16_t, int8_t, uint64_t,
+                           memory_offset64_t>;
   static auto constexpr s2s_SimdS128Load8x8U =
       s2s_DoSimdLoadExtend<int16x8, uint16_t, uint8_t, uint32_t,
                            memory_offset32_t>;
   static auto constexpr s2s_SimdS128Load8x8U_Idx64 =
-      s2s_DoSimdLoadExtend<int16x8, uint16_t, uint8_t, uint32_t,
-                           memory_offset32_t>;
+      s2s_DoSimdLoadExtend<int16x8, uint16_t, uint8_t, uint64_t,
+                           memory_offset64_t>;
   static auto constexpr s2s_SimdS128Load16x4S =
       s2s_DoSimdLoadExtend<int32x4, int32_t, int16_t, uint32_t,
                            memory_offset32_t>;
   static auto constexpr s2s_SimdS128Load16x4S_Idx64 =
-      s2s_DoSimdLoadExtend<int32x4, int32_t, int16_t, uint32_t,
-                           memory_offset32_t>;
+      s2s_DoSimdLoadExtend<int32x4, int32_t, int16_t, uint64_t,
+                           memory_offset64_t>;
   static auto constexpr s2s_SimdS128Load16x4U =
       s2s_DoSimdLoadExtend<int32x4, uint32_t, uint16_t, uint32_t,
                            memory_offset32_t>;
   static auto constexpr s2s_SimdS128Load16x4U_Idx64 =
-      s2s_DoSimdLoadExtend<int32x4, uint32_t, uint16_t, uint32_t,
-                           memory_offset32_t>;
+      s2s_DoSimdLoadExtend<int32x4, uint32_t, uint16_t, uint64_t,
+                           memory_offset64_t>;
   static auto constexpr s2s_SimdS128Load32x2S =
       s2s_DoSimdLoadExtend<int64x2, int64_t, int32_t, uint32_t,
                            memory_offset32_t>;
   static auto constexpr s2s_SimdS128Load32x2S_Idx64 =
-      s2s_DoSimdLoadExtend<int64x2, int64_t, int32_t, uint32_t,
-                           memory_offset32_t>;
+      s2s_DoSimdLoadExtend<int64x2, int64_t, int32_t, uint64_t,
+                           memory_offset64_t>;
   static auto constexpr s2s_SimdS128Load32x2U =
       s2s_DoSimdLoadExtend<int64x2, uint64_t, uint32_t, uint32_t,
                            memory_offset32_t>;
   static auto constexpr s2s_SimdS128Load32x2U_Idx64 =
-      s2s_DoSimdLoadExtend<int64x2, uint64_t, uint32_t, uint32_t,
-                           memory_offset32_t>;
+      s2s_DoSimdLoadExtend<int64x2, uint64_t, uint32_t, uint64_t,
+                           memory_offset64_t>;
 
   template <typename s_type, typename load_type, typename MemIdx,
             typename MemOffsetT>
@@ -5419,11 +5423,11 @@ class Handlers : public HandlersBase {
         base::ReadUnalignedValue<load_type>(reinterpret_cast<Address>(address));
     s_type s;
     // All lanes are 0.
-    for (size_t i = 0; i < arraysize(s.val); i++) {
-      s.val[LANE(i, s)] = 0;
+    for (size_t i = 0; i < s.size(); i++) {
+      s[LANE(i, s)] = 0;
     }
     // Lane 0 is set to the loaded value.
-    s.val[LANE(0, s)] = v;
+    s[LANE(0, s)] = v;
     push<Simd128>(sp, code, wasm_runtime, Simd128(s));
 
     NextOp();
@@ -5442,7 +5446,7 @@ class Handlers : public HandlersBase {
   INSTRUCTION_HANDLER_FUNC s2s_DoSimdLoadLane(
       const uint8_t* code, uint32_t* sp, WasmInterpreterRuntime* wasm_runtime,
       int64_t r0, double fp0) {
-    s_type value = pop<Simd128>(sp, code, wasm_runtime).template to<s_type>();
+    s_type value = pop<s_type>(sp, code, wasm_runtime);
 
     uint8_t* memory_start = wasm_runtime->GetMemoryStart();
     uint64_t offset = Read<MemOffsetT>(code);
@@ -5461,7 +5465,7 @@ class Handlers : public HandlersBase {
     memory_type loaded = base::ReadUnalignedValue<memory_type>(
         reinterpret_cast<Address>(address));
     uint16_t lane = Read<uint16_t>(code);
-    value.val[LANE(lane, value)] = loaded;
+    value[LANE(lane, value)] = loaded;
     push<Simd128>(sp, code, wasm_runtime, Simd128(value));
 
     NextOp();
@@ -5489,7 +5493,7 @@ class Handlers : public HandlersBase {
       const uint8_t* code, uint32_t* sp, WasmInterpreterRuntime* wasm_runtime,
       int64_t r0, double fp0) {
     // Extract a single lane, push it onto the stack, then store the lane.
-    s_type value = pop<Simd128>(sp, code, wasm_runtime).template to<s_type>();
+    s_type value = pop<s_type>(sp, code, wasm_runtime);
 
     uint8_t* memory_start = wasm_runtime->GetMemoryStart();
     uint64_t offset = Read<MemOffsetT>(code);
@@ -5506,7 +5510,7 @@ class Handlers : public HandlersBase {
     uint8_t* address = memory_start + effective_index;
 
     uint16_t lane = Read<uint16_t>(code);
-    memory_type res = value.val[LANE(lane, value)];
+    memory_type res = value[LANE(lane, value)];
     base::WriteUnalignedValue<memory_type>(reinterpret_cast<Address>(address),
                                            res);
 
@@ -5534,13 +5538,13 @@ class Handlers : public HandlersBase {
   INSTRUCTION_HANDLER_FUNC s2s_DoSimdExtAddPairwise(
       const uint8_t* code, uint32_t* sp, WasmInterpreterRuntime* wasm_runtime,
       int64_t r0, double fp0) {
-    constexpr int lanes = kSimd128Size / sizeof(DstSimdType::val[0]);
-    auto v = pop<Simd128>(sp, code, wasm_runtime).template to<SrcSimdType>();
+    constexpr int lanes = std::tuple_size_v<DstSimdType>;
+    auto v = pop<SrcSimdType>(sp, code, wasm_runtime);
     DstSimdType res;
     for (int i = 0; i < lanes; ++i) {
-      res.val[LANE(i, res)] =
-          AddLong<Wide>(static_cast<Narrow>(v.val[LANE(i * 2, v)]),
-                        static_cast<Narrow>(v.val[LANE(i * 2 + 1, v)]));
+      res[LANE(i, res)] =
+          AddLong<Wide>(static_cast<Narrow>(v[LANE(i * 2, v)]),
+                        static_cast<Narrow>(v[LANE(i * 2 + 1, v)]));
     }
     push<Simd128>(sp, code, wasm_runtime, Simd128(res));
 
@@ -5562,7 +5566,7 @@ class Handlers : public HandlersBase {
   INSTRUCTION_HANDLER_FUNC s2s_Throw(const uint8_t* code, uint32_t* sp,
                                      WasmInterpreterRuntime* wasm_runtime,
                                      int64_t r0, double fp0) {
-    Isolate* isolate = wasm_runtime->GetIsolate();
+    Isolate* isolate = Isolate::Current();
     {
       HandleScope handle_scope(isolate);  // Avoid leaking handles.
 
@@ -5570,7 +5574,7 @@ class Handlers : public HandlersBase {
 
       DirectHandle<WasmExceptionPackage> exception_object =
           wasm_runtime->CreateWasmExceptionPackage(tag_index);
-      DirectHandle<FixedArray> encoded_values = Cast<FixedArray>(
+      DirectHandle<FixedArray> encoded_values = TrustedCast<FixedArray>(
           WasmExceptionPackage::GetExceptionValues(isolate, exception_object));
 
       // Encode the exception values on the operand stack into the exception
@@ -5603,14 +5607,10 @@ class Handlers : public HandlersBase {
           }
           case kS128: {
             int32x4 s128 = pop<Simd128>(sp, code, wasm_runtime).to_i32x4();
-            EncodeI32ExceptionValue(encoded_values, &encoded_index,
-                                    s128.val[0]);
-            EncodeI32ExceptionValue(encoded_values, &encoded_index,
-                                    s128.val[1]);
-            EncodeI32ExceptionValue(encoded_values, &encoded_index,
-                                    s128.val[2]);
-            EncodeI32ExceptionValue(encoded_values, &encoded_index,
-                                    s128.val[3]);
+            EncodeI32ExceptionValue(encoded_values, &encoded_index, s128[0]);
+            EncodeI32ExceptionValue(encoded_values, &encoded_index, s128[1]);
+            EncodeI32ExceptionValue(encoded_values, &encoded_index, s128[2]);
+            EncodeI32ExceptionValue(encoded_values, &encoded_index, s128[3]);
             break;
           }
           case kRef:
@@ -5742,29 +5742,29 @@ class Handlers : public HandlersBase {
   static bool DoRefCast(WasmRef ref, ValueType ref_type, HeapType target_type,
                         bool null_succeeds,
                         WasmInterpreterRuntime* wasm_runtime) {
-    if (target_type.is_index()) {
+    if (target_type.has_index()) {
       DirectHandle<Map> rtt =
           wasm_runtime->RttCanon(target_type.ref_index().index);
       return wasm_runtime->SubtypeCheck(ref, ref_type, rtt,
                                         target_type.ref_index(), null_succeeds);
     } else {
-      switch (target_type.representation()) {
-        case HeapType::kEq:
+      switch (target_type.generic_kind()) {
+        case GenericKind::kEq:
           return wasm_runtime->RefIsEq(ref, ref_type, null_succeeds);
-        case HeapType::kI31:
+        case GenericKind::kI31:
           return wasm_runtime->RefIsI31(ref, ref_type, null_succeeds);
-        case HeapType::kStruct:
+        case GenericKind::kStruct:
           return wasm_runtime->RefIsStruct(ref, ref_type, null_succeeds);
-        case HeapType::kArray:
+        case GenericKind::kArray:
           return wasm_runtime->RefIsArray(ref, ref_type, null_succeeds);
-        case HeapType::kString:
+        case GenericKind::kString:
           return wasm_runtime->RefIsString(ref, ref_type, null_succeeds);
-        case HeapType::kNone:
-        case HeapType::kNoExtern:
-        case HeapType::kNoFunc:
+        case GenericKind::kNone:
+        case GenericKind::kNoExtern:
+        case GenericKind::kNoFunc:
           DCHECK(null_succeeds);
           return wasm_runtime->IsNullTypecheck(ref, ref_type);
-        case HeapType::kAny:
+        case GenericKind::kAny:
           // Any may never need a cast as it is either implicitly convertible or
           // never convertible for any given type.
         default:
@@ -5794,8 +5794,9 @@ class Handlers : public HandlersBase {
       const uint8_t* code, uint32_t* sp, WasmInterpreterRuntime* wasm_runtime,
       int64_t r0, double fp0) {
     bool null_succeeds = Read<int32_t>(code);
-    HeapType target_type(
-        ModuleTypeIndex({static_cast<uint32_t>(Read<int32_t>(code))}));
+
+    HeapType target_type =
+        HeapType::FromBits(static_cast<uint32_t>(Read<int32_t>(code)));
 
     WasmRef ref = pop<WasmRef>(sp, code, wasm_runtime);
     const uint32_t ref_bitfield = Read<int32_t>(code);
@@ -5832,8 +5833,9 @@ class Handlers : public HandlersBase {
       const uint8_t* code, uint32_t* sp, WasmInterpreterRuntime* wasm_runtime,
       int64_t r0, double fp0) {
     bool null_succeeds = Read<int32_t>(code);
-    HeapType target_type(
-        ModuleTypeIndex({static_cast<uint32_t>(Read<int32_t>(code))}));
+
+    HeapType target_type =
+        HeapType::FromBits(static_cast<uint32_t>(Read<int32_t>(code)));
 
     WasmRef ref = pop<WasmRef>(sp, code, wasm_runtime);
     const uint32_t ref_bitfield = Read<int32_t>(code);
@@ -6093,9 +6095,9 @@ class Handlers : public HandlersBase {
     Address field_addr = (*struct_obj).ptr() + offset;
     // DrumBrake expects pointer compression.
     Tagged_t ref_tagged = base::ReadUnalignedValue<uint32_t>(field_addr);
-    Isolate* isolate = wasm_runtime->GetIsolate();
+    Isolate* isolate = Isolate::Current();
     Tagged<Object> ref_uncompressed(
-        V8HeapCompressionScheme::DecompressTagged(isolate, ref_tagged));
+        V8HeapCompressionScheme::DecompressTagged(ref_tagged));
     WasmRef ref_handle = handle(ref_uncompressed, isolate);
     push<WasmRef>(sp, code, wasm_runtime, ref_handle);
 
@@ -6136,7 +6138,7 @@ class Handlers : public HandlersBase {
     }
     Address field_addr = (*struct_obj).ptr() + field_offset;
     StoreRefIntoMemory(
-        Cast<HeapObject>(*struct_obj), field_addr,
+        TrustedCast<HeapObject>(*struct_obj), field_addr,
         field_offset +
             kHeapObjectTag,  // field_offset is offset into tagged object.
         *ref, UPDATE_WRITE_BARRIER);
@@ -6216,7 +6218,7 @@ class Handlers : public HandlersBase {
       Address element_addr = array->ElementAddress(0);
       uint32_t element_offset = array->element_offset(0);
       for (uint32_t i = 0; i < elem_count; i++) {
-        StoreRefIntoMemory(Cast<HeapObject>(*array), element_addr,
+        StoreRefIntoMemory(TrustedCast<HeapObject>(*array), element_addr,
                            element_offset, *value, SKIP_WRITE_BARRIER);
         element_addr += sizeof(Tagged_t);
         element_offset += sizeof(Tagged_t);
@@ -6286,7 +6288,7 @@ class Handlers : public HandlersBase {
             case kRef:
             case kRefNull: {
               WasmRef ref = pop<WasmRef>(sp, code, wasm_runtime);
-              StoreRefIntoMemory(Cast<HeapObject>(*array), element_addr,
+              StoreRefIntoMemory(TrustedCast<HeapObject>(*array), element_addr,
                                  element_offset, *ref, SKIP_WRITE_BARRIER);
               break;
             }
@@ -6356,7 +6358,7 @@ class Handlers : public HandlersBase {
           case kRef:
           case kRefNull:
             StoreRefIntoMemory(
-                Cast<HeapObject>(*array), element_addr, element_offset,
+                TrustedCast<HeapObject>(*array), element_addr, element_offset,
                 wasm_runtime->GetNullValue(element_type), SKIP_WRITE_BARRIER);
             break;
           default:
@@ -6480,7 +6482,7 @@ class Handlers : public HandlersBase {
     }
     DCHECK(IsWasmArray(*array_obj));
 
-    Tagged<WasmArray> array = Cast<WasmArray>(*array_obj);
+    Tagged<WasmArray> array = TrustedCast<WasmArray>(*array_obj);
     push<int32_t>(sp, code, wasm_runtime, array->length());
 
     NextOp();
@@ -6509,12 +6511,12 @@ class Handlers : public HandlersBase {
     } else if (V8_UNLIKELY(wasm_runtime->IsRefNull(dest_array))) {
       TRAP(TrapReason::kTrapNullDereference)
     } else if (V8_UNLIKELY(dest_offset + size >
-                           Cast<WasmArray>(*dest_array)->length())) {
+                           TrustedCast<WasmArray>(*dest_array)->length())) {
       TRAP(TrapReason::kTrapArrayOutOfBounds)
     } else if (V8_UNLIKELY(wasm_runtime->IsRefNull(src_array))) {
       TRAP(TrapReason::kTrapNullDereference)
     } else if (V8_UNLIKELY(src_offset + size >
-                           Cast<WasmArray>(*src_array)->length())) {
+                           TrustedCast<WasmArray>(*src_array)->length())) {
       TRAP(TrapReason::kTrapArrayOutOfBounds)
     }
 
@@ -6544,7 +6546,7 @@ class Handlers : public HandlersBase {
     }
     DCHECK(IsWasmArray(*array_obj));
 
-    Tagged<WasmArray> array = Cast<WasmArray>(*array_obj);
+    Tagged<WasmArray> array = TrustedCast<WasmArray>(*array_obj);
     if (V8_UNLIKELY(index >= array->length())) {
       TRAP(TrapReason::kTrapArrayOutOfBounds)
     }
@@ -6574,7 +6576,7 @@ class Handlers : public HandlersBase {
     }
     DCHECK(IsWasmArray(*array_obj));
 
-    Tagged<WasmArray> array = Cast<WasmArray>(*array_obj);
+    Tagged<WasmArray> array = TrustedCast<WasmArray>(*array_obj);
     if (V8_UNLIKELY(index >= array->length())) {
       TRAP(TrapReason::kTrapArrayOutOfBounds)
     }
@@ -6599,7 +6601,7 @@ class Handlers : public HandlersBase {
     }
     DCHECK(IsWasmArray(*array_obj));
 
-    Tagged<WasmArray> array = Cast<WasmArray>(*array_obj);
+    Tagged<WasmArray> array = TrustedCast<WasmArray>(*array_obj);
     if (V8_UNLIKELY(index >= array->length())) {
       TRAP(TrapReason::kTrapArrayOutOfBounds)
     }
@@ -6628,7 +6630,7 @@ class Handlers : public HandlersBase {
     }
     DCHECK(IsWasmArray(*array_obj));
 
-    Tagged<WasmArray> array = Cast<WasmArray>(*array_obj);
+    Tagged<WasmArray> array = TrustedCast<WasmArray>(*array_obj);
     if (V8_UNLIKELY(index >= array->length())) {
       TRAP(TrapReason::kTrapArrayOutOfBounds)
     }
@@ -6655,7 +6657,7 @@ class Handlers : public HandlersBase {
     }
     DCHECK(IsWasmArray(*array_obj));
 
-    Tagged<WasmArray> array = Cast<WasmArray>(*array_obj);
+    Tagged<WasmArray> array = TrustedCast<WasmArray>(*array_obj);
     if (V8_UNLIKELY(static_cast<uint64_t>(offset) + size > array->length())) {
       TRAP(TrapReason::kTrapArrayOutOfBounds)
     }
@@ -6693,7 +6695,7 @@ class Handlers : public HandlersBase {
     }
     DCHECK(IsWasmArray(*array_obj));
 
-    Tagged<WasmArray> array = Cast<WasmArray>(*array_obj);
+    Tagged<WasmArray> array = TrustedCast<WasmArray>(*array_obj);
     if (V8_UNLIKELY(static_cast<uint64_t>(offset) + size > array->length())) {
       TRAP(TrapReason::kTrapArrayOutOfBounds)
     }
@@ -6754,8 +6756,8 @@ class Handlers : public HandlersBase {
   INSTRUCTION_HANDLER_FUNC RefCast(const uint8_t* code, uint32_t* sp,
                                    WasmInterpreterRuntime* wasm_runtime,
                                    int64_t r0, double fp0) {
-    HeapType target_type(
-        ModuleTypeIndex({static_cast<uint32_t>(Read<int32_t>(code))}));
+    HeapType target_type =
+        HeapType::FromBits(static_cast<uint32_t>(Read<int32_t>(code)));
 
     WasmRef ref = pop<WasmRef>(sp, code, wasm_runtime);
 
@@ -6777,8 +6779,8 @@ class Handlers : public HandlersBase {
   INSTRUCTION_HANDLER_FUNC RefTest(const uint8_t* code, uint32_t* sp,
                                    WasmInterpreterRuntime* wasm_runtime,
                                    int64_t r0, double fp0) {
-    HeapType target_type(
-        ModuleTypeIndex({static_cast<uint32_t>(Read<int32_t>(code))}));
+    HeapType target_type =
+        HeapType::FromBits(static_cast<uint32_t>(Read<int32_t>(code)));
 
     WasmRef ref = pop<WasmRef>(sp, code, wasm_runtime);
 
@@ -7103,16 +7105,16 @@ void ShadowStack::Slot::Print(WasmInterpreterRuntime* wasm_runtime,
       // when there is more state to know what type of values are on the
       // stack, the right format should be printed here.
       int32x4 s;
-      s.val[0] =
+      s[0] =
           base::ReadUnalignedValue<uint32_t>(reinterpret_cast<Address>(addr));
-      s.val[1] = base::ReadUnalignedValue<uint32_t>(
+      s[1] = base::ReadUnalignedValue<uint32_t>(
           reinterpret_cast<Address>(addr + 4));
-      s.val[2] = base::ReadUnalignedValue<uint32_t>(
+      s[2] = base::ReadUnalignedValue<uint32_t>(
           reinterpret_cast<Address>(addr + 8));
-      s.val[3] = base::ReadUnalignedValue<uint32_t>(
+      s[3] = base::ReadUnalignedValue<uint32_t>(
           reinterpret_cast<Address>(addr + 12));
-      wasm_runtime->Trace("%c%zu:s128:%08x,%08x,%08x,%08x ", kind, index,
-                          s.val[0], s.val[1], s.val[2], s.val[3]);
+      wasm_runtime->Trace("%c%zu:s128:%08x,%08x,%08x,%08x ", kind, index, s[0],
+                          s[1], s[2], s[3]);
       break;
     }
     case kRef:
@@ -7134,7 +7136,6 @@ char const* kInstructionHandlerNames[kInstructionTableSize];
 #endif  // V8_ENABLE_DRUMBRAKE_TRACING
 
 PWasmOp* kInstructionTable[kInstructionTableSize] = {
-
 // 1. Add "small" (compressed) instruction handlers.
 
 #if !V8_DRUMBRAKE_BOUNDS_CHECKS
@@ -7321,6 +7322,7 @@ void WasmEHDataGenerator::RecordPotentialExceptionThrowingInstruction(
 WasmBytecode::WasmBytecode(int func_index, const uint8_t* code_data,
                            size_t code_length, uint32_t stack_frame_size,
                            const FunctionSig* signature,
+                           const CanonicalSig* canonical_signature,
                            const InterpreterCode* interpreter_code,
                            size_t blocks_count, const uint8_t* const_slots_data,
                            size_t const_slots_length, uint32_t ref_slots_count,
@@ -7329,6 +7331,7 @@ WasmBytecode::WasmBytecode(int func_index, const uint8_t* code_data,
     : code_(code_data, code_data + code_length),
       code_bytes_(code_.data()),
       signature_(signature),
+      canonical_signature_(canonical_signature),
       interpreter_code_(interpreter_code),
       const_slots_values_(const_slots_data,
                           const_slots_data + const_slots_length),
@@ -7430,7 +7433,7 @@ size_t WasmBytecodeGenerator::Simd128Hash::operator()(
     const Simd128& s128) const {
   static_assert(sizeof(size_t) == sizeof(uint64_t));
   const int64x2 s = s128.to_i64x2();
-  return s.val[0] ^ s.val[1];
+  return s[0] ^ s[1];
 }
 
 // Look if the slot that hold the value at {stack_index} is being shared with
@@ -7823,16 +7826,20 @@ void WasmBytecodeGenerator::StoreBlockParamsAndResultsIntoSlots(
       target_block_index == 0 ? 0 : ParamsCount(target_block_data);
   uint32_t rets_count = ReturnsCount(target_block_data);
 
-  // There could be valid code where there are not enough elements in the
-  // stack if some code in unreachable (for example if a 'i32.const 0' is
-  // followed by a 'br_if' the if branch is never reachable).
-  uint32_t count = std::min(static_cast<uint32_t>(stack_.size()), rets_count);
-  for (uint32_t i = 0; i < count; i++) {
-    uint32_t from_slot_index = stack_[stack_top_index() - (count - 1) + i];
-    uint32_t to_slot_index = target_block_data.first_block_index_ + i;
-    if (from_slot_index != to_slot_index) {
-      EmitCopySlot(GetReturnType(target_block_data, i), from_slot_index,
-                   to_slot_index);
+  // If we are branching to a loop block we go back to the beginning of the
+  // block, therefore we don't need to store the block results.
+  if (!is_target_loop_block || !is_branch) {
+    // There could be valid code where there are not enough elements in the
+    // stack if some code in unreachable (for example if a 'i32.const 0' is
+    // followed by a 'br_if' the if branch is never reachable).
+    uint32_t count = std::min(static_cast<uint32_t>(stack_.size()), rets_count);
+    for (uint32_t i = 0; i < count; i++) {
+      uint32_t from_slot_index = stack_[stack_top_index() - (count - 1) + i];
+      uint32_t to_slot_index = target_block_data.first_block_index_ + i;
+      if (from_slot_index != to_slot_index) {
+        EmitCopySlot(GetReturnType(target_block_data, i), from_slot_index,
+                     to_slot_index);
+      }
     }
   }
 
@@ -7979,6 +7986,7 @@ WasmInstruction WasmBytecodeGenerator::DecodeInstruction(pc_t pc,
   }
 
   WasmInstruction::Optional optional;
+  WasmDetectedFeatures detected;
   switch (orig) {
     case kExprUnreachable:
       break;
@@ -7988,7 +7996,7 @@ WasmInstruction WasmBytecodeGenerator::DecodeInstruction(pc_t pc,
     case kExprLoop:
     case kExprIf:
     case kExprTry: {
-      BlockTypeImmediate imm(WasmEnabledFeatures::All(), &decoder,
+      BlockTypeImmediate imm(WasmEnabledFeatures::All(), &detected, &decoder,
                              wasm_code_->at(pc + 1), Decoder::kNoValidation);
       if (imm.sig_index.valid()) {
         // The block has at least one argument or at least two results, its
@@ -8081,7 +8089,7 @@ WasmInstruction WasmBytecodeGenerator::DecodeInstruction(pc_t pc,
     case kExprSelect:
       break;
     case kExprSelectWithType: {
-      SelectTypeImmediate imm(WasmEnabledFeatures::All(), &decoder,
+      SelectTypeImmediate imm(WasmEnabledFeatures::All(), &detected, &decoder,
                               wasm_code_->at(pc + 1), Decoder::kNoValidation);
       len = 1 + imm.length;
       break;
@@ -8264,9 +8272,10 @@ WasmInstruction WasmBytecodeGenerator::DecodeInstruction(pc_t pc,
 #undef EXECUTE_UNOP
 
     case kExprRefNull: {
-      HeapTypeImmediate imm(WasmEnabledFeatures::All(), &decoder,
+      HeapTypeImmediate imm(WasmEnabledFeatures::All(), &detected, &decoder,
                             wasm_code_->at(pc + 1), Decoder::kNoValidation);
-      optional.ref_type = imm.type.representation();
+      value_type_reader::Populate(&imm.type, module_);
+      optional.ref_type_bit_field = imm.type.raw_bit_field();
       len = 1 + imm.length;
       break;
     }
@@ -8327,6 +8336,7 @@ void WasmBytecodeGenerator::DecodeGCOp(WasmOpcode opcode,
                                        WasmInstruction::Optional* optional,
                                        Decoder* decoder, InterpreterCode* code,
                                        pc_t pc, int* const len) {
+  WasmDetectedFeatures detected;
   switch (opcode) {
     case kExprStructNew:
     case kExprStructNewDefault: {
@@ -8411,11 +8421,12 @@ void WasmBytecodeGenerator::DecodeGCOp(WasmOpcode opcode,
     case kExprRefCastNull:
     case kExprRefTest:
     case kExprRefTestNull: {
-      HeapTypeImmediate imm(WasmEnabledFeatures::All(), decoder,
+      HeapTypeImmediate imm(WasmEnabledFeatures::All(), &detected, decoder,
                             code->at(pc + *len), Decoder::kNoValidation);
+      value_type_reader::Populate(&imm.type, module_);
       optional->gc_heap_type_immediate.length = imm.length;
-      optional->gc_heap_type_immediate.type_representation =
-          imm.type.representation();
+      optional->gc_heap_type_immediate.heap_type_bit_field =
+          imm.type.raw_bit_field();
       *len += imm.length;
       break;
     }
@@ -8428,15 +8439,21 @@ void WasmBytecodeGenerator::DecodeGCOp(WasmOpcode opcode,
       BranchDepthImmediate branch(decoder, code->at(pc + *len),
                                   Decoder::kNoValidation);
       *len += branch.length;
-      HeapTypeImmediate source_imm(WasmEnabledFeatures::All(), decoder,
-                                   code->at(pc + *len), Decoder::kNoValidation);
+      HeapTypeImmediate source_imm(WasmEnabledFeatures::All(), &detected,
+                                   decoder, code->at(pc + *len),
+                                   Decoder::kNoValidation);
+      value_type_reader::Populate(&source_imm.type, module_);
       *len += source_imm.length;
-      HeapTypeImmediate target_imm(WasmEnabledFeatures::All(), decoder,
-                                   code->at(pc + *len), Decoder::kNoValidation);
+      HeapTypeImmediate target_imm(WasmEnabledFeatures::All(), &detected,
+                                   decoder, code->at(pc + *len),
+                                   Decoder::kNoValidation);
+      value_type_reader::Populate(&target_imm.type, module_);
       *len += target_imm.length;
+      DCHECK(target_imm.type.raw_bit_field() <
+             (1 << kBranchOnCastDataTargetTypeBitSize));
       optional->br_on_cast_data = BranchOnCastData{
           branch.depth, flags_imm.flags.src_is_null,
-          flags_imm.flags.res_is_null, target_imm.type.representation()};
+          flags_imm.flags.res_is_null, target_imm.type.raw_bit_field()};
       break;
     }
 
@@ -8788,10 +8805,7 @@ bool WasmBytecodeGenerator::TypeCheckAlwaysFails(ValueType obj_type,
   return (types_unrelated &&
           (!null_succeeds || !obj_type.is_nullable() ||
            obj_type.is_string_view() || expected_type.is_string_view())) ||
-         (!null_succeeds &&
-          (expected_type.representation() == HeapType::kNone ||
-           expected_type.representation() == HeapType::kNoFunc ||
-           expected_type.representation() == HeapType::kNoExtern));
+         (!null_succeeds && expected_type.is_none_type());
 }
 
 #ifdef DEBUG
@@ -9744,7 +9758,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
           GetTargetBranch(br_on_cast_data.label_depth);
       bool null_succeeds = br_on_cast_data.res_is_null;
       const ValueType target_type = ValueType::RefMaybeNull(
-          ModuleTypeIndex({br_on_cast_data.target_type}),
+          HeapType::FromBits(br_on_cast_data.target_type_bit_fields),
           null_succeeds ? kNullable : kNonNullable);
 
       const ValueType obj_type = slots_[stack_.back()].value_type;
@@ -9771,10 +9785,10 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
         EMIT_INSTR_HANDLER(s2s_BranchOnCast);
         EmitI32Const(null_succeeds);
         HeapType br_on_cast_data_target_type(
-            ModuleTypeIndex({br_on_cast_data.target_type}));
+            HeapType::FromBits(br_on_cast_data.target_type_bit_fields));
         EmitI32Const(br_on_cast_data_target_type.is_index()
-                         ? br_on_cast_data_target_type.representation()
-                         : target_type.heap_type().representation());
+                         ? br_on_cast_data_target_type.raw_bit_field()
+                         : target_type.heap_type().raw_bit_field());
         ValueType value_type = RefPop();
         EmitRefValueType(value_type.raw_bit_field());
         RefPush(value_type);
@@ -9797,8 +9811,8 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
       int32_t target_branch_index =
           GetTargetBranch(br_on_cast_data.label_depth);
       bool null_succeeds = br_on_cast_data.res_is_null;
-      HeapType br_on_cast_data_target_type(
-          ModuleTypeIndex({br_on_cast_data.target_type}));
+      HeapType br_on_cast_data_target_type =
+          HeapType::FromBits(br_on_cast_data.target_type_bit_fields);
       const ValueType target_type =
           ValueType::RefMaybeNull(br_on_cast_data_target_type,
                                   null_succeeds ? kNullable : kNonNullable);
@@ -9831,8 +9845,8 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
         EMIT_INSTR_HANDLER(s2s_BranchOnCastFail);
         EmitI32Const(null_succeeds);
         EmitI32Const(br_on_cast_data_target_type.is_index()
-                         ? br_on_cast_data_target_type.representation()
-                         : target_type.heap_type().representation());
+                         ? br_on_cast_data_target_type.raw_bit_field()
+                         : target_type.heap_type().raw_bit_field());
         ValueType value_type = RefPop();
         EmitRefValueType(value_type.raw_bit_field());
         RefPush(value_type);
@@ -11163,8 +11177,8 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
 
     case kExprRefNull: {
       EMIT_INSTR_HANDLER(s2s_RefNull);
-      ValueType value_type =
-          ValueType::RefNull(HeapType(instr.optional.ref_type));
+      ValueType value_type = ValueType::RefNull(
+          HeapType::FromBits(instr.optional.ref_type_bit_field));
       EmitRefValueType(value_type.raw_bit_field());
       RefPush(value_type);
       break;
@@ -11179,8 +11193,9 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
     case kExprRefFunc: {
       EMIT_INSTR_HANDLER(s2s_RefFunc);
       EmitI32Const(instr.optional.index);
-      ValueType value_type =
-          ValueType::Ref(module_->functions[instr.optional.index].sig_index);
+      ModuleTypeIndex sig_index =
+          module_->functions[instr.optional.index].sig_index;
+      ValueType value_type = ValueType::Ref(module_->heap_type(sig_index));
       RefPush(value_type);
       break;
     }
@@ -11211,14 +11226,16 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
         Pop(kind);
       }
 
-      RefPush(ValueType::Ref(ModuleTypeIndex({instr.optional.index})));
+      ModuleTypeIndex type_index{instr.optional.index};
+      RefPush(ValueType::Ref(module_->heap_type(type_index)));
       break;
     }
 
     case kExprStructNewDefault: {
       EMIT_INSTR_HANDLER(s2s_StructNewDefault);
       EmitI32Const(instr.optional.index);
-      RefPush(ValueType::Ref(ModuleTypeIndex({instr.optional.index})));
+      ModuleTypeIndex type_index{instr.optional.index};
+      RefPush(ValueType::Ref(module_->heap_type(type_index)));
       break;
     }
 
@@ -11413,7 +11430,8 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
           UNREACHABLE();
       }
       // Push the new array.
-      RefPush(ValueType::Ref(ModuleTypeIndex({array_index})));
+      RefPush(
+          ValueType::Ref(module_->heap_type(ModuleTypeIndex({array_index}))));
       break;
     }
 
@@ -11456,7 +11474,8 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
         }
       }
       // Push the new array.
-      RefPush(ValueType::Ref(ModuleTypeIndex({array_index})));
+      RefPush(
+          ValueType::Ref(module_->heap_type(ModuleTypeIndex({array_index}))));
       break;
     }
 
@@ -11465,7 +11484,9 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
       EmitI32Const(instr.optional.index);
       I32Pop();
       // Push the new array.
-      RefPush(ValueType::Ref(ModuleTypeIndex({instr.optional.index})));
+      ModuleTypeIndex array_index{instr.optional.index};
+      RefPush(
+          ValueType::Ref(module_->heap_type(ModuleTypeIndex({array_index}))));
       break;
     }
 
@@ -11479,7 +11500,8 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
       I32Pop();
       I32Pop();
       // Push the new array.
-      RefPush(ValueType::Ref(ModuleTypeIndex({array_index})));
+      RefPush(
+          ValueType::Ref(module_->heap_type(ModuleTypeIndex({array_index}))));
       break;
     }
 
@@ -11493,7 +11515,8 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
       I32Pop();
       I32Pop();
       // Push the new array.
-      RefPush(ValueType::Ref(ModuleTypeIndex({array_index})));
+      RefPush(
+          ValueType::Ref(module_->heap_type(ModuleTypeIndex({array_index}))));
       break;
     }
 
@@ -11747,7 +11770,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
     case kExprRefI31: {
       EMIT_INSTR_HANDLER(s2s_RefI31);
       I32Pop();
-      RefPush(ValueType::Ref(HeapType::kI31));
+      RefPush(ValueType::Ref(kWasmRefI31));
       break;
     }
 
@@ -11768,7 +11791,8 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
     case kExprRefCast:
     case kExprRefCastNull: {
       bool null_succeeds = (instr.opcode == kExprRefCastNull);
-      HeapType target_type = instr.optional.gc_heap_type_immediate.type();
+      HeapType target_type = HeapType::FromBits(
+          instr.optional.gc_heap_type_immediate.heap_type_bit_field);
       ValueType resulting_value_type = ValueType::RefMaybeNull(
           target_type, null_succeeds ? kNullable : kNonNullable);
 
@@ -11805,7 +11829,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
         } else {
           EMIT_INSTR_HANDLER_WITH_PC(s2s_RefCastNull, instr.pc);
         }
-        EmitI32Const(instr.optional.gc_heap_type_immediate.type_representation);
+        EmitI32Const(instr.optional.gc_heap_type_immediate.heap_type_bit_field);
         ValueType value_type = RefPop();
         EmitRefValueType(value_type.raw_bit_field());
         RefPush(resulting_value_type);
@@ -11816,7 +11840,8 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
     case kExprRefTest:
     case kExprRefTestNull: {
       bool null_succeeds = (instr.opcode == kExprRefTestNull);
-      HeapType target_type = instr.optional.gc_heap_type_immediate.type();
+      HeapType target_type = HeapType::FromBits(
+          instr.optional.gc_heap_type_immediate.heap_type_bit_field);
 
       ValueType obj_type = slots_[stack_.back()].value_type;
       DCHECK(obj_type.is_object_reference());
@@ -11845,7 +11870,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
         } else {
           EMIT_INSTR_HANDLER(s2s_RefTestNull);
         }
-        EmitI32Const(instr.optional.gc_heap_type_immediate.type_representation);
+        EmitI32Const(instr.optional.gc_heap_type_immediate.heap_type_bit_field);
         ValueType value_type = RefPop();
         EmitRefValueType(value_type.raw_bit_field());
         I32Push();  // bool
@@ -11857,7 +11882,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
       EMIT_INSTR_HANDLER_WITH_PC(s2s_AnyConvertExtern, instr.pc);
       ValueType extern_val = RefPop();
       ValueType intern_type = ValueType::RefMaybeNull(
-          HeapType::kAny, Nullability(extern_val.is_nullable()));
+          kWasmAnyRef, Nullability(extern_val.is_nullable()));
       RefPush(intern_type);
       break;
     }
@@ -11866,7 +11891,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
       EMIT_INSTR_HANDLER(s2s_ExternConvertAny);
       ValueType value_type = RefPop();
       ValueType extern_type = ValueType::RefMaybeNull(
-          HeapType::kExtern, Nullability(value_type.is_nullable()));
+          kWasmExternRef, Nullability(value_type.is_nullable()));
       RefPush(extern_type);
       break;
     }
@@ -12966,8 +12991,9 @@ std::unique_ptr<WasmBytecode> WasmBytecodeGenerator::GenerateBytecode() {
     _PushSlot(wasm_code_->locals.local_types[index]);
   }
 
-  current_block_index_ =
-      BeginBlock(kExprBlock, {wasm_code_->function->sig_index, kBottom});
+  current_block_index_ = BeginBlock(
+      kExprBlock,
+      {wasm_code_->function->sig_index, kWasmBottom.raw_bit_field()});
 
   WasmInstruction curr_instr;
   WasmInstruction next_instr;
@@ -13011,11 +13037,15 @@ std::unique_ptr<WasmBytecode> WasmBytecodeGenerator::GenerateBytecode() {
 
   total_bytecode_size_ += code_.size();
 
+  CanonicalTypeIndex canonical_sig_index =
+      module_->canonical_sig_id(module_->functions[function_index_].sig_index);
+  const CanonicalSig* canonicalized_sig =
+      GetTypeCanonicalizer()->LookupFunctionSignature(canonical_sig_index);
   return std::make_unique<WasmBytecode>(
       function_index_, code_.data(), code_.size(), slot_offset_,
-      module_->functions[function_index_].sig, wasm_code_, blocks_.size(),
-      const_slots_values_.data(), const_slots_values_.size(), ref_slots_count_,
-      std::move(eh_data_), std::move(code_pc_map_));
+      module_->functions[function_index_].sig, canonicalized_sig, wasm_code_,
+      blocks_.size(), const_slots_values_.data(), const_slots_values_.size(),
+      ref_slots_count_, std::move(eh_data_), std::move(code_pc_map_));
 }
 
 int32_t WasmBytecodeGenerator::BeginBlock(
@@ -13146,23 +13176,6 @@ bool WasmBytecodeGenerator::TryCompactInstructionHandler(
     return true;
   }
   return false;
-}
-
-ClearThreadInWasmScope::ClearThreadInWasmScope(Isolate* isolate)
-    : isolate_(isolate) {
-  DCHECK_IMPLIES(trap_handler::IsTrapHandlerEnabled(),
-                 trap_handler::IsThreadInWasm());
-  trap_handler::ClearThreadInWasm();
-}
-
-ClearThreadInWasmScope ::~ClearThreadInWasmScope() {
-  DCHECK_IMPLIES(trap_handler::IsTrapHandlerEnabled(),
-                 !trap_handler::IsThreadInWasm());
-  if (!isolate_->has_exception()) {
-    trap_handler::SetThreadInWasm();
-  }
-  // Otherwise we only want to set the flag if the exception is caught in
-  // wasm. This is handled by the unwinder.
 }
 
 }  // namespace wasm

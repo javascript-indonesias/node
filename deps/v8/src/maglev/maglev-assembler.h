@@ -20,22 +20,20 @@ namespace maglev {
 class Graph;
 class MaglevAssembler;
 
-inline ExternalReference SpaceAllocationTopAddress(Isolate* isolate,
-                                                   AllocationType alloc_type) {
+inline IsolateFieldId SpaceAllocationTopAddress(AllocationType alloc_type) {
   if (alloc_type == AllocationType::kYoung) {
-    return ExternalReference::new_space_allocation_top_address(isolate);
+    return IsolateFieldId::kNewAllocationInfoTop;
   }
   DCHECK_EQ(alloc_type, AllocationType::kOld);
-  return ExternalReference::old_space_allocation_top_address(isolate);
+  return IsolateFieldId::kOldAllocationInfoTop;
 }
 
-inline ExternalReference SpaceAllocationLimitAddress(
-    Isolate* isolate, AllocationType alloc_type) {
+inline IsolateFieldId SpaceAllocationLimitAddress(AllocationType alloc_type) {
   if (alloc_type == AllocationType::kYoung) {
-    return ExternalReference::new_space_allocation_limit_address(isolate);
+    return IsolateFieldId::kNewAllocationInfoLimit;
   }
   DCHECK_EQ(alloc_type, AllocationType::kOld);
-  return ExternalReference::old_space_allocation_limit_address(isolate);
+  return IsolateFieldId::kOldAllocationInfoLimit;
 }
 
 inline Builtin AllocateBuiltin(AllocationType alloc_type) {
@@ -123,7 +121,6 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
 
   inline MemOperand GetStackSlot(const compiler::AllocatedOperand& operand);
   inline MemOperand ToMemOperand(const compiler::InstructionOperand& operand);
-  inline MemOperand ToMemOperand(const ValueLocation& location);
 
   inline Register GetFramePointer();
 
@@ -175,7 +172,7 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
                      Label* if_false, Label::Distance false_distance,
                      bool fallthrough_when_false);
 
-  Register FromAnyToRegister(const Input& input, Register scratch);
+  Register FromAnyToRegister(ConstInput input, Register scratch);
 
   inline void LoadTaggedField(Register result, MemOperand operand);
   inline void LoadTaggedField(Register result, Register object, int offset);
@@ -294,6 +291,8 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
       RegisterSnapshot& register_snapshot, Register result, Register string,
       Register index, Register scratch1, Register scratch2,
       Label* result_fits_one_byte);
+  void SeqOneByteStringCharCodeAt(Register result, Register string,
+                                  Register index);
   // Warning: Input {char_code} will be scratched.
   void StringFromCharCode(RegisterSnapshot register_snapshot,
                           Label* char_code_fits_one_byte, Register result,
@@ -338,7 +337,8 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
   inline void UncheckedSmiTagUint32(Register dst, Register src);
   inline void UncheckedSmiTagUint32(Register reg);
 
-  // Try to smi-tag {obj}. Result is thrown away.
+  // Try to smi-tag {obj}. Result is thrown away. Only use this when
+  // SmiValuesAre31Bits().
   inline void CheckInt32IsSmi(Register obj, Label* fail,
                               Register scratch = Register::no_reg());
 
@@ -450,10 +450,15 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
   inline void Move(Register dst, Tagged<TaggedIndex> i);
   inline void Move(Register dst, int32_t i);
   inline void Move(Register dst, uint32_t i);
+#ifdef V8_TARGET_ARCH_64_BIT
+  inline void Move(Register dst, intptr_t p);
+#endif
   inline void Move(Register dst, IndirectPointerTag i);
   inline void Move(DoubleRegister dst, double n);
   inline void Move(DoubleRegister dst, Float64 n);
   inline void Move(Register dst, Handle<HeapObject> obj);
+
+  void Move(ExternalReference dst, int32_t imm);
 
   inline void MoveTagged(Register dst, Handle<HeapObject> obj);
 
@@ -482,6 +487,8 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
 
   inline void SignExtend32To64Bits(Register dst, Register src);
   inline void NegateInt32(Register val);
+
+  void CountLeadingZerosInt32(Register dst, Register src);
 
   inline void ToUint8Clamped(Register result, DoubleRegister value, Label* min,
                              Label* max, Label* done);
@@ -542,10 +549,15 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
   inline void JumpIfStringMap(Register map, Label* target,
                               Label::Distance distance = Label::kFar,
                               bool jump_if_true = true);
+  inline void JumpIfSeqOneByteStringMap(Register map, Label* target,
+                                        Label::Distance distance = Label::kFar,
+                                        bool jump_if_true = true);
   inline void JumpIfString(Register heap_object, Label* target,
                            Label::Distance distance = Label::kFar);
   inline void JumpIfNotString(Register heap_object, Label* target,
                               Label::Distance distance = Label::kFar);
+  inline void JumpIfNotSeqOneByteString(Register heap_object, Label* target,
+                                        Label::Distance distance = Label::kFar);
   inline void CheckJSAnyIsStringAndBranch(Register heap_object, Label* if_true,
                                           Label::Distance true_distance,
                                           bool fallthrough_when_true,
@@ -636,6 +648,15 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
   inline void JumpIfByte(Condition cc, Register value, int32_t byte,
                          Label* target, Label::Distance distance = Label::kFar);
 
+  inline void Float64SilenceNan(DoubleRegister value);
+#ifdef V8_ENABLE_UNDEFINED_DOUBLE
+  inline void JumpIfUndefinedNan(DoubleRegister value, Register scratch,
+                                 Label* target,
+                                 Label::Distance distance = Label::kFar);
+  inline void JumpIfNotUndefinedNan(DoubleRegister value, Register scratch,
+                                    Label* target,
+                                    Label::Distance distance = Label::kFar);
+#endif  // V8_ENABLE_UNDEFINED_DOUBLE
   inline void JumpIfHoleNan(DoubleRegister value, Register scratch,
                             Label* target,
                             Label::Distance distance = Label::kFar);
@@ -765,11 +786,21 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
 
   inline void SetMapAsRoot(Register object, RootIndex map);
 
+  inline void AssertContextCellState(Register cell, ContextCell::State state,
+                                     Condition condition = kEqual);
+  inline void LoadContextCellState(Register state, Register cell);
+
+  inline void LoadContextCellTaggedValue(Register value, Register cell);
+  inline void StoreContextCellSmiValue(Register cell, Register value);
+
+  inline void LoadContextCellInt32Value(Register value, Register cell);
+  inline void StoreContextCellInt32Value(Register cell, Register value);
+
+  inline void LoadContextCellFloat64Value(DoubleRegister value, Register cell);
+  inline void StoreContextCellFloat64Value(Register cell, DoubleRegister value);
+
   inline void LoadHeapNumberValue(DoubleRegister result, Register heap_number);
   inline void StoreHeapNumberValue(DoubleRegister value, Register heap_number);
-
-  inline void LoadHeapInt32Value(Register result, Register heap_number);
-  inline void StoreHeapInt32Value(Register value, Register heap_number);
 
   inline void LoadHeapNumberOrOddballValue(DoubleRegister result,
                                            Register object);
@@ -782,14 +813,13 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
                                   size_t lazy_deopt_count,
                                   Label* lazy_deopt_entry);
 
-  void GenerateCheckConstTrackingLetCellFooter(Register context, Register data,
-                                               int index, Label* done);
-
   void TryMigrateInstance(Register object, RegisterSnapshot& register_snapshot,
                           Label* fail);
 
   void TryMigrateInstanceAndMarkMapAsMigrationTarget(
       Register object, RegisterSnapshot& register_snapshot);
+
+  void ResetLastYoungAllocation();
 
   compiler::NativeContextRef native_context() const {
     return code_gen_state()->broker()->target_native_context();
@@ -827,7 +857,9 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
            index * kSystemPointerSize;
   }
 
-  inline void SmiTagInt32AndSetFlags(Register dst, Register src);
+  // Returns the condition code satisfied if tagging is successful. Only use
+  // this when SmiValuesAre31Bits(); otherwise use SmiTag(dst, src).
+  inline Condition TrySmiTagInt32(Register dst, Register src);
 
   MaglevCodeGenState* const code_gen_state_;
   TemporaryRegisterScope* scratch_register_scope_ = nullptr;

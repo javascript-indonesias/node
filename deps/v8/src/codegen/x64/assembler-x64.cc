@@ -257,15 +257,9 @@ bool Operand::AddressUsesRegister(Register reg) const {
   }
 }
 
-void Assembler::AllocateAndInstallRequestedHeapNumbers(LocalIsolate* isolate) {
-  DCHECK_IMPLIES(isolate == nullptr, heap_number_requests_.empty());
-  for (auto& request : heap_number_requests_) {
-    Address pc = reinterpret_cast<Address>(buffer_start_) + request.offset();
-    Handle<HeapNumber> object =
-        isolate->factory()->NewHeapNumber<AllocationType::kOld>(
-            request.heap_number());
-    WriteUnalignedValue(pc, object);
-  }
+void Assembler::PatchInHeapNumberRequest(Address pc,
+                                         Handle<HeapNumber> heap_number) {
+  WriteUnalignedValue(pc, heap_number);
 }
 
 // Partial Constant Pool.
@@ -1325,6 +1319,20 @@ void Assembler::lfence() {
   emit(0x0F);
   emit(0xAE);
   emit(0xE8);
+}
+
+void Assembler::rdpkru() {
+  EnsureSpace ensure_space(this);
+  emit(0x0F);
+  emit(0x01);
+  emit(0xEE);
+}
+
+void Assembler::wrpkru() {
+  EnsureSpace ensure_space(this);
+  emit(0x0F);
+  emit(0x01);
+  emit(0xEF);
 }
 
 void Assembler::cpuid() {
@@ -3142,6 +3150,17 @@ void Assembler::shufps(XMMRegister dst, XMMRegister src, uint8_t imm8) {
   emit(imm8);
 }
 
+void Assembler::shufpd(XMMRegister dst, XMMRegister src, uint8_t imm8) {
+  DCHECK(is_uint8(imm8));
+  EnsureSpace ensure_space(this);
+  emit(0x66);
+  emit_optional_rex_32(dst, src);
+  emit(0x0F);
+  emit(0xC6);
+  emit_sse_operand(dst, src);
+  emit(imm8);
+}
+
 void Assembler::movapd(XMMRegister dst, XMMRegister src) {
   DCHECK(!IsEnabled(AVX));
   EnsureSpace ensure_space(this);
@@ -4696,7 +4715,7 @@ void Assembler::WriteBuiltinJumpTableEntry(Label* label, int table_pos) {
   EnsureSpace ensure_space(this);
   CHECK(label->is_bound());
   int32_t value = label->pos() - table_pos;
-  if constexpr (V8_BUILTIN_JUMP_TABLE_INFO_BOOL) {
+  if constexpr (V8_JUMP_TABLE_INFO_BOOL) {
     builtin_jump_table_info_writer_.Add(pc_offset(), label->pos());
   }
   emitl(value);
@@ -4704,7 +4723,7 @@ void Assembler::WriteBuiltinJumpTableEntry(Label* label, int table_pos) {
 
 int Assembler::WriteBuiltinJumpTableInfos() {
   if (builtin_jump_table_info_writer_.entry_count() == 0) return 0;
-  CHECK(V8_BUILTIN_JUMP_TABLE_INFO_BOOL);
+  CHECK(V8_JUMP_TABLE_INFO_BOOL);
   int offset = pc_offset();
   builtin_jump_table_info_writer_.Emit(this);
   int size = pc_offset() - offset;

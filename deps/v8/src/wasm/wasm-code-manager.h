@@ -25,9 +25,12 @@
 #include "src/codegen/safepoint-table.h"
 #include "src/codegen/source-position.h"
 #include "src/handles/handles.h"
+#include "src/logging/counters.h"
+#include "src/sandbox/sandbox-malloc.h"
 #include "src/tasks/operations-barrier.h"
 #include "src/trap-handler/trap-handler.h"
 #include "src/wasm/compilation-environment.h"
+#include "src/wasm/wasm-code-coverage.h"
 #include "src/wasm/wasm-code-pointer-table.h"
 #include "src/wasm/wasm-features.h"
 #include "src/wasm/wasm-limits.h"
@@ -38,8 +41,8 @@ namespace v8 {
 class CFunctionInfo;
 namespace internal {
 
-class InstructionStream;
 class CodeDesc;
+class InstructionStream;
 class Isolate;
 
 namespace wasm {
@@ -93,6 +96,7 @@ class V8_EXPORT_PRIVATE WasmCode final {
     kWasmFunction,
     kWasmToCapiWrapper,
     kWasmToJsWrapper,
+    kWasmStackEntryWrapper,
 #if V8_ENABLE_DRUMBRAKE
     kInterpreterEntry,
 #endif  // V8_ENABLE_DRUMBRAKE
@@ -203,10 +207,14 @@ class V8_EXPORT_PRIVATE WasmCode final {
   int handler_table_size() const;
   Address code_comments() const;
   int code_comments_size() const;
+  Address jump_table_info() const;
+  int jump_table_info_size() const;
+  bool has_jump_table_info() const { return jump_table_info_size() > 0; }
   int constant_pool_offset() const { return constant_pool_offset_; }
   int safepoint_table_offset() const { return safepoint_table_offset_; }
   int handler_table_offset() const { return handler_table_offset_; }
   int code_comments_offset() const { return code_comments_offset_; }
+  int jump_table_info_offset() const { return jump_table_info_offset_; }
   int unpadded_binary_size() const { return unpadded_binary_size_; }
   int stack_slots() const { return stack_slots_; }
   int ool_spills() const { return ool_spills_; }
@@ -245,6 +253,17 @@ class V8_EXPORT_PRIVATE WasmCode final {
         protected_instructions_data());
   }
 
+  struct __attribute__((packed)) EffectHandler {
+    int call_offset;
+    int tag_index;
+    int handler_offset;
+  };
+  static_assert(sizeof(WasmCode::EffectHandler) == 3 * kIntSize);
+
+  base::Vector<const EffectHandler> effect_handlers() const {
+    return effect_handlers_.as_vector();
+  }
+
   bool IsProtectedInstruction(Address pc);
 
   void Validate() const;
@@ -261,40 +280,51 @@ class V8_EXPORT_PRIVATE WasmCode final {
   ~WasmCode();
 
   void IncRef() {
-    [[maybe_unused]] int old_val =
-        ref_count_.fetch_add(1, std::memory_order_acq_rel);
-    DCHECK_LE(1, old_val);
-    DCHECK_GT(kMaxInt, old_val);
+    [[maybe_unused]] uint32_t old_field =
+        ref_count_bitfield_.fetch_add(1, std::memory_order_acq_rel);
+    DCHECK_LE(1, refcount(old_field));
+    DCHECK_GT(kMaxInt, refcount(old_field));
+  }
+
+  // Returns true if the refcount was incremented, false if {this->is_dying()}.
+  bool IncRefIfNotDying() {
+    uint32_t old_field = ref_count_bitfield_.load(std::memory_order_acquire);
+    while (true) {
+      if (is_dying(old_field)) return false;
+      if (ref_count_bitfield_.compare_exchange_weak(
+              old_field, old_field + 1, std::memory_order_acq_rel)) {
+        return true;
+      }
+    }
   }
 
   // Decrement the ref count. Returns whether this code becomes dead and needs
   // to be freed.
   V8_WARN_UNUSED_RESULT bool DecRef() {
-    int old_count = ref_count_.load(std::memory_order_acquire);
+    uint32_t old_field = ref_count_bitfield_.load(std::memory_order_acquire);
     while (true) {
-      DCHECK_LE(1, old_count);
-      if (V8_UNLIKELY(old_count == 1)) {
-        if (is_dying()) {
+      DCHECK_LE(1, refcount(old_field));
+      if (V8_UNLIKELY(refcount(old_field) == 1)) {
+        if (is_dying(old_field)) {
           // The code was already on the path to deletion, only temporary
           // C++ references to it are left. Decrement the refcount, and
           // return true if it drops to zero.
           return DecRefOnDeadCode();
         }
         // Otherwise, the code enters the path to destruction now.
-        mark_as_dying();
-        old_count = ref_count_.load(std::memory_order_acquire);
-        if (V8_LIKELY(old_count == 1)) {
+        if (ref_count_bitfield_.compare_exchange_weak(
+                old_field, old_field | kIsDyingMask,
+                std::memory_order_acq_rel)) {
           // No other thread got in the way. Commit to the decision.
           DecRefOnPotentiallyDeadCode();
           return false;
         }
-        // Another thread managed to increment the refcount again, just
-        // before we set the "dying" bit. So undo that, and resume the
-        // loop to evaluate again what needs to be done.
-        undo_mark_as_dying();
+        // Another thread interfered. Re-evaluate what to do.
+        continue;
       }
-      if (ref_count_.compare_exchange_weak(old_count, old_count - 1,
-                                           std::memory_order_acq_rel)) {
+      DCHECK_LT(1, refcount(old_field));
+      if (ref_count_bitfield_.compare_exchange_weak(
+              old_field, old_field - 1, std::memory_order_acq_rel)) {
         return false;
       }
     }
@@ -303,16 +333,18 @@ class V8_EXPORT_PRIVATE WasmCode final {
   // Decrement the ref count on code that is known to be in use (i.e. the ref
   // count cannot drop to zero here).
   void DecRefOnLiveCode() {
-    [[maybe_unused]] int old_count =
-        ref_count_.fetch_sub(1, std::memory_order_acq_rel);
-    DCHECK_LE(2, old_count);
+    [[maybe_unused]] uint32_t old_bitfield_value =
+        ref_count_bitfield_.fetch_sub(1, std::memory_order_acq_rel);
+    DCHECK_LE(2, refcount(old_bitfield_value));
   }
 
   // Decrement the ref count on code that is known to be dead, even though there
   // might still be C++ references. Returns whether this drops the last
   // reference and the code needs to be freed.
   V8_WARN_UNUSED_RESULT bool DecRefOnDeadCode() {
-    return ref_count_.fetch_sub(1, std::memory_order_acq_rel) == 1;
+    uint32_t old_bitfield_value =
+        ref_count_bitfield_.fetch_sub(1, std::memory_order_acq_rel);
+    return refcount(old_bitfield_value) == 1;
   }
 
   // Decrement the ref count on a set of {WasmCode} objects, potentially
@@ -321,9 +353,9 @@ class V8_EXPORT_PRIVATE WasmCode final {
 
   // Called by the WasmEngine when it shuts down for code it thinks is
   // probably dead (i.e. is in the "potentially_dead_code_" set). Wrapped
-  // in a method only because {ref_count_} is private.
+  // in a method only because {ref_count_bitfield_} is private.
   void DcheckRefCountIsOne() {
-    DCHECK_EQ(1, ref_count_.load(std::memory_order_acquire));
+    DCHECK_EQ(1, refcount(ref_count_bitfield_.load(std::memory_order_acquire)));
   }
 
   // Returns the last source position before {offset}.
@@ -340,7 +372,15 @@ class V8_EXPORT_PRIVATE WasmCode final {
     return ForDebuggingField::decode(flags_);
   }
 
-  bool is_dying() const { return dying_.load(std::memory_order_acquire); }
+  bool is_dying() const {
+    return is_dying(ref_count_bitfield_.load(std::memory_order_acquire));
+  }
+  static bool is_dying(uint32_t bit_field_value) {
+    return (bit_field_value & kIsDyingMask) != 0;
+  }
+  static uint32_t refcount(uint32_t bit_field_value) {
+    return bit_field_value & ~kIsDyingMask;
+  }
 
   // Returns {true} for Liftoff code that sets up a feedback vector slot in its
   // stack frame.
@@ -365,14 +405,17 @@ class V8_EXPORT_PRIVATE WasmCode final {
            base::Vector<uint8_t> instructions, int stack_slots, int ool_spills,
            uint32_t tagged_parameter_slots, int safepoint_table_offset,
            int handler_table_offset, int constant_pool_offset,
-           int code_comments_offset, int unpadded_binary_size,
+           int code_comments_offset, int jump_table_info_offset,
+           int unpadded_binary_size,
            base::Vector<const uint8_t> protected_instructions_data,
            base::Vector<const uint8_t> reloc_info,
            base::Vector<const uint8_t> source_position_table,
            base::Vector<const uint8_t> inlining_positions,
            base::Vector<const uint8_t> deopt_data, Kind kind,
            ExecutionTier tier, ForDebugging for_debugging,
-           uint64_t signature_hash, bool frame_has_feedback_slot = false)
+           uint64_t signature_hash,
+           base::OwnedVector<const EffectHandler> effect_handlers,
+           bool frame_has_feedback_slot = false)
       : native_module_(native_module),
         instructions_(instructions.begin()),
         signature_hash_(signature_hash),
@@ -393,7 +436,9 @@ class V8_EXPORT_PRIVATE WasmCode final {
         safepoint_table_offset_(safepoint_table_offset),
         handler_table_offset_(handler_table_offset),
         code_comments_offset_(code_comments_offset),
+        jump_table_info_offset_(jump_table_info_offset),
         unpadded_binary_size_(unpadded_binary_size),
+        effect_handlers_(std::move(effect_handlers)),
         flags_(KindField::encode(kind) | ExecutionTierField::encode(tier) |
                ForDebuggingField::encode(for_debugging) |
                FrameHasFeedbackSlotField::encode(frame_has_feedback_slot)) {
@@ -401,6 +446,7 @@ class V8_EXPORT_PRIVATE WasmCode final {
     DCHECK_LE(handler_table_offset, unpadded_binary_size);
     DCHECK_LE(code_comments_offset, unpadded_binary_size);
     DCHECK_LE(constant_pool_offset, unpadded_binary_size);
+    DCHECK_LE(jump_table_info_offset, unpadded_binary_size);
   }
 
   std::unique_ptr<const uint8_t[]> ConcatenateBytes(
@@ -426,11 +472,6 @@ class V8_EXPORT_PRIVATE WasmCode final {
   // Slow path for {DecRef}: The code becomes potentially dead. Schedule it
   // for consideration in the next Code GC cycle.
   V8_NOINLINE void DecRefOnPotentiallyDeadCode();
-
-  void mark_as_dying() { dying_.store(true, std::memory_order_release); }
-  // This is rarely necessary to mitigate a race condition. See the comment
-  // at its (only) call site.
-  void undo_mark_as_dying() { dying_.store(false, std::memory_order_release); }
 
   NativeModule* const native_module_ = nullptr;
   uint8_t* const instructions_;
@@ -461,24 +502,17 @@ class V8_EXPORT_PRIVATE WasmCode final {
   const int safepoint_table_offset_;
   const int handler_table_offset_;
   const int code_comments_offset_;
+  const int jump_table_info_offset_;
   const int unpadded_binary_size_;
   int trap_handler_index_ = -1;
+  base::OwnedVector<const EffectHandler> effect_handlers_;
 
   const uint8_t flags_;  // Bit field, see below.
   // Bits encoded in {flags_}:
-#if !V8_ENABLE_DRUMBRAKE
-  using KindField = base::BitField8<Kind, 0, 2>;
-#else   // !V8_ENABLE_DRUMBRAKE
-  // We have an additional kind: Wasm interpreter.
   using KindField = base::BitField8<Kind, 0, 3>;
-#endif  // !V8_ENABLE_DRUMBRAKE
   using ExecutionTierField = KindField::Next<ExecutionTier, 2>;
   using ForDebuggingField = ExecutionTierField::Next<ForDebugging, 2>;
   using FrameHasFeedbackSlotField = ForDebuggingField::Next<bool, 1>;
-
-  // Will be set to {true} the first time this code object is considered
-  // "potentially dead" (to be confirmed by the next Wasm Code GC cycle).
-  std::atomic<bool> dying_{false};
 
   // WasmCode is ref counted. Counters are held by:
   //   1) The jump table / code table.
@@ -490,7 +524,11 @@ class V8_EXPORT_PRIVATE WasmCode final {
   // it's being used. Once the ref count drops to zero (i.e. after being removed
   // from (3) and all (2)), the code object is deleted and the memory for the
   // machine code is freed.
-  std::atomic<int> ref_count_{1};
+  // The topmost bit is used to indicate that the code is in (3). It is stored
+  // in this same field to avoid race conditions between atomic updates to
+  // that state and the refcount.
+  static constexpr uint32_t kIsDyingMask = 0x8000'0000u;
+  std::atomic<uint32_t> ref_count_bitfield_{1};
 };
 
 WasmCode::Kind GetCodeKind(const WasmCompilationResult& result);
@@ -507,13 +545,19 @@ struct UnpublishedWasmCode {
   static constexpr AssumptionsJournal* kNoAssumptions = nullptr;
 };
 
-// Manages the code reservations and allocations of a single {NativeModule}.
+// Manages the code reservations and allocations of a single {NativeModule} or
+// the {WasmImportWrapperCache}.
 class WasmCodeAllocator {
  public:
-  explicit WasmCodeAllocator(std::shared_ptr<Counters> async_counters);
+  // The passed {DelayedCounterUpdates} object must outlive the
+  // {WasmCodeAllocator}. It's typically a field in the class which also holds
+  // the code allocator.
+  explicit WasmCodeAllocator(DelayedCounterUpdates*);
+
   ~WasmCodeAllocator();
 
-  // Call before use, after the {NativeModule} is set up completely.
+  // Call before use, after the {NativeModule} / {WasmImportWrapperCache} is set
+  // up completely.
   void Init(VirtualMemory code_space);
 
   // Call on newly allocated code ranges, to write platform-specific headers.
@@ -550,8 +594,6 @@ class WasmCodeAllocator {
   // Hold the {NativeModule}'s {allocation_mutex_} when calling this method.
   size_t GetNumCodeSpaces() const;
 
-  Counters* counters() const { return async_counters_.get(); }
-
  private:
   //////////////////////////////////////////////////////////////////////////////
   // These fields are protected by the mutex in {NativeModule}.
@@ -572,11 +614,20 @@ class WasmCodeAllocator {
   std::atomic<size_t> generated_code_size_{0};
   std::atomic<size_t> freed_code_size_{0};
 
-  std::shared_ptr<Counters> async_counters_;
+  DelayedCounterUpdates* counter_updates_;
 };
 
 class V8_EXPORT_PRIVATE NativeModule final {
  public:
+  class V8_NODISCARD NativeModuleAllocationLockScope {
+   public:
+    explicit NativeModuleAllocationLockScope(NativeModule* module)
+        : lock_(module->allocation_mutex_) {}
+
+   private:
+    base::RecursiveMutexGuard lock_;
+  };
+
   static constexpr ExternalPointerTag kManagedTag = kWasmNativeModuleTag;
 
 #if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_S390X || V8_TARGET_ARCH_ARM64 || \
@@ -591,17 +642,13 @@ class V8_EXPORT_PRIVATE NativeModule final {
   NativeModule& operator=(const NativeModule&) = delete;
   ~NativeModule();
 
-  // {AddCode} is thread safe w.r.t. other calls to {AddCode} or methods adding
-  // code below, i.e. it can be called concurrently from background threads.
-  // The returned code still needs to be published via {PublishCode}.
-  std::unique_ptr<WasmCode> AddCode(
-      int index, const CodeDesc& desc, int stack_slots, int ool_spill_count,
-      uint32_t tagged_parameter_slots,
-      base::Vector<const uint8_t> protected_instructions,
-      base::Vector<const uint8_t> source_position_table,
-      base::Vector<const uint8_t> inlining_positions,
-      base::Vector<const uint8_t> deopt_data, WasmCode::Kind kind,
-      ExecutionTier tier, ForDebugging for_debugging);
+  // Returns the number of lines generated in the disassembly of the whole
+  // module.
+  // {bytecode_disasm_offsets} maps the bytecode offset of a Wasm instruction
+  // into the corresponding line in the disassembler text output.
+  uint32_t DisassembleForLcov(
+      std::ostream& out, std::vector<int>& function_body_offsets,
+      std::map<uint32_t, uint32_t>& bytecode_disasm_offsets);
 
   // {PublishCode} makes the code available to the system by entering it into
   // the code table and patching the jump table. It returns a raw pointer to the
@@ -637,13 +684,14 @@ class V8_EXPORT_PRIVATE NativeModule final {
       int ool_spills, uint32_t tagged_parameter_slots,
       int safepoint_table_offset, int handler_table_offset,
       int constant_pool_offset, int code_comments_offset,
-      int unpadded_binary_size,
+      int jump_table_info_offset, int unpadded_binary_size,
       base::Vector<const uint8_t> protected_instructions_data,
       base::Vector<const uint8_t> reloc_info,
       base::Vector<const uint8_t> source_position_table,
       base::Vector<const uint8_t> inlining_positions,
       base::Vector<const uint8_t> deopt_data, WasmCode::Kind kind,
-      ExecutionTier tier);
+      ExecutionTier tier,
+      base::OwnedVector<const WasmCode::EffectHandler> effect_handlers);
 
   // Adds anonymous code for testing purposes.
   WasmCode* AddCodeForTesting(DirectHandle<Code> code, uint64_t signature_hash);
@@ -732,12 +780,6 @@ class V8_EXPORT_PRIVATE NativeModule final {
   size_t liftoff_bailout_count() const {
     return liftoff_bailout_count_.load(std::memory_order_relaxed);
   }
-  size_t liftoff_code_size() const {
-    return liftoff_code_size_.load(std::memory_order_relaxed);
-  }
-  size_t turbofan_code_size() const {
-    return turbofan_code_size_.load(std::memory_order_relaxed);
-  }
 
   void AddLazyCompilationTimeSample(int64_t sample);
 
@@ -815,10 +857,9 @@ class V8_EXPORT_PRIVATE NativeModule final {
     kRemoveTurbofanCode,
     kRemoveAllCode,
   };
-  // Remove all compiled code based on the `filter` from the {NativeModule},
-  // replace it with {CompileLazy} builtins and return the sizes of the removed
-  // (executable) code and the removed metadata.
-  std::pair<size_t, size_t> RemoveCompiledCode(RemoveFilter filter);
+  // Remove all compiled code based on the `filter` from the {NativeModule} and
+  // replace it with {CompileLazy} builtins.
+  void RemoveCompiledCode(RemoveFilter filter);
 
   // Returns the code size of all Liftoff compiled functions.
   size_t SumLiftoffCodeSizeForTesting() const;
@@ -845,8 +886,6 @@ class V8_EXPORT_PRIVATE NativeModule final {
   std::atomic<uint32_t>* tiering_budget_array() const {
     return tiering_budgets_.get();
   }
-
-  Counters* counters() const { return code_allocator_.counters(); }
 
   // Returns an approximation of current off-heap memory used by this module.
   size_t EstimateCurrentMemoryConsumption() const;
@@ -918,6 +957,21 @@ class V8_EXPORT_PRIVATE NativeModule final {
 
   WasmCodePointer GetCodePointerHandle(int index) const;
 
+  const std::shared_ptr<WasmModuleCoverageData>& coverage_data() const {
+    return coverage_data_;
+  }
+
+  void set_continuation_wrapper(WasmCode* wrapper) {
+    continuation_wrapper_ = wrapper;
+  }
+
+  WasmCode* continuation_wrapper() {
+    DCHECK_NOT_NULL(continuation_wrapper_);
+    return continuation_wrapper_;
+  }
+
+  DelayedCounterUpdates* counter_updates() { return &counter_updates_; }
+
  private:
   friend class WasmCode;
   friend class WasmCodeAllocator;
@@ -935,7 +989,6 @@ class V8_EXPORT_PRIVATE NativeModule final {
                WasmDetectedFeatures detected_features,
                CompileTimeImports compile_imports, VirtualMemory code_space,
                std::shared_ptr<const WasmModule> module,
-               std::shared_ptr<Counters> async_counters,
                std::shared_ptr<NativeModule>* shared_this);
 
   std::unique_ptr<WasmCode> AddCodeWithCodeSpace(
@@ -946,6 +999,7 @@ class V8_EXPORT_PRIVATE NativeModule final {
       base::Vector<const uint8_t> inlining_positions,
       base::Vector<const uint8_t> deopt_data, WasmCode::Kind kind,
       ExecutionTier tier, ForDebugging for_debugging,
+      base::OwnedVector<const WasmCode::EffectHandler> effect_handlers,
       bool frame_has_feedback_slot, base::Vector<uint8_t> code_space,
       const JumpTablesRef& jump_tables_ref);
 
@@ -960,8 +1014,6 @@ class V8_EXPORT_PRIVATE NativeModule final {
   // {GetNearRuntimeStubEntry} to avoid the overhead of looking this information
   // up there. Return an empty struct if no suitable jump tables exist.
   JumpTablesRef FindJumpTablesForRegionLocked(base::AddressRegion) const;
-
-  void UpdateCodeSize(size_t, ExecutionTier, ForDebugging);
 
   // Hold the {allocation_mutex_} when calling one of these methods.
   // {slot_index} is the index in the declared functions, i.e. function index
@@ -1040,8 +1092,15 @@ class V8_EXPORT_PRIVATE NativeModule final {
   // hence needs to be destructed first when this native module dies.
   std::unique_ptr<CompilationState> compilation_state_;
 
+#ifdef V8_ENABLE_SANDBOX_HARDWARE_SUPPORT
+  // Array to handle number of function calls. Allocated inside the sandbox as
+  // it is written to from generated code and only contains untrusted data.
+  // TODO(427410040): Make this in-sandbox allocated in all configurations.
+  std::unique_ptr<std::atomic<uint32_t>[], SandboxFreeDeleter> tiering_budgets_;
+#else
   // Array to handle number of function calls.
   std::unique_ptr<std::atomic<uint32_t>[]> tiering_budgets_;
+#endif  // V8_ENABLE_SANDBOX_HARDWARE_SUPPORT
 
   // This mutex protects concurrent calls to {AddCode} and friends.
   // TODO(dlehmann): Revert this to a regular {Mutex} again.
@@ -1096,8 +1155,6 @@ class V8_EXPORT_PRIVATE NativeModule final {
 
   bool lazy_compile_frozen_ = false;
   std::atomic<size_t> liftoff_bailout_count_{0};
-  std::atomic<size_t> liftoff_code_size_{0};
-  std::atomic<size_t> turbofan_code_size_{0};
 
   // Metrics for lazy compilation.
   std::atomic<int> num_lazy_compilations_{0};
@@ -1118,6 +1175,16 @@ class V8_EXPORT_PRIVATE NativeModule final {
 
   std::unique_ptr<std::atomic<Address>[]> fast_api_targets_;
   std::unique_ptr<std::atomic<const MachineSignature*>[]> fast_api_signatures_;
+
+  std::shared_ptr<WasmModuleCoverageData> coverage_data_;
+  // TODO(thibaudm): Share the wrappers across modules, and cache them per
+  // signature once we support arguments and return values.
+  WasmCode* continuation_wrapper_{nullptr};
+
+  // The native module does not belong to an isolate, so we cannot immediately
+  // update counters in an isolate. Store them here instead and publish them the
+  // next time we get hold of an isolate.
+  DelayedCounterUpdates counter_updates_;
 };
 
 class V8_EXPORT_PRIVATE WasmCodeManager final {
@@ -1180,7 +1247,7 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
   friend class WasmImportWrapperCache;
 
   std::shared_ptr<NativeModule> NewNativeModule(
-      Isolate* isolate, WasmEnabledFeatures enabled_features,
+      WasmEnabledFeatures enabled_features,
       WasmDetectedFeatures detected_features,
       CompileTimeImports compile_imports, size_t code_size_estimate,
       std::shared_ptr<const WasmModule> module);
@@ -1237,6 +1304,10 @@ class V8_EXPORT_PRIVATE V8_NODISCARD WasmCodeRefScope {
   // Register a {WasmCode} reference in the current {WasmCodeRefScope}. Fails if
   // there is no current scope.
   static void AddRef(WasmCode*);
+  // Same, but conditional:
+  // - if the {code} is marked as dying, do nothing, return nullptr.
+  // - otherwise add a ref and return {code}.
+  static WasmCode* AddRefIfNotDying(WasmCode* code);
 
  private:
   WasmCodeRefScope* const previous_scope_;

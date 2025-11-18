@@ -25,6 +25,7 @@
 #include "absl/base/internal/throw_delegate.h"
 #include "absl/container/internal/btree.h"  // IWYU pragma: export
 #include "absl/container/internal/common.h"
+#include "absl/hash/internal/weakly_mixed_integer.h"
 #include "absl/memory/memory.h"
 #include "absl/meta/type_traits.h"
 
@@ -267,7 +268,8 @@ class btree_container {
     for (const auto &v : b) {
       h = State::combine(std::move(h), v);
     }
-    return State::combine(std::move(h), b.size());
+    return State::combine(std::move(h),
+                          hash_internal::WeaklyMixedInteger{b.size()});
   }
 
  protected:
@@ -638,12 +640,12 @@ class btree_map_container : public btree_set_container<Tree> {
   }
   template <class K = key_type, int = EnableIf<LifetimeBoundK<K, false>>()>
   mapped_type &operator[](key_arg<K> &&k) ABSL_ATTRIBUTE_LIFETIME_BOUND {
-    return try_emplace(std::forward<K>(k)).first->second;
+    return try_emplace(std::forward<key_arg<K>>(k)).first->second;
   }
   template <class K = key_type, int &..., EnableIf<LifetimeBoundK<K, true>> = 0>
   mapped_type &operator[](key_arg<K> &&k ABSL_INTERNAL_ATTRIBUTE_CAPTURED_BY(
       this)) ABSL_ATTRIBUTE_LIFETIME_BOUND {
-    return this->template operator[]<K, 0>(std::forward<K>(k));
+    return this->template operator[]<K, 0>(std::forward<key_arg<K>>(k));
   }
 
   template <typename K = key_type>

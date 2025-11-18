@@ -297,19 +297,6 @@ class UnalignedSlot : public SlotBase<UnalignedSlot<T>, T, 1> {
   }
 };
 
-// An off-heap uncompressed object slot can be the same as an on-heap one, with
-// a few methods deleted.
-class OffHeapFullObjectSlot : public FullObjectSlot {
- public:
-  OffHeapFullObjectSlot() : FullObjectSlot() {}
-  explicit OffHeapFullObjectSlot(Address ptr) : FullObjectSlot(ptr) {}
-  explicit OffHeapFullObjectSlot(const Address* ptr) : FullObjectSlot(ptr) {}
-
-  inline Tagged<Object> operator*() const = delete;
-
-  using FullObjectSlot::Relaxed_Load;
-};
-
 // An ExternalPointerSlot instance describes a kExternalPointerSlotSize-sized
 // field ("slot") holding a pointer to objects located outside the V8 heap and
 // V8 sandbox (think: ExternalPointer_t).
@@ -357,6 +344,8 @@ class ExternalPointerSlot
   {
   }
 
+  inline void init_lazily_initialized();
+
   inline void init(IsolateForSandbox isolate, Tagged<HeapObject> host,
                    Address value, ExternalPointerTag tag);
 
@@ -382,6 +371,9 @@ class ExternalPointerSlot
   inline Address load(IsolateForSandbox isolate);
   inline void store(IsolateForSandbox isolate, Address value,
                     ExternalPointerTag tag);
+
+  // Loads tag value from the external pointer table.
+  inline ExternalPointerTag load_tag(IsolateForSandbox isolate);
 
   // ExternalPointerSlot serialization support.
   // These methods can be used to clear an external pointer slot prior to
@@ -580,14 +572,27 @@ class WriteProtectedSlot : public SlotT {
 // |src| and |dst| must be kTaggedSize-aligned.
 inline void CopyTagged(Address dst, const Address src, size_t num_tagged);
 
-// Sets |counter| number of kTaggedSize-sized values starting at |start| slot.
+// Fills `start` with `count` `value`s.
 inline void MemsetTagged(Tagged_t* start, Tagged<MaybeObject> value,
-                         size_t counter);
+                         size_t count);
 
-// Sets |counter| number of kTaggedSize-sized values starting at |start| slot.
+// Fills `start` with `count` `value`s.
 template <typename T>
 inline void MemsetTagged(SlotBase<T, Tagged_t> start, Tagged<MaybeObject> value,
-                         size_t counter);
+                         size_t count);
+
+// Fills `start` with `count` `value`s using relaxed atomic stores.
+inline void Relaxed_MemsetTagged(Tagged_t* start, Tagged<MaybeObject> value,
+                                 size_t count);
+
+// Fills `start` with `count` `value`s using relaxed atomic stores.
+template <typename T>
+inline void Relaxed_MemsetTagged(SlotBase<T, Tagged_t> start,
+                                 Tagged<MaybeObject> value, size_t count);
+
+// Fills `start` with `count` `value`s.
+inline void MemsetPointer(FullObjectSlot start, Tagged<Object> value,
+                          size_t count);
 
 }  // namespace v8::internal
 

@@ -12,7 +12,7 @@
 #include "include/v8-function.h"
 #include "include/v8-inspector.h"
 #include "include/v8-microtask-queue.h"
-#include "src/base/safe_conversions.h"
+#include "src/base/numerics/safe_conversions.h"
 #include "src/debug/debug-interface.h"
 #include "src/inspector/crc32.h"
 #include "src/inspector/injected-script.h"
@@ -400,7 +400,8 @@ Response isValidPosition(protocol::Debugger::ScriptPosition* position) {
   return Response::Success();
 }
 
-Response isValidRangeOfPositions(std::vector<std::pair<int, int>>& positions) {
+Response isValidRangeOfPositions(
+    const std::vector<std::pair<int, int>>& positions) {
   for (size_t i = 1; i < positions.size(); ++i) {
     if (positions[i - 1].first < positions[i].first) continue;
     if (positions[i - 1].first == positions[i].first &&
@@ -1139,6 +1140,8 @@ const char* buildStatus(v8::debug::LiveEditResult::Status status) {
     case v8::debug::LiveEditResult::BLOCKED_BY_TOP_LEVEL_ES_MODULE_CHANGE:
       return protocol::Debugger::SetScriptSource::StatusEnum::
           BlockedByTopLevelEsModuleChange;
+    case v8::debug::LiveEditResult::FEATURE_DISABLED:
+      UNREACHABLE();
   }
 }
 }  // namespace
@@ -1172,6 +1175,10 @@ Response V8DebuggerAgentImpl::setScriptSource(
   v8::debug::LiveEditResult result;
   it->second->setSource(newContent, dryRun.value_or(false),
                         allowTopFrameLiveEditing, &result);
+  if (result.status == v8::debug::LiveEditResult::FEATURE_DISABLED) {
+    return Response::ServerError(
+        "setScriptSource functionality no longer available");
+  }
   *status = buildStatus(result.status);
   if (result.status == v8::debug::LiveEditResult::COMPILE_ERROR) {
     *optOutCompileError =
@@ -1947,6 +1954,7 @@ void V8DebuggerAgentImpl::didParseSource(
     String16 scriptSource = script->source(0);
     script->setSourceURL(findSourceURL(scriptSource, false));
     script->setSourceMappingURL(findSourceMapURL(scriptSource, false));
+    script->setBuildId(findDebugId(scriptSource, false));
   }
 
   int contextId = script->executionContextId();
@@ -2400,7 +2408,7 @@ Response V8DebuggerAgentImpl::processSkipList(
 
   // Verify that the skipList is sorted, and that all ranges
   // are properly defined (start comes before end).
-  for (auto skipListPair : skipListInit) {
+  for (const auto& skipListPair : skipListInit) {
     Response res = isValidRangeOfPositions(skipListPair.second);
     if (res.IsError()) return res;
   }
