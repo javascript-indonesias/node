@@ -1619,7 +1619,7 @@ changes:
 * `options` {Object} Configuration options for the test. The following
   properties are supported:
   * `concurrency` {number|boolean} If a number is provided,
-    then that many tests would run in parallel within the application thread.
+    then that many tests would run asynchronously (they are still managed by the single-threaded event loop).
     If `true`, all scheduled asynchronous tests run concurrently within the
     thread. If `false`, only one test runs at a time.
     If unspecified, subtests inherit this value from their parent.
@@ -3667,7 +3667,9 @@ the path of the root test file.
 ### `context.fullName`
 
 <!-- YAML
-added: v22.3.0
+added:
+  - v22.3.0
+  - v20.16.0
 -->
 
 The name of the test and each of its ancestors, separated by `>`.
@@ -3882,7 +3884,7 @@ changes:
 * `options` {Object} Configuration options for the subtest. The following
   properties are supported:
   * `concurrency` {number|boolean|null} If a number is provided,
-    then that many tests would run in parallel within the application thread.
+    then that many tests would run asynchronously (they are still managed by the single-threaded event loop).
     If `true`, it would run all subtests in parallel.
     If `false`, it would only run one test at a time.
     If unspecified, subtests inherit this value from their parent.
@@ -3969,6 +3971,16 @@ added: v22.6.0
 The absolute path of the test file that created the current suite. If a test
 file imports additional modules that generate suites, the imported suites will
 return the path of the root test file.
+
+### `context.fullName`
+
+<!-- YAML
+added:
+  - v22.3.0
+  - v20.16.0
+-->
+
+The name of the suite and each of its ancestors, separated by `>`.
 
 ### `context.name`
 

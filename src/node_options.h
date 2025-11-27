@@ -415,8 +415,9 @@ std::vector<std::string> MapAvailableNamespaces();
 // Define all namespace entries
 #define OPTION_NAMESPACE_LIST(V)                                               \
   V(kNoNamespace, "")                                                          \
-  V(kTestRunnerNamespace, "testRunner")                                        \
-  V(kWatchNamespace, "watch")
+  V(kTestRunnerNamespace, "test")                                              \
+  V(kWatchNamespace, "watch")                                                  \
+  V(kPermissionNamespace, "permission")
 
 enum class OptionNamespaces {
 #define V(name, _) name,
