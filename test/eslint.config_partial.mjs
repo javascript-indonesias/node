@@ -110,11 +110,11 @@ export default [
           message: 'Calling `.catch(common.mustNotCall())` will not detect never-settling promises. Use `.then(common.mustCall())` instead.',
         },
         {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="assert"][callee.property.type="Identifier"][callee.property.name="ok"][arguments.0.type="CallExpression"][arguments.0.callee.type="MemberExpression"][arguments.0.callee.object.regex][arguments.0.callee.property.type="Identifier"][arguments.0.callee.property.name="test"]',
+          selector: 'CallExpression:matches([callee.type="Identifier"][callee.name="assert"], [callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="assert"][callee.property.type="Identifier"][callee.property.name="ok"])[arguments.0.type="CallExpression"][arguments.0.callee.type="MemberExpression"][arguments.0.callee.object.regex][arguments.0.callee.property.type="Identifier"][arguments.0.callee.property.name="test"]',
           message: 'Use assert.match instead',
         },
         {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="assert"][callee.property.type="Identifier"][callee.property.name="ok"][arguments.0.type="UnaryExpression"][arguments.0.operator="!"][arguments.0.argument.type="CallExpression"][arguments.0.argument.callee.type="MemberExpression"][arguments.0.argument.callee.object.regex][arguments.0.argument.callee.property.name="test"]',
+          selector: 'CallExpression:matches([callee.type="Identifier"][callee.name="assert"], [callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="assert"][callee.property.type="Identifier"][callee.property.name="ok"])[arguments.0.type="UnaryExpression"][arguments.0.operator="!"][arguments.0.argument.type="CallExpression"][arguments.0.argument.callee.type="MemberExpression"][arguments.0.argument.callee.object.regex][arguments.0.argument.callee.property.name="test"]',
           message: 'Use assert.doesNotMatch instead',
         },
       ],
@@ -141,13 +141,12 @@ export default [
       ],
       'node-core/require-common-first': 'error',
       'node-core/no-duplicate-requires': 'off',
+      'node-core/must-call-assert': 'error',
     },
   },
   {
     files: [
-      'test/es-module/**/*.{js,mjs}',
       'test/parallel/**/*.{js,mjs}',
-      'test/sequential/**/*.{js,mjs}',
     ],
     rules: {
       '@stylistic/js/comma-dangle': [
@@ -164,52 +163,20 @@ export default [
   },
   {
     files: [
-      `test/{${[
-        'abort',
-        'addons',
-        'async-hooks',
-        'benchmark',
-        'cctest',
-        'client-proxy',
-        'doctool',
-        'embedding',
-        'es-module',
-        'fixtures',
-        'fuzzers',
-        'internet',
-        'js-native-api',
-        'known_issues',
-        'message',
-        'module-hooks',
-        'node-api',
-        'nop',
-        'overlapped-checker',
-        'pseudo-tty',
-        'pummel',
-        'report',
-        'sea',
-        'sequential',
-        'sqlite',
-        'system-ca',
-        'test426',
-        'testpy',
-        'tick-processor',
-        'tools',
-        'v8-updates',
-        'wasi',
-        'wasm-allocation',
-        'wpt',
-      ].join(',')}}/**/*.{js,mjs,cjs}`,
-      `test/parallel/test-{${
-        // 0x61 is code for 'a', this generates a string enumerating latin letters: 'a*,b*,…'
-        Array.from({ length: 13 }, (_, i) => String.fromCharCode(0x61 + i, 42)).join(',')
-      },n*,r*,${
-        // 0x61 is code for 'a', this generates a string enumerating latin letters: 'z*,y*,…'
-        Array.from({ length: 8 }, (_, i) => String.fromCharCode(0x61 + 25 - i, 42)).join(',')
-      }}.{js,mjs,cjs}`,
+      'test/es-module/**/*.{js,mjs}',
+      'test/sequential/**/*.{js,mjs}',
     ],
     rules: {
-      'node-core/must-call-assert': 'error',
+      '@stylistic/js/comma-dangle': [
+        'error',
+        {
+          arrays: 'always-multiline',
+          exports: 'always-multiline',
+          functions: 'only-multiline',
+          imports: 'always-multiline',
+          objects: 'always-multiline',
+        },
+      ],
     },
   },
   {
@@ -220,6 +187,7 @@ export default [
     rules: {
       'node-core/required-modules': 'off',
       'node-core/require-common-first': 'off',
+      'node-core/must-call-assert': 'off',
     },
   },
   {

@@ -443,7 +443,7 @@ tools/test.py parallel/test-stream-*  # The test/ prefix can be omitted
 tools/test.py "test/parallel/test-stream-*"
 ```
 
-The whildcard `*` can be used in any part of the path. For example, to run all tests
+The wildcard `*` can be used in any part of the path. For example, to run all tests
 with a name that starts with `test-inspector-`, regardless of the directory they are in:
 
 ```bash
@@ -1043,6 +1043,16 @@ configure option:
 ```bash
 ./configure --openssl-conf-name=<some_conf_name>
 ```
+
+## Building Node.js with Temporal support
+
+Node.js supports the [Temporal](https://github.com/tc39/proposal-temporal) APIs, when
+linking statically or dynamically with a version [temporal\_rs](https://github.com/boa-dev/temporal).
+
+To build Node.js with Temporal support, a Rust toolchain is required:
+
+* rustc >= 1.82 (with LLVM >= 19)
+* cargo >= 1.82
 
 ## Building Node.js with FIPS-compliant OpenSSL
 
