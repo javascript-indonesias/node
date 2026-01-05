@@ -32,15 +32,16 @@ jobs:
     if: github.repository == 'nodejs/node'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3  # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
         with:
           persist-credentials: false
       - name: Check commit message
+        id: commit-check
         run: npx -q core-validate-commit "$COMMIT"
         env:
           COMMIT: ${{ github.event.after }}
       - name: Slack Notification
-        if: failure()
+        if: ${{ failure() && steps.commit-check.conclusion == 'failure' }}
         uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661  # 2.3.3
         env:
           SLACK_COLOR: '#DE512A'
